@@ -4,6 +4,7 @@ pub mod users;
 pub mod activities;
 pub mod gear;
 
+#[derive(Clone)]
 pub struct Database {
     pub users: users::UserTree,
     pub activities: activities::ActivityTree,

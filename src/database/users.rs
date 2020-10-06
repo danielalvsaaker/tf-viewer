@@ -1,5 +1,6 @@
 use crate::{Error, Result, User};
 
+#[derive(Clone)]
 pub struct UserTree {
     pub(super) username_password: sled::Tree,
     pub(super) username_user: sled::Tree,

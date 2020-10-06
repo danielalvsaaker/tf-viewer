@@ -100,7 +100,7 @@ pub fn parse(fit_data: &[u8]) -> crate::models::Activity {
     let mut lap_vec: Vec<Lap> = Vec::new();
 
     for data in fitparser::from_bytes(fit_data).expect("Failed to parse fit-file") {
-        let mut lap = Lap::new();
+        let lap = Lap::new();
         match data.kind() {
             MesgNum::Session => session = parse_session(data.into_vec(), session),
             MesgNum::Record => record = parse_record(data.into_vec(), record),

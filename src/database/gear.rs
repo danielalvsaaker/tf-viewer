@@ -1,5 +1,6 @@
 use crate::{Error, Result, Gear};
 
+#[derive(Clone)]
 pub struct GearTree {
     pub(super) usernameid_gear: sled::Tree,
 }

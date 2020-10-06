@@ -1,5 +1,6 @@
 use crate::{Error, Result, Activity};
 
+#[derive(Clone)]
 pub struct ActivityTree {
     pub(super) usernameid_activity: sled::Tree,
 }

@@ -14,6 +14,8 @@ pub use error::{Error, Result};
 
 use actix_web::{App, HttpServer, web};
 use actix_identity::{CookieIdentityPolicy, IdentityService, Identity};
+use actix_files::Files;
+
 use routes::{
     index::index, 
     authentication::{login, logout}, 
@@ -39,6 +41,11 @@ async fn main() -> std::io::Result<()> {
                 )
         )
         .app_data(data.clone())
+        .service(Files::new("/static", "static/"))
+        .service(
+            web::resource("/static")
+            .name("static")
+        )
         .service(login)
         .service(logout)
         .service(

@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }}</title>
-    <link rel="stylesheet" href="/css/pure/pure-min.css">
-    <link rel="stylesheet" href="/css/pure/grids-responsive-min.css">
-    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
-    <link rel="stylesheet" href="/layouts/marketing/styles.css">
+    <link rel="stylesheet" href="{{ url._static }}/css/pure-min.css">
+    <link rel="stylesheet" href="{{ url._static }}/css/grids-responsive-min.css">
+    <link rel="stylesheet" href="{{ url._static }}/css/font-awesome.css">
+    <link rel="stylesheet" href="{{ url._static }}/css/styles.css">
 </head>
 <body>
 
@@ -21,7 +21,7 @@
 	    <li class="pure-menu-item"><a href="{{ url.gearindex }}" class="pure-menu-link">Gear</a></li>
 	    <li class="pure-menu-item"><a href="{{ url.upload }}" class="pure-menu-link">Upload</a></li>
 	    {% block button %}
-<li class="pure-menu-item"><a href="{{ url.login }}" class="pure-menu-link">Log in</a></li>
+	    <li class="pure-menu-item"><a href="{{ url.login }}" class="pure-menu-link">Log in</a></li>
 	    {% endblock %}
         </ul>
     </div>

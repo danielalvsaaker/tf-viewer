@@ -8,6 +8,7 @@ pub mod activity;
 pub mod gear;
 
 pub struct UrlFor {
+    pub _static: url::Url,
     pub index: url::Url,
     pub user: url::Url,
     pub userindex: url::Url,
@@ -20,6 +21,7 @@ pub struct UrlFor {
 impl UrlFor {
     pub fn new(user: &Identity, req: HttpRequest) -> Self {
         UrlFor {
+            _static: req.url_for("static", &[""]).unwrap(),
             index: req.url_for("index", &[""]).unwrap(),
             user: req.url_for("user", &[&user.identity().unwrap()]).unwrap(),
             userindex: req.url_for("userindex", &[""]).unwrap(),

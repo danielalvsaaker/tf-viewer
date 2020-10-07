@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="/css/pure/pure-min.css">
+    <link rel="stylesheet" href="/css/pure/grids-responsive-min.css">
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
+    <link rel="stylesheet" href="/layouts/marketing/styles.css">
+</head>
+<body>
+
+<div class="header">
+    <div class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+	    <a class="pure-menu-heading" href="{{ url.index }}">Tf-viewer</a>
+
+        <ul class="pure-menu-list">
+	    <li class="pure-menu-item"><a href="{{ url.userindex }}" class="pure-menu-link">Users</a></li>
+	    <li class="pure-menu-item"><a href="{{ url.activityindex }}" class="pure-menu-link">Activities</a></li>
+	    <li class="pure-menu-item"><a href="{{ url.gearindex }}" class="pure-menu-link">Gear</a></li>
+	    <li class="pure-menu-item"><a href="{{ url.upload }}" class="pure-menu-link">Upload</a></li>
+	    {% block button %}
+<li class="pure-menu-item"><a href="{{ url.login }}" class="pure-menu-link">Log in</a></li>
+	    {% endblock %}
+        </ul>
+    </div>
+</div>
+
+<div class="content-wrapper">
+    <div class="content">
+	    {% block content %}
+	    {% endblock %}
+    </div>
+</div>
+
+</body>
+</html>

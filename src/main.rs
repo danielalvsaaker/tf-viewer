@@ -18,7 +18,7 @@ use actix_files::Files;
 
 use routes::{
     index::index, 
-    authentication::{login, logout}, 
+    authentication::{login, login_post, logout, register, register_post}, 
     user::{user, userindex},
     activity::{activity, activityindex},
     gear::{gear, gearindex},
@@ -47,7 +47,14 @@ async fn main() -> std::io::Result<()> {
             .name("static")
         )
         .service(login)
+        .service(login_post)
         .service(logout)
+        .service(
+            web::resource("/register")
+            .name("register")
+            .route(web::get().to(register))
+            .route(web::post().to(register_post))
+        )
         .service(
             web::resource("/")
             .name("index")

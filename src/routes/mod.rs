@@ -16,6 +16,7 @@ pub struct UrlFor {
     pub gearindex: url::Url,
     pub upload: url::Url,
     pub login: url::Url,
+    pub register: url::Url,
 }
 
 impl UrlFor {
@@ -23,12 +24,13 @@ impl UrlFor {
         UrlFor {
             _static: req.url_for("static", &[""]).unwrap(),
             index: req.url_for("index", &[""]).unwrap(),
-            user: req.url_for("user", &[&user.identity().unwrap()]).unwrap(),
+            user: req.url_for("user", &[&user.identity().unwrap_or("None".to_string())]).unwrap(),
             userindex: req.url_for("userindex", &[""]).unwrap(),
-            activityindex: req.url_for("activityindex", &[&user.identity().unwrap()]).unwrap(),
-            gearindex: req.url_for("gearindex", &[&user.identity().unwrap()]).unwrap(),
+            activityindex: req.url_for("activityindex", &[&user.identity().unwrap_or("None".to_string())]).unwrap(),
+            gearindex: req.url_for("gearindex", &[&user.identity().unwrap_or("None".to_string())]).unwrap(),
             upload: req.url_for("upload", &[""]).unwrap(),
             login: req.url_for("login", &[""]).unwrap(),
+            register: req.url_for("register", &[""]).unwrap(),
         }
     }
 }

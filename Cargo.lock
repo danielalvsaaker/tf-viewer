@@ -1888,6 +1888,7 @@ dependencies = [
  "chrono",
  "fitparser",
  "futures",
+ "http",
  "serde",
  "sled",
  "thiserror",

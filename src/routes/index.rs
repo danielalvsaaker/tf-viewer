@@ -5,10 +5,10 @@ use actix_identity::Identity;
 use super::UrlFor;
 
 #[derive(Template)]
-#[template(path = "base.html")]
+#[template(path = "index.html")]
 struct IndexTemplate<'a> {
     url: UrlFor,
-    user: Identity,
+    id: Identity,
     title: &'a str,
 }
 
@@ -16,7 +16,7 @@ struct IndexTemplate<'a> {
 pub async fn index(id: Identity, req: HttpRequest) -> impl Responder {
     IndexTemplate {
         url: UrlFor::new(&id, req),
-        user: id,
+        id: id,
         title: "Index",
     }.into_response()
 }

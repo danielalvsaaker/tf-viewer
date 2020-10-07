@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<form action="register" method="POST" class="pure-form">
+    <fieldset>
+      <input type="text" name="username" id="username" placeholder="Username">
+      <input type='password' name='password' id='password' placeholder='Password'>
+      <button type="submit" class="pure-button pure-button-primary">Register</button>
+    </fieldset>
+</form>
+<p>Already registered? <a href="{{ url.login }}">Log in</a></p>
+{% endblock %}
+

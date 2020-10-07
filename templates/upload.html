@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block button %}
+<li class="pure-menu-item"><a href="{{ url.user }}" class="pure-menu-link">{{ id.identity().unwrap() }}</a></li>
+{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{{ url._static }}/css/dropzone.min.css">
+<script src="{{ url._static}}/js/dropzone.min.js"></script>
+
+<p> Uploads </p>
+
+<script>
+	window.Dropzone.options.upload = {
+		maxFilesize: 50,
+		acceptedFiles: ".fit",
+		parallellUploads: 5,
+		init: function() {
+    			this.on("queuecomplete", function(file) { alert("Queue complete."); });
+  		}
+	};
+</script>
+
+<form action="/upload" class="dropzone" id="upload">
+</form>
+
+{% endblock %}

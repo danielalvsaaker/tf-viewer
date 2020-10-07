@@ -3,6 +3,7 @@ use actix_identity::Identity;
 
 pub mod authentication;
 pub mod index;
+pub mod upload;
 pub mod user;
 pub mod activity;
 pub mod gear;

@@ -17,6 +17,7 @@ use actix_identity::{CookieIdentityPolicy, IdentityService, Identity};
 use actix_files::Files;
 
 use routes::{
+    upload::{upload, upload_post},
     index::index, 
     authentication::{login, login_post, logout, register, register_post}, 
     user::{user, userindex},
@@ -65,7 +66,8 @@ async fn main() -> std::io::Result<()> {
             web::resource("/upload")
             .name("upload")
             .wrap(middleware::CheckLogin)
-            .to(index)
+            .route(web::get().to(upload))
+            .route(web::post().to(upload_post))
         )
         .service(
             web::scope("/user")

@@ -9,6 +9,11 @@ pub enum Error {
         #[from]
         source: sled::Error,
     },
+    #[error("Parsing fit file failed.")]
+    FitError {
+        #[from]
+        source: fitparser::Error,
+    },
     #[error("{0}")]
     BadServerResponse(&'static str),
     #[error("{0}")]

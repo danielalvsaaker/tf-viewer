@@ -1,5 +1,6 @@
 use actix_web::HttpRequest;
 use actix_identity::Identity;
+use askama_actix::Template;
 
 pub mod authentication;
 pub mod index;
@@ -7,6 +8,14 @@ pub mod upload;
 pub mod user;
 pub mod activity;
 pub mod gear;
+
+#[derive(Template)]
+#[template(path = "error.html")]
+pub struct ErrorTemplate<'a> {
+    url: UrlFor,
+    id: Identity,
+    title: &'a str,
+}
 
 pub struct UrlFor {
     pub _static: url::Url,
@@ -23,15 +32,15 @@ pub struct UrlFor {
 impl UrlFor {
     pub fn new(user: &Identity, req: HttpRequest) -> Self {
         UrlFor {
-            _static: req.url_for("static", &[""]).unwrap(),
-            index: req.url_for("index", &[""]).unwrap(),
+            _static: req.url_for_static("static").unwrap(),
+            index: req.url_for_static("index").unwrap(),
             user: req.url_for("user", &[&user.identity().unwrap_or("None".to_string())]).unwrap(),
-            userindex: req.url_for("userindex", &[""]).unwrap(),
+            userindex: req.url_for_static("userindex").unwrap(),
             activityindex: req.url_for("activityindex", &[&user.identity().unwrap_or("None".to_string())]).unwrap(),
             gearindex: req.url_for("gearindex", &[&user.identity().unwrap_or("None".to_string())]).unwrap(),
-            upload: req.url_for("upload", &[""]).unwrap(),
-            login: req.url_for("login", &[""]).unwrap(),
-            register: req.url_for("register", &[""]).unwrap(),
+            upload: req.url_for_static("upload").unwrap(),
+            login: req.url_for_static("login").unwrap(),
+            register: req.url_for_static("register").unwrap(),
         }
     }
 }
@@ -48,4 +57,18 @@ impl UrlActivity {
     }
 }
 
+mod date_format {
+    use chrono::{DateTime, Local, TimeZone};
+    use serde::{self, Serializer};
 
+    pub fn serialize<S>(
+        date: &DateTime<Local>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = format!("{}", date.format("%d.%m.%Y %H:%M"));
+        serializer.serialize_str(&s)
+    }
+}

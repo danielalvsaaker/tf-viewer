@@ -23,7 +23,11 @@ impl Database {
             },
 
             activities: activities::ActivityTree {
-                usernameid_activity: db.open_tree("usernameid_activity")?,
+                usernameid_id: db.open_tree("usernameid_id")?,
+                usernameid_gear_id: db.open_tree("usernameid_gear_id")?,
+                usernameid_session: db.open_tree("usernameid_session")?,
+                usernameid_record: db.open_tree("usernameid_record")?,
+                usernameid_lap: db.open_tree("usernameid_lap")?,
             },
 
             gear: gear::GearTree {

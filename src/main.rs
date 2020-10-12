@@ -7,10 +7,12 @@ pub mod parser;
 use std::fs;
 
 pub use database::Database;
-pub use models::{Activity, User, Gear};
+pub use models::{Activity, Session, Record, Lap, TimeStamp, User, Gear};
 pub use parser::*;
 pub use error::{Error, Result};
 
+use dotenv::dotenv;
+use std::env;
 
 use actix_web::{App, HttpServer, web};
 use actix_identity::{CookieIdentityPolicy, IdentityService, Identity};
@@ -21,7 +23,7 @@ use routes::{
     index::index, 
     authentication::{login, login_post, logout, register, register_post}, 
     user::{user, userindex},
-    activity::{activity, activityindex},
+    activity::{activity, activityindex, activityindex_post},
     gear::{gear, gearindex},
 };
 
@@ -29,6 +31,8 @@ use routes::{
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    dotenv().ok();
+
     let data = web::Data::new(Database::load_or_create().expect("Failed to load"));
 
     println!("Running at 127.0.0.1:2000");
@@ -85,7 +89,8 @@ async fn main() -> std::io::Result<()> {
                 .service(
                     web::resource("/{user}/activity")
                     .name("activityindex")
-                    .to(activityindex)
+                    .route(web::get().to(activityindex))
+                    .route(web::post().to(activityindex_post))
                 )
                 .service(
                     web::resource("/{user}/activity/{activity}")

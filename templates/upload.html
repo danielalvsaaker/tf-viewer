@@ -13,9 +13,11 @@
 
 <script>
 	window.Dropzone.options.upload = {
+		autoDiscover: true,
 		maxFilesize: 50,
 		acceptedFiles: ".fit",
-		parallellUploads: 5,
+		uploadMultiple: false,
+		parallelUploads: 5,
 		init: function() {
     			this.on("queuecomplete", function(file) { alert("Queue complete."); });
   		}

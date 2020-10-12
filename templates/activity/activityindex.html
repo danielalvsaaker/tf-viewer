@@ -6,6 +6,90 @@
 
 {% block content %}
 
-<p> Index </p>
+<style>
+    td {
+	text-transform: capitalize;
+	text-align: center;
+    }
+    tr:hover {
+	cursor: pointer;
+    } 
+</style>
+
+<link rel="stylesheet" href="{{ url._static }}/css/datatables.min.css">
+<script src="{{ url._static }}/js/jquery.min.js"></script>
+<script src="{{ url._static }}/js/datatables.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+	var table = $("#activities").DataTable( {
+	    "serverSide": true,
+	    "processing": true,
+	    "pageLength": 25,
+	    "ajax": {
+		"url": "/user/{{ user }}/activity",
+		"contentType": "application/json",
+		"type": "POST",
+		"data": function (data) {
+		    return JSON.stringify({
+			draw: data.draw,
+			start: data.start,
+			length: data.length,
+			column: data.order[0].column,
+			dir: data.order[0].dir
+			})
+		}
+	    },
+	    "deferRender": true,
+	    "order": [[ 0, "desc" ]],
+	    "columns": [
+		{"data": "date"},
+		{"data": "activity_type"},
+		{"data": "duration"},
+		{"data": "distance"},
+		{"data": "calories"},
+		{"data": "cadence_avg"},
+		{"data": "heartrate_avg"},
+		{"data": "heartrate_max"},
+		{"data": "speed_avg"},
+		{"data": "speed_max"},
+		{"data": "ascent"},
+		{"data": "descent"},
+		{"data": "id"}
+	    ],
+	    "columnDefs": [
+		{"visible": false, "targets": 12}
+	    ]
+	});
+
+	$("#activities").on("click", "td", function (e) {
+	    var data = table.row($(this).parents("tr") ).data()["id"];
+	    var username = "{{ user }}";
+	    window.location.href = "/user/" + username + "/activity/" + data;
+	});
+    });
+</script>
+
+<table id="activities" class="display" style="width:100%">
+    <thead>
+	<tr>
+	    <th>Date</th>
+	    <th>Activity type</th>
+	    <th>Duration</th>
+	    <th>Distance</th>
+	    <th>Calories</th>
+	    <th>Avg. cadence</th>
+	    <th>Avg. heart rate</th>
+	    <th>Max. heart rate</th>
+	    <th>Avg. speed</th>
+	    <th>Max. speed</th>
+	    <th>Ascent</th>
+	    <th>Descent</th>
+	    <th>Id</th>
+	</tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
 
 {% endblock %}

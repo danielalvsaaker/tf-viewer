@@ -7,99 +7,23 @@ use std::io::prelude::*;
 use chrono::offset::Local;
 use chrono::DateTime;
 
-use serde::{Serialize, Deserialize};
-
-#[derive(Serialize, Deserialize)]
-pub struct TimeStamp(DateTime<Local>);
-
-impl Default for TimeStamp {
-    fn default() -> TimeStamp {
-        TimeStamp(Local::now())
-    }
-}
+use anyhow::{Result, anyhow};
+use crate::{Activity, Session, Record, Lap, TimeStamp};
 
 
-#[derive(Default, Serialize, Deserialize)]
-pub struct Session {
-    pub cadence_avg: Option<u8>,
-    pub cadence_max: Option<u8>,
-    pub heartrate_avg: Option<u8>,
-    pub heartrate_max: Option<u8>,
-    pub speed_avg: Option<f64>,
-    pub speed_max: Option<f64>,
-    pub nec_lat: Option<i32>,
-    pub nec_lon: Option<i32>,
-    pub swc_lat: Option<i32>,
-    pub swc_lon: Option<i32>,
-    pub laps: Option<u16>,
-    pub activity_type: Option<String>,
-    pub ascent: Option<u16>,
-    pub descent: Option<u16>,
-    pub calories: Option<u16>,
-    pub distance: Option<f64>,
-    pub duration: Option<f64>,
-    pub duration_active: Option<f64>,
-    pub start_time: Option<TimeStamp>,
-}
 
-#[derive(Default, Serialize, Deserialize)]
-pub struct Record {
-    pub cadence: Vec<Option<u8>>,
-    pub distance: Vec<Option<f64>>,
-    pub altitude: Vec<Option<f64>>,
-    pub speed: Vec<Option<f64>>,
-    pub heartrate: Vec<Option<u8>>,
-    pub lat: Vec<Option<i32>>,
-    pub lon: Vec<Option<i32>>,
-    pub timestamp: Vec<Option<TimeStamp>>,
-}
-
-#[derive(Default, Serialize, Deserialize)]
-pub struct Lap {
-    pub cadence_avg: Option<u8>,
-    pub cadence_max: Option<u8>,
-    pub heartrate_avg: Option<u8>,
-    pub heartrate_max: Option<u8>,
-    pub speed_avg: Option<f64>,
-    pub speed_max: Option<f64>,
-    pub lat_start: Option<i32>,
-    pub lon_start: Option<i32>,
-    pub lat_end: Option<i32>,
-    pub lon_end: Option<i32>,
-    pub ascent: Option<u16>,
-    pub descent: Option<u16>,
-    pub calories: Option<u16>,
-    pub distance: Option<f64>,
-    pub duration: Option<f64>,
-    pub duration_active: Option<f64>,
-}
-
-impl Session {
-    fn new() -> Self {
-        Default::default()
-    }
-}
-
-impl Record {
-    fn new() -> Self {
-        Default::default()
-    }
-}
-
-impl Lap {
-    fn new() -> Self {
-        Default::default()
-    }
-}
-
-
-pub fn parse(fit_data: &[u8]) -> crate::models::Activity {
-
+pub fn parse(fit_data: &[u8], gear_id: &str) -> Result<Activity> {
     let mut session: Session = Session::new();
     let mut record: Record = Record::new();
     let mut lap_vec: Vec<Lap> = Vec::new();
 
-    for data in fitparser::from_bytes(fit_data).expect("Failed to parse fit-file") {
+    let file = fitparser::from_bytes(fit_data)?;
+
+    if !file.iter().any(|x| x.kind() == MesgNum::Session) {
+        return Err(anyhow!("No session"))
+    }
+
+    for data in file {
         let lap = Lap::new();
         match data.kind() {
             MesgNum::Session => session = parse_session(data.into_vec(), session),
@@ -109,17 +33,21 @@ pub fn parse(fit_data: &[u8]) -> crate::models::Activity {
         }
     }
 
-    crate::models::Activity {
-        id: 2u8,
-        gear_id: 2u8,
-        session: session,
-        record: record,
-        lap: lap_vec,
-    }
+    Ok(crate::models::Activity {
+            id: session.start_time.0.format("%Y%m%d%H%M").to_string(),
+            gear_id: gear_id.to_owned(),
+            session: session,
+            record: record,
+            lap: lap_vec,
+            }
+    )
 }
 
 
 fn parse_session(fields: Vec<FitDataField>, mut session:  Session) -> Session {
+
+    // Semicircle to degree
+    let multiplier = 180f64 / 2f64.powi(31);
 
     for field in fields.iter() {
         match field.name() {
@@ -145,32 +73,32 @@ fn parse_session(fields: Vec<FitDataField>, mut session:  Session) -> Session {
                 },
             "enhanced_avg_speed" =>
                  session.speed_avg = match field.value() {
-                    Float64(x) => Some(*x),
+                    Float64(x) => Some((*x * 3.6f64 * 100f64).round() / 100f64),
                     _ => None,
                 },
             "enhanced_max_speed" =>
                  session.speed_max = match field.value() {
-                    Float64(x) => Some(*x),
+                    Float64(x) => Some((*x * 3.6f64 * 100f64).round() / 100f64),
                     _ => None,
                 },
             "nec_lat" => 
                  session.nec_lat = match field.value() {
-                    SInt32(x) => Some(*x),
+                    SInt32(x) => Some(f64::from(*x) * multiplier),
                     _ => None,
                 },
             "nec_long" =>
                  session.nec_lon = match field.value() {
-                    SInt32(x) => Some(*x),
+                    SInt32(x) => Some(f64::from(*x) * multiplier),
                     _ => None,
                 },
             "swc_lat" =>
                  session.swc_lat = match field.value() {
-                    SInt32(x) => Some(*x),
+                    SInt32(x) => Some(f64::from(*x) * multiplier),
                     _ => None,
                 },
             "swc_long" =>
                  session.swc_lon = match field.value() {
-                    SInt32(x) => Some(*x),
+                    SInt32(x) => Some(f64::from(*x) * multiplier),
                     _ => None,
                 },
             "num_laps" =>
@@ -179,9 +107,8 @@ fn parse_session(fields: Vec<FitDataField>, mut session:  Session) -> Session {
                     _ => None,
                 },
             "sport" =>
-                 session.activity_type = match field.value() {
-                    String(x) => Some(x.to_string()),
-                    _ => None,
+                 if let String(x) = field.value() {
+                    session.activity_type = x.to_string();
                 },
             "total_ascent" =>
                  session.ascent = match field.value() {
@@ -194,29 +121,26 @@ fn parse_session(fields: Vec<FitDataField>, mut session:  Session) -> Session {
                     _ => None,
                 },
             "total_calories" =>
-                 session.calories = match field.value() {
-                    UInt16(x) => Some(*x),
-                    _ => None,
+                 if let UInt16(x) = field.value() {
+                     session.calories = *x;
                 },
             "total_distance" =>
                  session.distance = match field.value() {
-                    Float64(x) => Some(*x),
+                    Float64(x) => Some((*x / 10f64).round() / 100f64),
                     _ => None,
                 },
             "total_elapsed_time" =>
-                 session.duration = match field.value() {
-                    Float64(x) => Some(*x),
-                    _ => None,
+                 if let Float64(x) = field.value() {
+                     session.duration = *x;
                 },
             "total_timer_time" =>
                  session.duration_active = match field.value() {
-                    Float64(x) => Some(*x),
-                    _ => None,
+                     Float64(x) => Some(*x),
+                     _ => None,
                 },
             "start_time" =>
-                 session.start_time = match field.value() {
-                    Timestamp(x) =>  Some(TimeStamp(*x)),
-                    _ => None,
+                 if let Timestamp(x) = field.value() {
+                     session.start_time = TimeStamp(*x);
                 },
             _ => (),
         }
@@ -227,6 +151,9 @@ fn parse_session(fields: Vec<FitDataField>, mut session:  Session) -> Session {
 
 fn parse_record(fields: Vec<FitDataField>, mut record: Record) -> Record {
 
+    // Semicircle to degree
+    let multiplier = 180f64 / 2f64.powi(31);
+
     for field in fields.iter() {
         match field.name() {
             "cadence" =>  record.cadence.push(match field.value() {
@@ -234,7 +161,7 @@ fn parse_record(fields: Vec<FitDataField>, mut record: Record) -> Record {
                 _ => None,
             }),
             "distance" =>  record.distance.push(match field.value() {
-                Float64(x) => Some(*x),
+                Float64(x) => Some((*x / 10f64).round() / 100f64),
                 _ => None,
             }),
             "enhanced_altitude" =>  record.altitude.push(match field.value() {
@@ -242,7 +169,7 @@ fn parse_record(fields: Vec<FitDataField>, mut record: Record) -> Record {
                 _ => None,
             }),
             "enhanced_speed" => record.speed.push(match field.value() {
-                Float64(x) => Some(*x),
+                Float64(x) => Some((*x * 3.6f64 * 100f64).round() / 100f64),
                 _ => None,
             }),
             "heart_rate" =>  record.heartrate.push(match field.value() {
@@ -250,11 +177,11 @@ fn parse_record(fields: Vec<FitDataField>, mut record: Record) -> Record {
                 _ => None,
             }),
             "position_lat" =>  record.lat.push(match field.value() {
-                SInt32(x) => Some(*x),
+                SInt32(x) => Some(f64::from(*x) * multiplier),
                 _ => None,
             }),
             "position_long" =>  record.lon.push(match field.value() {
-                SInt32(x) => Some(*x),
+                SInt32(x) => Some(f64::from(*x) * multiplier),
                 _ => None,
             }),
             "timestamp" =>  record.timestamp.push(match field.value() {
@@ -269,6 +196,9 @@ fn parse_record(fields: Vec<FitDataField>, mut record: Record) -> Record {
 }
 
 fn parse_lap(fields: Vec<FitDataField>, mut lap: Lap) -> Lap {
+
+    // Semicircle to degree
+    let multiplier = 180f64 / 2f64.powi(31);
 
     for field in fields.iter() {
         match field.name() {
@@ -289,27 +219,27 @@ fn parse_lap(fields: Vec<FitDataField>, mut lap: Lap) -> Lap {
                 _ => None,
             },
             "enhanced_avg_speed" => lap.speed_avg = match field.value() {
-                Float64(x) => Some(*x),
+                Float64(x) => Some((*x * 3.6f64 * 100f64).round() / 100f64),
                 _ => None,
             },
             "enhanced_max_speed" => lap.speed_max = match field.value() {
-                Float64(x) => Some(*x),
+                Float64(x) => Some((*x * 3.6f64 * 100f64).round() / 100f64),
                 _ => None,
             },
             "start_position_lat" => lap.lat_start = match field.value() {
-                SInt32(x) => Some(*x),
+                SInt32(x) => Some(f64::from(*x) * multiplier),
                 _ => None,
             },
             "start_position_long" => lap.lon_start = match field.value() {
-                SInt32(x) => Some(*x),
+                SInt32(x) => Some(f64::from(*x) * multiplier),
                 _ => None,
             },
             "end_position_lat" => lap.lat_end = match field.value() {
-                SInt32(x) => Some(*x),
+                SInt32(x) => Some(f64::from(*x) * multiplier),
                 _ => None,
             },
             "end_position_long" => lap.lon_end = match field.value() {
-                SInt32(x) => Some(*x),
+                SInt32(x) => Some(f64::from(*x) * multiplier),
                 _ => None,
             },
             "total_ascent" => lap.ascent = match field.value() {
@@ -325,7 +255,7 @@ fn parse_lap(fields: Vec<FitDataField>, mut lap: Lap) -> Lap {
                 _ => None,
             },
             "total_distance" => lap.distance = match field.value() {
-                Float64(x) => Some(*x),
+                Float64(x) => Some((*x / 10f64).round() / 100f64),
                 _ => None,
             },
             "total_elapsed_time" => lap.duration = match field.value() {
@@ -342,8 +272,3 @@ fn parse_lap(fields: Vec<FitDataField>, mut lap: Lap) -> Lap {
 
     lap
 }
-                
-            
-
-
-

@@ -9,6 +9,7 @@ use super::UrlFor;
 struct LoginTemplate<'a> {
     url: UrlFor,
     title: &'a str,
+    message: Option<&'a str>,
 }
 
 
@@ -21,6 +22,7 @@ pub async fn login(
     LoginTemplate {
         url: UrlFor::new(&id, req),
         title: "Log in",
+        message: None,
     }.into_response()
 }
 
@@ -33,15 +35,29 @@ pub struct Credentials {
 #[post("/login")]
 pub async fn login_post(
     form: web::Form<Credentials>,
+    data: web::Data<crate::Database>,
+    req: HttpRequest,
     id: Identity
     ) -> impl Responder {
 
-    id.remember(form.username.to_owned());
+    let username = form.username.clone();
+    let password = form.password.clone();
 
-    HttpResponse::Found()
-        .header(http::header::LOCATION, "/")
-        .finish()
-        .into_body()
+    if data.get_ref().users.exists(&form.username).unwrap() && 
+        web::block(move || data.get_ref().users.verify_hash(&username, &password)).await.unwrap() {
+            id.remember(form.username.to_owned());
+
+            return Ok(HttpResponse::Found()
+                .header(http::header::LOCATION, "/")
+                .finish()
+                .into_body())
+    }
+
+    LoginTemplate {
+        url: UrlFor::new(&id, req),
+        title: "Login",
+        message: Some("Wrong username or password"),
+    }.into_response()
 }
 
 
@@ -75,8 +91,17 @@ pub async fn register(
 
 pub async fn register_post(
     form: web::Form<Credentials>,
+    data: web::Data<crate::Database>,
     id: Identity
     ) -> impl Responder {
+
+    if !data.get_ref().users.exists(&form.username).unwrap() {
+        web::block(move ||data.get_ref().users.insert(
+            crate::User::new(),
+            &form.username,
+            &form.password
+            )).await;
+    }
 
     HttpResponse::Found()
         .header(http::header::LOCATION, "/login")

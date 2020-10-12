@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
+{% if message.is_some() %}
+{{ message.unwrap() }}
+{% endif %}
 <form action="login" method="POST" class="pure-form">
     <fieldset>
       <input type="text" name="username" id="username" placeholder="Username">

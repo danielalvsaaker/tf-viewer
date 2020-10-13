@@ -6,6 +6,7 @@ use fitparser::Value::*;
 use std::io::prelude::*;
 use chrono::offset::Local;
 use chrono::DateTime;
+use std::time::Duration;
 
 use anyhow::{Result, anyhow};
 use crate::{Activity, Session, Record, Lap, TimeStamp};
@@ -131,12 +132,11 @@ fn parse_session(fields: Vec<FitDataField>, mut session:  Session) -> Session {
                 },
             "total_elapsed_time" =>
                  if let Float64(x) = field.value() {
-                     session.duration = *x;
+                     session.duration = Duration::from_secs_f64(*x);
                 },
             "total_timer_time" =>
-                 session.duration_active = match field.value() {
-                     Float64(x) => Some(*x),
-                     _ => None,
+                 if let Float64(x) = field.value() {
+                     session.duration_active = Duration::from_secs_f64(*x);
                 },
             "start_time" =>
                  if let Timestamp(x) = field.value() {
@@ -258,13 +258,11 @@ fn parse_lap(fields: Vec<FitDataField>, mut lap: Lap) -> Lap {
                 Float64(x) => Some((*x / 10f64).round() / 100f64),
                 _ => None,
             },
-            "total_elapsed_time" => lap.duration = match field.value() {
-                Float64(x) => Some(*x),
-                _ => None,
+            "total_elapsed_time" => if let Float64(x) = field.value() {
+                lap.duration = Duration::from_secs_f64(*x);
             },
-            "total_timer_time" => lap.duration_active = match field.value() {
-                Float64(x) => Some(*x),
-                _ => None,
+            "total_timer_time" => if let Float64(x) = field.value() {
+                lap.duration_active = Duration::from_secs_f64(*x);
             },
             _ => (),
         }

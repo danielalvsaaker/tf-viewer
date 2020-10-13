@@ -17,7 +17,6 @@
 </style>
 
 <link rel="stylesheet" href="{{ url._static }}/css/datatables.min.css">
-<script src="{{ url._static }}/js/jquery.min.js"></script>
 <script src="{{ url._static }}/js/datatables.min.js"></script>
 
 <script>
@@ -26,6 +25,7 @@
 	    "serverSide": true,
 	    "processing": true,
 	    "pageLength": 25,
+	    "searching": false,	
 	    "ajax": {
 		"url": "/user/{{ user }}/activity",
 		"contentType": "application/json",

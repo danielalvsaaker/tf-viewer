@@ -38,6 +38,21 @@ impl UserTree {
         Ok(bincode::deserialize::<User>(&get.unwrap()).unwrap())
     }
 
+    pub fn zones(&self, id: &str) -> Result<Vec<u8>> {
+        let user = self.get(id)?;
+
+        let mut zones: Vec<u8> = vec![];
+
+        zones.push(user.heartrate_rest);
+        zones.push(user.heartrate_max * 55 / 10);
+        zones.push(user.heartrate_max * 72 / 10);
+        zones.push(user.heartrate_max * 82 / 10);
+        zones.push(user.heartrate_max * 87 / 10);
+        zones.push(user.heartrate_max * 92 / 10);
+
+        Ok(zones)
+    }
+
     pub fn verify_hash(&self, id: &str, password: &str) -> Result<bool> {
         let hash = String::from_utf8(self.username_password.get(&id)?.unwrap().to_vec()).unwrap();
         let mut verifier = Verifier::default();

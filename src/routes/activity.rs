@@ -2,7 +2,7 @@ use actix_web::{get, Responder, web, HttpRequest};
 use actix_identity::Identity;
 use askama_actix::{Template, TemplateIntoResponse};
 use serde::{Serialize, Deserialize};
-use super::{ErrorTemplate, UrlFor, date_format};
+use super::{ErrorTemplate, UrlFor, date_format, FormatDuration};
 
 #[derive(Template)]
 #[template(path = "activity/activity.html")]
@@ -10,7 +10,9 @@ struct ActivityTemplate<'a> {
     url: UrlFor,
     id: Identity,
     user: &'a str,
-    activity: crate::Activity,
+    session: crate::Session,
+    coords: Vec<(Option<f64>, Option<f64>)>,
+    plot: &'a str,
     title: &'a str,
 }
 
@@ -18,7 +20,7 @@ pub async fn activity(
     req: HttpRequest,
     data: web::Data<crate::Database>,
     id: Identity,
-    web::Path((user, activity_id)): web::Path<(String, String)>
+    web::Path((user, activity_id)): web::Path<(String, String)>,
     ) -> impl Responder {
 
 
@@ -32,11 +34,18 @@ pub async fn activity(
 
     let activity = data.as_ref().activities.get_activity(&user, &activity_id).unwrap();
 
+    let plot = {
+        let record = activity.record.clone();
+        web::block(move || super::utils::plot(&record)).await.unwrap()
+    };
+
     ActivityTemplate {
         url: UrlFor::new(&id, req),
         id: id,
         user: &user,
-        activity: activity,
+        session: activity.session,
+        coords: activity.record.lon.into_iter().zip(activity.record.lat).collect(),
+        plot: &plot,
         title: "Activity",
     }.into_response()
 }
@@ -88,7 +97,7 @@ struct Data {
     #[serde(with = "date_format")]
     date: chrono::DateTime<chrono::Local>,
     activity_type: String,
-    duration: Option<f64>,
+    duration: String,
     distance: Option<f64>,
     calories: u16,
     cadence_avg: Option<u8>,
@@ -107,21 +116,17 @@ pub async fn activityindex_post(
     user: web::Path<String>
     ) -> impl Responder {
 
-    let user1 = user.to_owned();
-    let data1 = data.to_owned();
-
-    let iter = web::block(move || data.as_ref().activities.iter(&user.to_owned()))
-        .await
+    let iter = data.as_ref().activities.iter(&user.to_owned())
         .unwrap();
 
-    let mut id = web::block(move || data1.as_ref().activities.iter_id(&user1)).await.unwrap();
+    let mut id = data.as_ref().activities.iter_id(&user).unwrap();
    
     let mut sessions: Vec<Data> = iter
         .zip(id)
         .map(|(x,y)| -> Data {  Data {
             date: x.start_time.0,
             activity_type: x.activity_type,
-            duration: x.duration_active,
+            duration: x.duration_active.to_string(),
             distance: x.distance,
             calories: x.calories,
             cadence_avg: x.cadence_avg,
@@ -138,7 +143,7 @@ pub async fn activityindex_post(
     let amount = sessions.len();
 
     match request.column {
-        0 => sessions.sort_by_key(|k| k.date),
+        0 => sessions.sort_by_key(|k| std::cmp::Reverse(k.date)),
         2 => sessions.sort_by(|a, b| a.duration.partial_cmp(&b.duration).unwrap()),
         3 => sessions.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap()),
         4 => sessions.sort_by_key(|k| k.calories),

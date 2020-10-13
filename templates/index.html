@@ -6,6 +6,19 @@
 
 {% block content %}
 
-<p> Index </p>
+<h2>Recent activities</h2>
+
+<table>
+{% for activity in activities %}
+    <tr>
+	<td>
+	    <img
+		src="{{ url._static}}/img/activity/{{ activity.1 }}.png" 
+		width="100%"
+		height="100%">
+	</td>
+    </tr>
+{% endfor %}
+</table>
 
 {% endblock %}

@@ -6,8 +6,111 @@
 
 {% block content %}
 
-<p> Index </p>
+<style>
+.grid-container {
+    height:100%;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    grid-column-gap: 0px;
+    grid-row-gap: 0px;
+}
+.map { grid-area: 1 / 1 / 4 / 5; }
+.stats { grid-area: 1 / 5 / 4 / 6; }
+.plot { grid-area: 4 / 1 / 6 / 6; }
 
-{{ activity.id }}
+#session li { 
+	font-size:110%;
+	line-height:120%;
+	margin-bottom:4%;
+}
+</style>
 
+<div class="grid-container">
+    <div class="map" id="map" style="height:100%">
+	{% match session.nec_lat %}
+	    {% when Some with (value) %}
+		<link rel="stylesheet" href="{{ url._static }}/css/leaflet.css" />
+		<script src="{{ url._static }}/js/leaflet.js"></script>
+
+		<script>
+
+		    var map = L.map("map").fitBounds([
+			[{{ session.nec_lat.unwrap() }}, {{ session.nec_lon.unwrap() }}],
+			[{{ session.swc_lat.unwrap()}}, {{ session.swc_lon.unwrap()}}]
+		    ]);
+
+		    var tiles = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+			"maxNativeZoom": 18,
+			"maxZoom": 18,
+			"minZoom": 0,
+			"subdomains": "abc"
+		    }).addTo(map);
+
+		    var line = L.polyline([
+		    {% for coord in coords  %}
+			[{{ coord.1.unwrap() }}, {{ coord.0.unwrap() }}],
+		    {% endfor %}
+		    ],
+		    {"bubblingMouseEvents": true, "color": "#FF0000", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#FF0000", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+		    ).addTo(map);
+
+	    </script>
+	{% when None %}
+	<p style="margin-top:10%; text-align:center;">Activity does not contain any geographic data</p>
+    {% endmatch %}
+    </div>
+<div class="stats">
+<ul id="session">
+    <li><strong>User: </strong> {{ user }}</li>
+    <li><strong>Activity type: </strong>{{ session.activity_type }}</li>
+    <li><strong>Gear: </strong></li>
+    <li><strong>Duration: </strong> {{ session.duration_active.to_string() }}</li>
+    {% match session.distance %}
+    	{% when Some with (value) %}
+    		<li><strong>Distance: </strong> {{ value }} km</li>
+	{% when None %}
+    {% endmatch %}
+    {% match session.speed_max %}
+    	{% when Some with (value) %}
+    	<li><strong>Max. speed: </strong> {{ value }} km/h</li>
+	{% when None %}
+    {% endmatch %}
+    {% match session.speed_avg %}
+	{% when Some with (value) %}
+	<li><strong>Avg. speed: </strong> {{ value }} km/h</li>
+	{% when None %}
+    {% endmatch %}
+    {% match session.heartrate_max %}
+	{% when Some with (value) %}
+	<li><strong>Max. heart rate: </strong> {{ value }} bpm</li>
+	{% when None %}
+    {% endmatch %}
+    {% match session.heartrate_avg %}
+	{% when Some with (value) %}
+	<li><strong>Avg. heart rate: </strong> {{ value }} bpm</li>
+	{% when None %}
+    {% endmatch %}
+    {% match session.cadence_avg %}
+	{% when Some with (value) %}
+	<li><strong>Avg. cadence: </strong> {{ value }} rpm</li>
+	{% when None %}
+    {% endmatch %}
+    {% match session.ascent %}
+	{% when Some with (value) %}
+	<li><strong>Total ascent: </strong> {{ value }} m</li>
+	{% when None %}
+    {% endmatch %}
+    {% match session.descent %}
+	{% when Some with (value) %}
+	<li><strong>Total descent: </strong> {{ value }} m</li>
+	{% when None %}
+    {% endmatch %}
+</ul>
+</div>
+<div class="plot">
+    <script src="{{ url._static }}/js/plotly.min.js"></script>
+    {{ plot|safe }}
+</div>
+</div>
 {% endblock %}

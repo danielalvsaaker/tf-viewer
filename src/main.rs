@@ -36,7 +36,7 @@ async fn main() -> std::io::Result<()> {
     let data = web::Data::new(Database::load_or_create().expect("Failed to load"));
 
     println!("Running at 127.0.0.1:2000");
-
+    
     HttpServer::new(move || {
         App::new()
         .wrap(IdentityService::new(

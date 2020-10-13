@@ -1,6 +1,7 @@
 use serde::{Serialize, Deserialize};
 use chrono::offset::Local;
 use chrono::DateTime;
+use std::time::Duration;
 
 #[derive(Serialize, Deserialize)]
 pub struct Activity {
@@ -39,12 +40,12 @@ pub struct Session {
     pub descent: Option<u16>,
     pub calories: u16,
     pub distance: Option<f64>,
-    pub duration: f64,
-    pub duration_active: Option<f64>,
+    pub duration: Duration,
+    pub duration_active: Duration,
     pub start_time: TimeStamp,
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize, Clone)]
 pub struct Record {
     pub cadence: Vec<Option<u8>>,
     pub distance: Vec<Option<f64>>,
@@ -72,8 +73,8 @@ pub struct Lap {
     pub descent: Option<u16>,
     pub calories: Option<u16>,
     pub distance: Option<f64>,
-    pub duration: Option<f64>,
-    pub duration_active: Option<f64>,
+    pub duration: Duration,
+    pub duration_active: Duration,
 }
 
 impl Session {
@@ -104,8 +105,8 @@ pub struct Gear {
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct User {
-    pub heartrate_rest: u32,
-    pub heartrate_max: u32,
+    pub heartrate_rest: u8,
+    pub heartrate_max: u8,
     pub age: u32,
     pub height: u32,
     pub weight: u32,

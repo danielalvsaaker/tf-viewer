@@ -3,7 +3,6 @@ use actix_web::{Responder, HttpRequest, get, HttpResponse, web};
 use actix_identity::Identity;
 use actix_multipart::{Multipart, Field};
 use futures::{StreamExt, TryStreamExt};
-use rayon::prelude::*;
 
 use super::UrlFor;
 
@@ -39,16 +38,22 @@ pub async fn upload_post(
 
             
         while let Some(chunk) = field.next().await {
-            let data = chunk.unwrap();
-            f.extend_from_slice(data.as_ref());
+            let chunk = chunk.unwrap();
+            f.extend_from_slice(chunk.as_ref());
         }
     }
-    let gear = data.as_ref().users.get(&id.identity().unwrap_or("None".to_string())).unwrap().standard_gear;
 
+    let gear = data.as_ref().users.get(id.identity().unwrap().as_str()).unwrap().standard_gear;
     let parsed = web::block(move || crate::parser::parse(&f, &gear)).await;
 
     if let Ok(x) = parsed {
-        data.as_ref().activities.insert(x, id.identity().unwrap_or("None".to_owned()));
+        {
+            let record = x.record.clone();
+            let id = x.id.clone();
+            std::thread::spawn(move || super::utils::generate_thumb(record, &id));
+        }
+
+        data.as_ref().activities.insert(x, id.identity().unwrap().as_str());
         HttpResponse::Ok().finish().into_body()
     }
     else {

@@ -8,6 +8,7 @@ pub mod upload;
 pub mod user;
 pub mod activity;
 pub mod gear;
+pub mod utils;
 
 #[derive(Template)]
 #[template(path = "error.html")]
@@ -70,5 +71,21 @@ mod date_format {
     {
         let s = format!("{}", date.format("%d.%m.%Y %H:%M"));
         serializer.serialize_str(&s)
+    }
+}
+
+pub trait FormatDuration {
+    fn to_string(&self) -> String;
+}
+
+impl FormatDuration for std::time::Duration {
+    fn to_string(&self) -> String {
+        let mut s = self.as_secs();
+        let ms = self.subsec_millis();
+
+        let (h, s) = (s / 3600, s % 3600);
+        let (m, s) = (s / 60, s % 60);
+
+        format!("{:02}:{:02}:{:02}", h, m, s)
     }
 }

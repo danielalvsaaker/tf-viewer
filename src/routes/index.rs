@@ -20,8 +20,16 @@ pub async fn index(
     ) -> impl Responder {
 
     let sessions = data.as_ref().activities.iter_session(5).unwrap();
-    let ids = data.as_ref().activities.iter_all_id(5).unwrap();
-    let activities: Vec<(crate::Session, String)> = sessions.zip(ids).collect();
+    let records = data.as_ref().activities.iter_record(5).unwrap();
+    let ids: Vec<String> = data.as_ref().activities.iter_all_id(5).unwrap().collect();
+    let activities: Vec<(crate::Session, String)> = sessions.zip(ids.clone()).collect();
+
+    {
+        for (record, id) in records.zip(ids) {
+            std::thread::spawn(move || super::utils::generate_thumb(record, &id));
+        }
+    }
+
 
     IndexTemplate {
         url: UrlFor::new(&id, req),

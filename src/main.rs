@@ -103,7 +103,8 @@ async fn main() -> std::io::Result<()> {
                     .to(gearindex)
                 )
     )})
-    .bind("127.0.0.1:2000")?
+    .server_hostname("http://192.168.10.165:3000")
+    .bind("0.0.0.0:2000")?
     .run()
     .await
 

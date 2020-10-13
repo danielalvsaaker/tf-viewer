@@ -69,10 +69,11 @@ impl ActivityTree {
             .map(|x| bincode::deserialize::<Session>(&x.unwrap()).unwrap()).into_iter())
     }
 
-    pub fn iter_all_record(&self) -> Result<impl Iterator<Item = Record>> {
+    pub fn iter_record(&self, amount: usize) -> Result<impl Iterator<Item = Record>> {
         Ok(self.usernameid_record.iter()
             .values()
             .rev()
+            .take(amount)
             .map(|x| bincode::deserialize::<Record>(&x.unwrap()).unwrap()).into_iter())
     }
 

@@ -26,6 +26,13 @@ pub fn generate_thumb(record: crate::Record, id: &str) -> Result<()> {
     if record.lon.len() == 0 {
         return Ok(())
     }
+    
+    let path = format!("static/img/activity/{}.png", id);
+    let path = std::path::Path::new(&path);
+
+    if path.exists() {
+        return Ok(())
+    }
 
     let mut map = StaticMap {
         width: 200,
@@ -68,6 +75,6 @@ pub fn generate_thumb(record: crate::Record, id: &str) -> Result<()> {
     map.add_line(line);
 
     let image = map.render();
-    image.save(format!("static/img/activity/{}.png", id));
+    image.save(path);
     Ok(())
 }

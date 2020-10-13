@@ -47,12 +47,6 @@ pub async fn upload_post(
     let parsed = web::block(move || crate::parser::parse(&f, &gear)).await;
 
     if let Ok(x) = parsed {
-        {
-            let record = x.record.clone();
-            let id = x.id.clone();
-            std::thread::spawn(move || super::utils::generate_thumb(record, &id));
-        }
-
         data.as_ref().activities.insert(x, id.identity().unwrap().as_str());
         HttpResponse::Ok().finish().into_body()
     }

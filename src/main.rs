@@ -9,7 +9,7 @@ use std::fs;
 pub use database::Database;
 pub use models::{Activity, Session, Record, Lap, TimeStamp, User, Gear};
 pub use parser::*;
-pub use error::{Error, Result};
+pub use error::Error;
 
 use dotenv::dotenv;
 use std::env;

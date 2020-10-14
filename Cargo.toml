@@ -18,7 +18,7 @@ actix-identity = "0.3.1"
 actix-service = "1.0.6"
 actix-files = "0.4.0"
 actix-multipart = "0.3.0"
-argonautica = { git = "https://github.com/bcmyers/argonautica", features = ["simd"] }
+argonautica = { version = "0.2.0", features = ["simd"] }
 dotenv = "0.15.0"
 http = "0.2.1"
 thiserror = "*"

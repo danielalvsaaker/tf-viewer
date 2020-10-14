@@ -1,7 +1,5 @@
 use thiserror::Error;
 
-pub type Result<T> = std::result::Result<T, Error>;
-
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("There was a problem with the connection to the database.")]
@@ -13,6 +11,11 @@ pub enum Error {
     FitError {
         #[from]
         source: fitparser::Error,
+    },
+    #[error("Failed to deserialize from database.")]
+    BincodeError {
+        #[from]
+        source: std::boxed::Box<bincode::ErrorKind>,
     },
     #[error("{0}")]
     BadServerResponse(&'static str),

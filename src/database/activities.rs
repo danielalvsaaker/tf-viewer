@@ -1,8 +1,9 @@
-use crate::{Error, Result, Activity, Session, Record, Lap};
+use crate::{Error, Activity, Session, Record, Lap};
 use actix_web::web;
 use staticmap::{Line, StaticMap, Color};
 use std::time::Instant;
 use std::future::Future;
+use anyhow::Result;
 
 #[derive(Clone)]
 pub struct ActivityTree {

@@ -1,7 +1,8 @@
-use crate::{Error, Result, User};
+use crate::{Error, User};
 use argonautica::{Hasher, Verifier};
 use dotenv::var;
 use futures::future::*;
+use anyhow::{anyhow, Result};
 
 #[derive(Clone)]
 pub struct UserTree {
@@ -35,7 +36,10 @@ impl UserTree {
     pub fn get(&self, id: &str) -> Result<User> {
         let get = self.username_user.get(id)?;
 
-        Ok(bincode::deserialize::<User>(&get.unwrap()).unwrap())
+        match get {
+            Some(x) => Ok(bincode::deserialize::<User>(&x)?),
+            None => Err(anyhow!("Failed to deserialize user")),
+        }
     }
 
     pub fn zones(&self, id: &str) -> Result<Vec<u8>> {

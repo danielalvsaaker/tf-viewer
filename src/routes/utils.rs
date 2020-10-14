@@ -1,6 +1,7 @@
 use plotly::{Scatter, Plot, common::Mode};
 use staticmap::{Line, StaticMap, Color};
-use crate::{Error, Result};
+use crate::{Error};
+use anyhow::Result;
 
 pub fn plot(record: &crate::Record) -> Result<String> {
 
@@ -75,6 +76,6 @@ pub fn generate_thumb(record: crate::Record, id: &str) -> Result<()> {
     map.add_line(line);
 
     let image = map.render();
-    image.save(path);
+    image.save(path)?;
     Ok(())
 }

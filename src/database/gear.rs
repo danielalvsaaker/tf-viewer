@@ -1,4 +1,5 @@
-use crate::{Error, Result, Gear};
+use crate::{Error, Gear};
+use anyhow::Result;
 
 #[derive(Clone)]
 pub struct GearTree {

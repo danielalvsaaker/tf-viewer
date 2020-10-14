@@ -13,9 +13,18 @@
     <tr>
 	<td>
 	    <img
-		src="{{ url._static}}/img/activity/{{ activity.1 }}.png" 
-		width="100%"
-		height="100%">
+		style="border-radius:50%;"
+		src="{{ url._static }}/img/user/user.png"
+		alt="No profile picture"
+		width="50"
+		height=50">
+	</td>
+	<td>
+	    <h3>{{ activity.0.start_time.0.format("%d.%m.%Y %H:%M").to_string() }}
+	    <img
+		src="{{ url._static }}/img/activity/{{ activity.1 }}.png" 
+		width="60%"
+		height="60%">
 	</td>
     </tr>
 {% endfor %}

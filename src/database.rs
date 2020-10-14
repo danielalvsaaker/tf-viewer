@@ -1,4 +1,5 @@
-use crate::{Error, Result};
+use crate::Error;
+use anyhow::Result;
 
 pub mod users;
 pub mod activities;

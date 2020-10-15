@@ -3,7 +3,7 @@ use actix_web::web;
 use staticmap::{Line, StaticMap, Color};
 use std::time::Instant;
 use std::future::Future;
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 
 #[derive(Clone)]
 pub struct ActivityTree {
@@ -27,13 +27,13 @@ impl ActivityTree {
         key.push(0xff);
         key.extend_from_slice(activity.id.to_string().as_bytes());
 
-        let session = bincode::serialize(&activity.session).expect("Failed to serialize activity");
+        let session = bincode::serialize(&activity.session)?;
         self.usernameid_session.insert(&key, session)?;
 
-        let record = bincode::serialize(&activity.record).expect("Failed to serialize record");
+        let record = bincode::serialize(&activity.record)?;
         self.usernameid_record.insert(&key, record)?;
 
-        let lap = bincode::serialize(&activity.lap).expect("Failed to serialize laps");
+        let lap = bincode::serialize(&activity.lap)?;
         self.usernameid_lap.insert(&key, lap)?;
 
         self.usernameid_id.insert(&key, activity.id.to_string().as_bytes());
@@ -49,7 +49,9 @@ impl ActivityTree {
         Ok(self.usernameid_session.scan_prefix(&prefix)
             .values()
             .rev()
-            .map(|x| bincode::deserialize::<Session>(&x.unwrap()).unwrap()).into_iter())
+            .flatten()
+            .map(|x| bincode::deserialize::<Session>(&x).unwrap())
+        )
         
     }
 
@@ -59,7 +61,7 @@ impl ActivityTree {
            .rev()
            .take(amount)
            .map(|x| String::from_utf8(x.unwrap().to_vec()).unwrap())
-           )
+        )
     }
 
     pub fn iter_session(&self, amount: usize) -> Result<impl Iterator<Item = Session>> {
@@ -67,7 +69,8 @@ impl ActivityTree {
             .values()
             .rev()
             .take(amount)
-            .map(|x| bincode::deserialize::<Session>(&x.unwrap()).unwrap()).into_iter())
+            .map(|x| bincode::deserialize::<Session>(&x.unwrap()).unwrap())
+        )
     }
 
     pub fn iter_record(&self, amount: usize) -> Result<impl Iterator<Item = Record>> {
@@ -75,7 +78,8 @@ impl ActivityTree {
             .values()
             .rev()
             .take(amount)
-            .map(|x| bincode::deserialize::<Record>(&x.unwrap()).unwrap()).into_iter())
+            .map(|x| bincode::deserialize::<Record>(&x.unwrap()).unwrap())
+        )
     }
 
     pub fn iter_id(&self, username: &str) -> Result<impl Iterator<Item = String>> {
@@ -86,7 +90,6 @@ impl ActivityTree {
            .values()
            .rev()
            .map(|x| String::from_utf8(x.unwrap().to_vec()).unwrap())
-           .into_iter()
            )
     }
 
@@ -96,7 +99,11 @@ impl ActivityTree {
         key.extend_from_slice(id.as_bytes());
 
         let get = self.usernameid_session.get(&key)?;
-        Ok(bincode::deserialize::<Session>(&get.unwrap()).unwrap())
+
+        match get {
+            Some(x) => Ok(bincode::deserialize::<Session>(&x)?),
+            None => Err(anyhow!("Failed to deserialize session")),
+        }
     }
 
     pub fn get_record(&self, username: &str, id: &str) -> Result<Record> {
@@ -105,7 +112,11 @@ impl ActivityTree {
         key.extend_from_slice(id.as_bytes());
 
         let get = self.usernameid_record.get(&key)?;
-        Ok(bincode::deserialize::<Record>(&get.unwrap()).unwrap())
+
+        match get {
+            Some(x) => Ok(bincode::deserialize::<Record>(&x)?),
+            None => Err(anyhow!("Failed to deserialize record")),
+        }
     }
 
     pub fn get_lap(&self, username: &str, id: &str) -> Result<Vec<Lap>> {
@@ -114,7 +125,11 @@ impl ActivityTree {
         key.extend_from_slice(id.as_bytes());
 
         let get = self.usernameid_lap.get(&key)?;
-        Ok(bincode::deserialize::<Vec<Lap>>(&get.unwrap()).unwrap())
+
+        match get {
+            Some(x) => Ok(bincode::deserialize::<Vec<Lap>>(&x)?),
+            None => Err(anyhow!("Failed to deserialize laps")),
+        }
     }
 
     pub fn get_gear_id(&self, username: &str, id: &str) -> Result<String> {
@@ -122,16 +137,21 @@ impl ActivityTree {
         key.push(0xff);
         key.extend_from_slice(id.as_bytes());
 
-        Ok(String::from_utf8(self.usernameid_gear_id.get(key)?.unwrap().to_vec()).unwrap())
+        let get = self.usernameid_gear_id.get(&key)?;
+
+        match get {
+            Some(x) => Ok(String::from_utf8(x.to_vec())?),
+            None => Err(anyhow!("Failed to get gear id")),
+        }
     }
 
     pub fn get_activity(&self, username: &str, id: &str) -> Result<Activity> {
         Ok(Activity {
             id: id.to_owned(),
-            gear_id: self.get_gear_id(username, id).unwrap(),
-            session: self.get_session(username, id).unwrap(),
-            record: self.get_record(username, id).unwrap(),
-            lap: self.get_lap(username, id).unwrap(),
+            gear_id: self.get_gear_id(username, id)?,
+            session: self.get_session(username, id)?,
+            record: self.get_record(username, id)?,
+            lap: self.get_lap(username, id)?,
         })
     }
 }

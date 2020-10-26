@@ -2,14 +2,14 @@ use askama_actix::{Template, TemplateIntoResponse};
 use actix_web::{Responder, HttpRequest, web};
 use actix_identity::Identity;
 
-use super::UrlFor;
+use super::{UrlFor, FormatDuration};
 
 #[derive(Template)]
 #[template(path = "index.html")]
 struct IndexTemplate<'a> {
     url: UrlFor,
     id: Identity,
-    activities: Vec<(crate::Session, String)>,
+    activities: &'a Vec<(crate::Session, String)>,
     title: &'a str,
 }
 
@@ -33,8 +33,8 @@ pub async fn index(
 
     IndexTemplate {
         url: UrlFor::new(&id, req),
-        id: id,
-        activities: activities,
+        id,
+        activities: &activities,
         title: "Index",
     }.into_response()
 }

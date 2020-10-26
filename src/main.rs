@@ -1,28 +1,24 @@
 mod database;
 mod routes;
-mod error;
 mod models;
 mod middleware;
 pub mod parser;
-use std::fs;
 
 pub use database::Database;
 pub use models::{Activity, Session, Record, Lap, TimeStamp, User, Gear};
 pub use parser::*;
-pub use error::Error;
 
 use dotenv::dotenv;
-use std::env;
 
-use actix_web::{App, HttpServer, web};
-use actix_identity::{CookieIdentityPolicy, IdentityService, Identity};
+use actix_web::{App, HttpServer, web, guard, HttpResponse, middleware::errhandlers::ErrorHandlers, http};
+use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_files::Files;
 
 use routes::{
     upload::{upload, upload_post},
     index::index, 
     authentication::{login, login_post, logout, register, register_post}, 
-    user::{user, userindex},
+    user::{user, userindex, userindex_post},
     activity::{activity, activityindex, activityindex_post},
     gear::{gear, gearindex},
 };
@@ -46,6 +42,11 @@ async fn main() -> std::io::Result<()> {
                 )
         )
         .app_data(data.clone())
+        .default_service(
+                web::route()
+                    .guard(guard::Not(guard::Get()))
+                    .to(routes::error::ErrorTemplate::not_found)
+        )
         .service(Files::new("/static", "static/"))
         .service(
             web::resource("/static")
@@ -79,7 +80,8 @@ async fn main() -> std::io::Result<()> {
                 .service(
                     web::resource("/")
                         .name("userindex")
-                        .to(userindex)
+                        .route(web::get().to(userindex))
+                        .route(web::post().to(userindex_post))
                 )
                 .service(
                     web::resource("/{user}")
@@ -87,7 +89,7 @@ async fn main() -> std::io::Result<()> {
                         .to(user)
                 )
                 .service(
-                    web::resource("/{user}/activity")
+                    web::resource("/{user}/activity/")
                     .name("activityindex")
                     .route(web::get().to(activityindex))
                     .route(web::post().to(activityindex_post))
@@ -98,7 +100,7 @@ async fn main() -> std::io::Result<()> {
                     .to(activity)
                 )
                 .service(
-                    web::resource("/{user}/gear")
+                    web::resource("/{user}/gear/")
                     .name("gearindex")
                     .to(gearindex)
                 )

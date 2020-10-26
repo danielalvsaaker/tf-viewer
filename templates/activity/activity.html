@@ -24,12 +24,26 @@
 	line-height:120%;
 	margin-bottom:4%;
 }
+
+table, td, th {  
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  padding: 15px;
+}
 </style>
 
 <div class="grid-container">
     <div class="map" id="map" style="height:100%">
-	{% match session.nec_lat %}
-	    {% when Some with (value) %}
+	{% match session.nec_lat -%}
+	    {% when Some with (value) -%}
 		<link rel="stylesheet" href="{{ url._static }}/css/leaflet.css" />
 		<script src="{{ url._static }}/js/leaflet.js"></script>
 
@@ -48,15 +62,15 @@
 		    }).addTo(map);
 
 		    var line = L.polyline([
-		    {% for coord in coords  %}
+		    {% for coord in coords  -%}
 			[{{ coord.1.unwrap() }}, {{ coord.0.unwrap() }}],
-		    {% endfor %}
+		    {% endfor -%}
 		    ],
 		    {"bubblingMouseEvents": true, "color": "#FF0000", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#FF0000", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
 		    ).addTo(map);
 
 	    </script>
-	{% when None %}
+	{% when None -%}
 	<p style="margin-top:10%; text-align:center;">Activity does not contain any geographic data</p>
     {% endmatch %}
     </div>
@@ -66,46 +80,46 @@
     <li><strong>Activity type: </strong>{{ session.activity_type }}</li>
     <li><strong>Gear: </strong></li>
     <li><strong>Duration: </strong> {{ session.duration_active.to_string() }}</li>
-    {% match session.distance %}
-    	{% when Some with (value) %}
+    {% match session.distance -%}
+    	{% when Some with (value) -%}
     		<li><strong>Distance: </strong> {{ value }} km</li>
-	{% when None %}
-    {% endmatch %}
-    {% match session.speed_max %}
-    	{% when Some with (value) %}
+	{% when None -%}
+    {% endmatch -%}
+    {% match session.speed_max -%}
+    	{% when Some with (value) -%}
     	<li><strong>Max. speed: </strong> {{ value }} km/h</li>
-	{% when None %}
-    {% endmatch %}
-    {% match session.speed_avg %}
-	{% when Some with (value) %}
+	{% when None -%}
+    {% endmatch -%}
+    {% match session.speed_avg -%}
+	{% when Some with (value) -%}
 	<li><strong>Avg. speed: </strong> {{ value }} km/h</li>
-	{% when None %}
-    {% endmatch %}
-    {% match session.heartrate_max %}
-	{% when Some with (value) %}
+	{% when None -%}
+    {% endmatch -%}
+    {% match session.heartrate_max -%}
+	{% when Some with (value) -%}
 	<li><strong>Max. heart rate: </strong> {{ value }} bpm</li>
-	{% when None %}
-    {% endmatch %}
-    {% match session.heartrate_avg %}
-	{% when Some with (value) %}
+	{% when None -%}
+    {% endmatch -%}
+    {% match session.heartrate_avg -%}
+	{% when Some with (value) -%}
 	<li><strong>Avg. heart rate: </strong> {{ value }} bpm</li>
-	{% when None %}
-    {% endmatch %}
-    {% match session.cadence_avg %}
-	{% when Some with (value) %}
+	{% when None -%}
+    {% endmatch -%}
+    {% match session.cadence_avg -%}
+	{% when Some with (value) -%}
 	<li><strong>Avg. cadence: </strong> {{ value }} rpm</li>
-	{% when None %}
-    {% endmatch %}
-    {% match session.ascent %}
-	{% when Some with (value) %}
+	{% when None -%}
+    {% endmatch -%}
+    {% match session.ascent -%}
+	{% when Some with (value) -%}
 	<li><strong>Total ascent: </strong> {{ value }} m</li>
-	{% when None %}
-    {% endmatch %}
-    {% match session.descent %}
-	{% when Some with (value) %}
+	{% when None -%}
+    {% endmatch -%}
+    {% match session.descent -%}
+	{% when Some with (value) -%}
 	<li><strong>Total descent: </strong> {{ value }} m</li>
-	{% when None %}
-    {% endmatch %}
+	{% when None -%}
+    {% endmatch -%}
 </ul>
 </div>
 <div class="plot">
@@ -113,4 +127,91 @@
     {{ plot|safe }}
 </div>
 </div>
+{% if laps.len() > 1 -%}
+<div style="margin-bottom:5%">
+<table>
+    <thead>
+	<tr>
+	    <th>Lap</th>
+	    <th>Duration</th>
+	    <th>Distance</th>
+	    <th>Avg. speed</th>
+	    <th>Max. speed</th>
+	    <th>Avg. heart rate</th>
+	    <th>Max. heart rate</th>
+	    <th>Avg. cadence</th>
+	    <th>Total ascent</th>
+	    <th>Total descent</th>
+	</tr>
+    </thead>
+    <tbody>
+    {% for lap in laps -%}
+	<tr>
+	    <td>
+		{{ loop.index }}
+	    </td>
+	    <td>
+		{{ lap.duration_active.to_string() }}
+	    </td>
+	    <td>
+	    {% match lap.distance -%}
+		{% when Some with (value) -%}
+		{{ value }} km
+		{% when None -%}
+	    {% endmatch -%}
+	    </td>
+	    <td>
+	    {% match lap.speed_avg -%}
+		{% when Some with (value) -%}
+		{{ value }} km/h
+		{% when None -%}
+	    {% endmatch -%}
+	    </td>
+	    <td>
+	    {% match lap.speed_max -%}
+		{% when Some with (value) -%}
+		{{ value }} km/h
+		{% when None -%}
+	    {% endmatch -%}
+	    </td>
+	    <td>
+	    {% match lap.heartrate_avg -%}
+		{% when Some with (value) -%}
+		{{ value }} bpm
+		{% when None -%}
+	    {% endmatch -%}
+	    </td>
+	    <td>
+	    {% match lap.heartrate_max -%}
+		{% when Some with (value) -%}
+		{{ value }} bpm
+		{% when None -%}
+	    {% endmatch -%}
+	    </td>
+	    <td>
+	    {% match lap.cadence_avg -%}
+		{% when Some with (value) -%}
+		{{ value }} rpm
+		{% when None -%}
+	    {% endmatch -%}
+	    </td>
+	    <td>
+	    {% match lap.ascent -%}
+		{% when Some with (value) -%}
+		{{ value }} m
+		{% when None -%}
+	    {% endmatch -%}
+	    </td>
+	    <td>
+	    {% match lap.descent -%}
+		{% when Some with (value) -%}
+		{{ value }} m
+		{% when None -%}
+	    {% endmatch -%}
+	    </td>
+    {% endfor -%}
+    </tbody>
+</table>
+</div>
+{% endif %}
 {% endblock %}

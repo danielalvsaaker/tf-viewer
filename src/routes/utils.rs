@@ -1,6 +1,6 @@
 use plotly::{Scatter, Plot, common::Mode};
 use staticmap::{Line, StaticMap, Color};
-use crate::{Error};
+//use crate::{Error};
 use anyhow::Result;
 
 pub fn plot(record: &crate::Record) -> Result<String> {
@@ -24,7 +24,7 @@ pub fn plot(record: &crate::Record) -> Result<String> {
 }
 
 pub fn generate_thumb(record: crate::Record, id: &str) -> Result<()> {
-    if record.lon.len() == 0 {
+    if record.lon.is_empty() {
         return Ok(())
     }
     
@@ -35,14 +35,18 @@ pub fn generate_thumb(record: crate::Record, id: &str) -> Result<()> {
         return Ok(())
     }
 
+    // Creating file prematurely, preventing more processes from spawning
+    // and performing the same task
+    std::fs::File::create(&path)?;
+
     let mut map = StaticMap {
         width: 200,
         height: 200,
         padding: (0, 0), // (x, y)
         x_center: 0.,
         y_center: 0.,
-        url_template: "https://a.tile.openstreetmap.org/%z/%x/%y.png".to_string(),
-        //url_template: "http://a.tile.komoot.de/komoot-2/%z/%x/%y.png".to_string(),
+        //url_template: "https://a.tile.openstreetmap.org/%z/%x/%y.png".to_string(),
+        url_template: "http://a.tile.komoot.de/komoot-2/%z/%x/%y.png".to_string(),
         tile_size: 256,
         lines: Vec::new(),
         zoom: 0,
@@ -53,7 +57,7 @@ pub fn generate_thumb(record: crate::Record, id: &str) -> Result<()> {
         .zip(record.lat)
         .map(|(x, y)|
              if let (Some(a), Some(b)) = (x, y) {
-                 return (a, b)
+                 (a, b)
              }
              else {
                 (0., 0.)
@@ -62,7 +66,7 @@ pub fn generate_thumb(record: crate::Record, id: &str) -> Result<()> {
         .collect();
 
     let line = Line {
-        coordinates: coordinates,
+        coordinates,
         color: Color {
             r: 255u8,
             g: 0u8,

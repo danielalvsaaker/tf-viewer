@@ -1,8 +1,11 @@
-use actix_web::{get, Responder, web, HttpRequest};
+use actix_web::{Responder, web, HttpRequest, HttpResponse};
 use actix_identity::Identity;
 use askama_actix::{Template, TemplateIntoResponse};
-use serde::{Serialize, Deserialize};
-use super::{ErrorTemplate, UrlFor, date_format, FormatDuration};
+use super::{UrlFor, FormatDuration,
+           api::{DataRequest, DataResponse, ActivityData},
+           error::ErrorTemplate
+};
+use crate::{Session, Lap};
 
 #[derive(Template)]
 #[template(path = "activity/activity.html")]
@@ -10,7 +13,8 @@ struct ActivityTemplate<'a> {
     url: UrlFor,
     id: Identity,
     user: &'a str,
-    session: crate::Session,
+    session: Session,
+    laps: Vec<Lap>,
     coords: Vec<(Option<f64>, Option<f64>)>,
     plot: &'a str,
     title: &'a str,
@@ -25,11 +29,7 @@ pub async fn activity(
 
 
     if !data.as_ref().activities.exists(&user, &activity_id).unwrap() {
-        return ErrorTemplate {
-            url: UrlFor::new(&id, req),
-            id: id,
-            title: "Error",
-        }.into_response()
+        return ErrorTemplate::not_found(req, id).await
     }
 
     let activity = data.as_ref().activities.get_activity(&user, &activity_id).unwrap();
@@ -41,9 +41,10 @@ pub async fn activity(
 
     ActivityTemplate {
         url: UrlFor::new(&id, req),
-        id: id,
+        id,
         user: &user,
         session: activity.session,
+        laps: activity.lap,
         coords: activity.record.lon.into_iter().zip(activity.record.lat).collect(),
         plot: &plot,
         title: "Activity",
@@ -62,52 +63,16 @@ struct ActivityIndexTemplate<'a> {
 
 pub async fn activityindex(
     req: HttpRequest,
-    data: web::Data<crate::Database>,
     id: Identity,
     user: web::Path<String>
     ) -> impl Responder {
 
     ActivityIndexTemplate {
         url: UrlFor::new(&id, req),
-        id: id,
+        id,
         user: &user,
         title: "Activities",
     }.into_response()
-}
-
-#[derive(Deserialize)]
-pub struct DataRequest {
-    pub draw: usize,
-    pub start: usize,
-    pub length: usize,
-    pub column: usize,
-    pub dir: String,
-}
-
-#[derive(Serialize, Debug)]
-struct DataResponse {
-    draw: usize,
-    recordsTotal: usize,
-    recordsFiltered: usize,
-    data: Vec<Data>,
-}
-
-#[derive(Serialize, Debug)]
-struct Data {
-    #[serde(with = "date_format")]
-    date: chrono::DateTime<chrono::Local>,
-    activity_type: String,
-    duration: String,
-    distance: Option<f64>,
-    calories: u16,
-    cadence_avg: Option<u8>,
-    heartrate_avg: Option<u8>,
-    heartrate_max: Option<u8>,
-    speed_avg: Option<f64>,
-    speed_max: Option<f64>,
-    ascent: Option<u16>,
-    descent: Option<u16>,
-    id: String,
 }
 
 pub async fn activityindex_post(
@@ -119,11 +84,11 @@ pub async fn activityindex_post(
     let iter = data.as_ref().activities.iter(&user.to_owned())
         .unwrap();
 
-    let mut id = data.as_ref().activities.iter_id(&user).unwrap();
+    let id = data.as_ref().activities.iter_id(&user).unwrap();
    
-    let mut sessions: Vec<Data> = iter
+    let mut sessions: Vec<ActivityData> = iter
         .zip(id)
-        .map(|(x,y)| -> Data {  Data {
+        .map(|(x,y)| -> ActivityData {  ActivityData {
             date: x.start_time.0,
             activity_type: x.activity_type,
             duration: x.duration_active.to_string(),
@@ -138,7 +103,7 @@ pub async fn activityindex_post(
             descent: x.descent,
             id: y,
         }})
-        .collect::<Vec<Data>>();
+        .collect();
 
     let amount = sessions.len();
 
@@ -161,7 +126,7 @@ pub async fn activityindex_post(
         sessions.reverse();
     }
 
-    let results: Vec<Data> = sessions
+    let results: Vec<ActivityData> = sessions
         .into_iter()
         .skip(request.start)
         .take(request.length)

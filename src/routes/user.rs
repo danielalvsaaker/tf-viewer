@@ -1,7 +1,10 @@
-use actix_web::{get, Responder, web, HttpRequest};
+use actix_web::{Responder, web, HttpRequest, HttpResponse};
 use actix_identity::Identity;
 use askama_actix::{Template, TemplateIntoResponse};
-use super::UrlFor;
+use super::{UrlFor,
+    api::{DataRequest, DataResponse, UserData},
+    error::ErrorTemplate
+};
 
 #[derive(Template)]
 #[template(path = "user/user.html")]
@@ -15,15 +18,23 @@ struct UserTemplate<'a> {
 pub async fn user(
     req: HttpRequest,
     id: Identity,
+    data: web::Data<crate::Database>,
     user: web::Path<String>
     ) -> impl Responder {
 
-    UserTemplate {
-        url: UrlFor::new(&id, req),
-        id: id,
-        user: &user,
-        title: &user,
-    }.into_response()
+    match data.as_ref().users.exists(&user) {
+        Ok(true) => {
+                        UserTemplate {
+                            url: UrlFor::new(&id, req),
+                            id,
+                            user: &user,
+                            title: &user,
+                        }.into_response()
+                    },
+        _ => {
+            ErrorTemplate::not_found(req, id).await
+        },
+    }
 }
 
 #[derive(Template)]
@@ -31,17 +42,58 @@ pub async fn user(
 struct UserIndexTemplate<'a> {
     url: UrlFor,
     id: Identity,
+    users: Vec<String>,
     title: &'a str,
 }
 
 pub async fn userindex(
     req: HttpRequest,
-    id: Identity
+    id: Identity,
+    data: web::Data<crate::Database>
     ) -> impl Responder {
+
+    let users: Vec<String> = data.as_ref().users.iter_id().unwrap().collect();
 
     UserIndexTemplate {
         url: UrlFor::new(&id, req),
-        id: id,
+        id,
         title: "Users",
+        users,
     }.into_response()
+}
+
+
+pub async fn userindex_post(
+    request: web::Json<DataRequest>,
+    data: web::Data<crate::Database>
+    ) -> impl Responder {
+
+    let ids = data.as_ref().users.iter_id().unwrap();
+
+    let mut users: Vec<UserData> = ids
+        .map(|x| UserData {
+            name: x,
+        })
+        .collect();
+
+    let amount = users.len();
+
+    if request.dir.as_str() == "asc" {
+        users.reverse();
+    }
+
+    let results: Vec<UserData> = users
+        .into_iter()
+        .skip(request.start)
+        .take(request.length)
+        .collect();
+
+    web::Json(
+        DataResponse {
+            draw: request.draw,
+            recordsTotal: amount,
+            recordsFiltered: amount,
+            data: results,
+        }
+    )
 }

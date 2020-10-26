@@ -6,6 +6,8 @@
 
 {% block content %}
 
-<p> Index </p>
+{% for user in users -%}
+    <li>{{ user }}</li>
+{% endfor -%}
 
 {% endblock %}

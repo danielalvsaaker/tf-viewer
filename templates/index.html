@@ -8,6 +8,31 @@
 
 <h2>Recent activities</h2>
 
+<style>
+table {
+    height:100%;
+    width:100%;
+}
+td {
+    grid-template-columns: 30% 30% 40%;
+    grid-area:auto;
+    border-collapse:collapse;
+    margin-left:auto;
+    margin-right:auto;
+}
+tr {
+    height:20%;
+    width:100;
+}
+.activities {
+    display:grid;
+    grid-auto-flow:column;
+    align-items:end;
+    grid-gap:none;
+}
+</style>
+
+<div class="activities">
 <table>
 {% for activity in activities %}
     <tr>
@@ -20,14 +45,23 @@
 		height=50">
 	</td>
 	<td>
-	    <h3>{{ activity.0.start_time.0.format("%d.%m.%Y %H:%M").to_string() }}
+	    <h3>{{ activity.0.start_time.0.format("%d.%m.%Y %H:%M").to_string() }}</h3>
+	    <p>{{ activity.0.duration_active.to_string() }}
+	    {% match activity.0.distance %}
+	    	{% when Some with (value) %}
+			, {{ value }} km
+		{% when None %}
+	    {% endmatch %}	
+	    </p>
+	</td>
+	<td>
 	    <img
 		src="{{ url._static }}/img/activity/{{ activity.1 }}.png" 
-		width="60%"
-		height="60%">
+		height="100px">
 	</td>
     </tr>
 {% endfor %}
 </table>
+</div>
 
 {% endblock %}

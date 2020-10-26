@@ -1,6 +1,6 @@
 use actix_web::HttpRequest;
 use actix_identity::Identity;
-use askama_actix::Template;
+use url::Url;
 
 pub mod authentication;
 pub mod index;
@@ -9,25 +9,20 @@ pub mod user;
 pub mod activity;
 pub mod gear;
 pub mod utils;
+pub mod api;
+pub mod error;
 
-#[derive(Template)]
-#[template(path = "error.html")]
-pub struct ErrorTemplate<'a> {
-    url: UrlFor,
-    id: Identity,
-    title: &'a str,
-}
-
+         
 pub struct UrlFor {
-    pub _static: url::Url,
-    pub index: url::Url,
-    pub user: url::Url,
-    pub userindex: url::Url,
-    pub activityindex: url::Url,
-    pub gearindex: url::Url,
-    pub upload: url::Url,
-    pub login: url::Url,
-    pub register: url::Url,
+    pub _static: Url,
+    pub index: Url,
+    pub user: Url,
+    pub userindex: Url,
+    pub activityindex: Url,
+    pub gearindex: Url,
+    pub upload: Url,
+    pub login: Url,
+    pub register: Url,
 }
 
 impl UrlFor {
@@ -47,7 +42,7 @@ impl UrlFor {
 }
 
 pub struct UrlActivity {
-    pub url: url::Url,
+    pub url: Url,
 }
 
 impl UrlActivity {
@@ -59,7 +54,7 @@ impl UrlActivity {
 }
 
 mod date_format {
-    use chrono::{DateTime, Local, TimeZone};
+    use chrono::{DateTime, Local};
     use serde::{self, Serializer};
 
     pub fn serialize<S>(
@@ -80,8 +75,7 @@ pub trait FormatDuration {
 
 impl FormatDuration for std::time::Duration {
     fn to_string(&self) -> String {
-        let mut s = self.as_secs();
-        let ms = self.subsec_millis();
+        let s = self.as_secs();
 
         let (h, s) = (s / 3600, s % 3600);
         let (m, s) = (s / 60, s % 60);

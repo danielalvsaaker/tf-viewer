@@ -3,8 +3,10 @@ use std::task::{Context, Poll};
 use actix_identity::Identity;
 use actix_service::{Service, Transform};
 use actix_web::dev::{ServiceRequest, ServiceResponse, Payload};
-use actix_web::{http, Error, HttpResponse, HttpRequest, FromRequest};
+use actix_web::{http, Error, HttpResponse, HttpRequest, FromRequest, http::StatusCode};
 use futures::future::{ok, Either, Ready};
+
+/// Login middleware
 
 pub struct CheckLogin;
 

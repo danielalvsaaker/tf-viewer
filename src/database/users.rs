@@ -1,7 +1,6 @@
-use crate::{Error, User};
+use crate::User;
 use argonautica::{Hasher, Verifier};
 use dotenv::var;
-use futures::future::*;
 use anyhow::{anyhow, Result};
 
 #[derive(Clone)]
@@ -16,13 +15,13 @@ impl UserTree {
     }
 
     pub fn insert(&self, user: User, username: &str, password: &str) -> Result<()> {
-        let serialized = bincode::serialize(&user).expect("Failed to serialize user");
+        let serialized = bincode::serialize(&user)?;
 
         let mut hasher = Hasher::default();
 
         let hash = hasher
             .with_password(password)
-            .with_secret_key(var("PASSWORD").unwrap())
+            .with_secret_key(var("PASSWORD")?)
             .hash()
             .unwrap();
 
@@ -58,15 +57,31 @@ impl UserTree {
     }
 
     pub fn verify_hash(&self, id: &str, password: &str) -> Result<bool> {
-        let hash = String::from_utf8(self.username_password.get(&id)?.unwrap().to_vec()).unwrap();
+        let hash = String::from_utf8(self.username_password.get(&id)?.unwrap().to_vec())?;
         let mut verifier = Verifier::default();
         
         Ok(verifier
             .with_hash(hash)
             .with_password(password)
-            .with_secret_key(var("PASSWORD").unwrap())
+            .with_secret_key(var("PASSWORD")?)
             .verify().unwrap())
 
+    }
+
+    pub fn iter_user(&self) -> Result<impl Iterator<Item = User>> {
+
+        Ok(self.username_user.iter()
+           .values()
+           .map(|x| bincode::deserialize::<User>(&x.unwrap()).unwrap())
+           )
+    }
+
+    pub fn iter_id(&self) -> Result<impl Iterator<Item = String>> {
+
+        Ok(self.username_user.iter()
+           .keys()
+           .map(|x| String::from_utf8(x.unwrap().to_vec()).unwrap())
+           )
     }
 }
 

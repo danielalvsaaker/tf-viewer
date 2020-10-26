@@ -1,4 +1,4 @@
-use actix_web::{get, Responder, web, HttpRequest};
+use actix_web::{Responder, web, HttpRequest};
 use actix_identity::Identity;
 use askama_actix::{Template, TemplateIntoResponse};
 use super::UrlFor;
@@ -21,7 +21,7 @@ pub async fn gear(
 
     GearTemplate {
         url: UrlFor::new(&id, req),
-        id: id,
+        id,
         user: &user,
         gear: &gear,
         title: &gear,
@@ -45,7 +45,7 @@ pub async fn gearindex(
 
     GearIndexTemplate {
         url: UrlFor::new(&id, req),
-        id: id,
+        id,
         user: &user,
         title: "Gear",
     }.into_response()

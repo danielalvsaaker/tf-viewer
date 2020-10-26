@@ -1,4 +1,3 @@
-use crate::Error;
 use anyhow::Result;
 
 pub mod users;

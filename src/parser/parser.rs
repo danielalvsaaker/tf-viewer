@@ -1,11 +1,6 @@
 use fitparser::profile::field_types::MesgNum;
-use std::string::String;
-use fitparser::{FitDataField, ValueWithUnits};
-use std::fs::File;
+use fitparser::FitDataField;
 use fitparser::Value::*;
-use std::io::prelude::*;
-use chrono::offset::Local;
-use chrono::DateTime;
 use std::time::Duration;
 
 use anyhow::{Result, anyhow};
@@ -21,7 +16,7 @@ pub fn parse(fit_data: &[u8], gear_id: &str) -> Result<Activity> {
     let file = fitparser::from_bytes(fit_data)?;
 
     if !file.iter().any(|x| x.kind() == MesgNum::Session) {
-        return Err(anyhow!("No session"))
+        return Err(anyhow!("File does not contain session data."))
     }
 
     for data in file {
@@ -34,11 +29,11 @@ pub fn parse(fit_data: &[u8], gear_id: &str) -> Result<Activity> {
         }
     }
 
-    Ok(crate::models::Activity {
+    Ok(Activity {
             id: session.start_time.0.format("%Y%m%d%H%M").to_string(),
             gear_id: gear_id.to_owned(),
-            session: session,
-            record: record,
+            session,
+            record,
             lap: lap_vec,
             }
     )
@@ -156,15 +151,15 @@ fn parse_record(fields: Vec<FitDataField>, mut record: Record) -> Record {
 
     for field in fields.iter() {
         match field.name() {
-            "cadence" =>  record.cadence.push(match field.value() {
+            "cadence" => record.cadence.push(match field.value() {
                 UInt8(x) => Some(*x),
                 _ => None,
             }),
-            "distance" =>  record.distance.push(match field.value() {
+            "distance" => record.distance.push(match field.value() {
                 Float64(x) => Some((*x / 10f64).round() / 100f64),
                 _ => None,
             }),
-            "enhanced_altitude" =>  record.altitude.push(match field.value() {
+            "enhanced_altitude" => record.altitude.push(match field.value() {
                 Float64(x) => Some(*x),
                 _ => None,
             }),
@@ -172,24 +167,27 @@ fn parse_record(fields: Vec<FitDataField>, mut record: Record) -> Record {
                 Float64(x) => Some((*x * 3.6f64 * 100f64).round() / 100f64),
                 _ => None,
             }),
-            "heart_rate" =>  record.heartrate.push(match field.value() {
+            "heart_rate" => record.heartrate.push(match field.value() {
                 UInt8(x) => Some(*x),
                 _ => None,
             }),
-            "position_lat" =>  record.lat.push(match field.value() {
+            "position_lat" => record.lat.push(match field.value() {
                 SInt32(x) => Some(f64::from(*x) * multiplier),
                 _ => None,
             }),
-            "position_long" =>  record.lon.push(match field.value() {
+            "position_long" => record.lon.push(match field.value() {
                 SInt32(x) => Some(f64::from(*x) * multiplier),
                 _ => None,
             }),
-            "timestamp" =>  record.timestamp.push(match field.value() {
-                Timestamp(x) => Some(TimeStamp(*x)),
-                _ => None,
-            }),
+            "timestamp" => if let Timestamp(x) = field.value() {
+                record.timestamp.push(TimeStamp(*x));
+            },
             _ => (),
         }
+    }
+
+    if record.timestamp.len() > 1 {
+        record.duration.push(chrono::Duration::to_std(&record.timestamp.last().unwrap().0.signed_duration_since(record.timestamp.first().unwrap().0)).unwrap());
     }
 
     record

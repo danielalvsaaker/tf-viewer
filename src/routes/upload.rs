@@ -1,7 +1,7 @@
 use askama_actix::{Template, TemplateIntoResponse};
-use actix_web::{Responder, HttpRequest, get, HttpResponse, web};
+use actix_web::{Responder, HttpRequest, HttpResponse, web};
 use actix_identity::Identity;
-use actix_multipart::{Multipart, Field};
+use actix_multipart::Multipart;
 use futures::{StreamExt, TryStreamExt};
 
 use super::UrlFor;
@@ -17,7 +17,7 @@ struct UploadTemplate<'a> {
 pub async fn upload(id: Identity, req: HttpRequest) -> impl Responder {
     UploadTemplate {
         url: UrlFor::new(&id, req),
-        id: id,
+        id,
         title: "Upload",
     }.into_response()
 }
@@ -32,11 +32,6 @@ pub async fn upload_post(
     let mut f: Vec<u8> = Vec::new();
 
     while let Ok(Some(mut field)) = payload.try_next().await {
-        let content_type = field
-            .content_disposition()
-            .ok_or_else(|| actix_web::error::ParseError::Incomplete).expect("Fail");
-
-            
         while let Some(chunk) = field.next().await {
             let chunk = chunk.unwrap();
             f.extend_from_slice(chunk.as_ref());
@@ -46,11 +41,13 @@ pub async fn upload_post(
     let gear = data.as_ref().users.get(id.identity().unwrap().as_str()).unwrap().standard_gear;
     let parsed = web::block(move || crate::parser::parse(&f, &gear)).await;
 
-    if let Ok(x) = parsed {
-        data.as_ref().activities.insert(x, id.identity().unwrap().as_str());
-        HttpResponse::Ok().finish().into_body()
-    }
-    else {
-        HttpResponse::BadRequest().finish().into_body()
+    match parsed {
+        Ok(x) => {
+            data.as_ref().activities.insert(x, id.identity().unwrap().as_str());
+            HttpResponse::Ok().finish().into_body()
+            },
+        Err(x) => {
+            HttpResponse::BadRequest().body(x.to_string())
+            },
     }
 }

@@ -1,9 +1,4 @@
 {% extends "base.html" %}
-
-{% block button %}
-<li class="pure-menu-item"><a href="{{ url.user }}" class="pure-menu-link">{{ id.identity().unwrap() }}</a></li>
-{% endblock %}
-
 {% block content %}
 
 {% for user in users -%}

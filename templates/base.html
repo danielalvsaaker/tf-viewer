@@ -22,9 +22,12 @@
 	    <li class="pure-menu-item"><a href="{{ url.activityindex }}" class="pure-menu-link">Activities</a></li>
 	    <li class="pure-menu-item"><a href="{{ url.gearindex }}" class="pure-menu-link">Gear</a></li>
 	    <li class="pure-menu-item"><a href="{{ url.upload }}" class="pure-menu-link">Upload</a></li>
-	    {% block button %}
+	{% match id.identity() -%}
+	    {% when Some with (value) -%}
+	    <li class="pure-menu-item"><a href="{{ url.user }}" class="pure-menu-link">{{ value }}</a></li>
+	    {% when None -%}
 	    <li class="pure-menu-item"><a href="{{ url.login }}" class="pure-menu-link">Log in</a></li>
-	    {% endblock %}
+	{% endmatch -%}
         </ul>
     </div>
 </div>

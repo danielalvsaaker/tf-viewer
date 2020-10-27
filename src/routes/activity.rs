@@ -81,7 +81,7 @@ pub async fn activityindex_post(
     user: web::Path<String>
     ) -> impl Responder {
 
-    let iter = data.as_ref().activities.iter(&user.to_owned())
+    let iter = data.as_ref().activities.iter_session(&user.to_owned())
         .unwrap();
 
     let id = data.as_ref().activities.iter_id(&user).unwrap();

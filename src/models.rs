@@ -12,7 +12,7 @@ pub struct Activity {
     pub lap: Vec<Lap>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct TimeStamp(pub DateTime<Local>);
 
 impl Default for TimeStamp {
@@ -21,8 +21,15 @@ impl Default for TimeStamp {
     }
 }
 
+impl TimeStamp {
+    pub fn to_string(self) -> String {
+        self.0.format("%d.%m.%Y %H:%M").to_string() 
+    }
+}
 
-#[derive(Default, Serialize, Deserialize)]
+
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone)]
 pub struct Session {
     pub cadence_avg: Option<u8>,
     pub cadence_max: Option<u8>,

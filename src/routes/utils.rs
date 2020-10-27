@@ -23,21 +23,10 @@ pub fn plot(record: &crate::Record) -> Result<String> {
     Ok(plot.to_inline_html(None))
 }
 
-pub fn generate_thumb(record: crate::Record, id: &str) -> Result<()> {
+pub fn generate_thumb(record: crate::Record, path: std::path::PathBuf) -> Result<()> {
     if record.lon.is_empty() {
         return Ok(())
     }
-    
-    let path = format!("static/img/activity/{}.png", id);
-    let path = std::path::Path::new(&path);
-
-    if path.exists() {
-        return Ok(())
-    }
-
-    // Creating file prematurely, preventing more processes from spawning
-    // and performing the same task
-    std::fs::File::create(&path)?;
 
     let mut map = StaticMap {
         width: 200,

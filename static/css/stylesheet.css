@@ -40,3 +40,20 @@
     min-width: 100px;
     height: 150px;
 }
+
+.parent {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    grid-column-gap: 0px;
+    grid-row-gap: 0px;
+}
+
+.userright {
+    grid-area: 1 / 4 / 6 / 6;
+    text-align:center;
+}
+.userleft {
+    grid-area: 1 / 1 / 6 / 4;
+}
+

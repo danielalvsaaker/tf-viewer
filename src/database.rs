@@ -23,6 +23,7 @@ impl Database {
             },
 
             activities: activities::ActivityTree {
+                usernameid_username: db.open_tree("usernameid_username")?,
                 usernameid_id: db.open_tree("usernameid_id")?,
                 usernameid_gear_id: db.open_tree("usernameid_gear_id")?,
                 usernameid_session: db.open_tree("usernameid_session")?,

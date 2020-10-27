@@ -4,6 +4,7 @@ use anyhow::{Result, anyhow};
 #[derive(Clone)]
 pub struct ActivityTree {
     pub usernameid_id: sled::Tree,
+    pub usernameid_username: sled::Tree,
     pub(super) usernameid_gear_id: sled::Tree,
     pub(super) usernameid_session: sled::Tree,
     pub(super) usernameid_record: sled::Tree,
@@ -35,10 +36,12 @@ impl ActivityTree {
         self.usernameid_id.insert(&key, activity.id.as_bytes());
         self.usernameid_gear_id.insert(&key, activity.gear_id.as_bytes());
 
+        self.usernameid_username.insert(&key, username.as_bytes());
+
         Ok(())
     }
 
-    pub fn iter(&self, username: &str) -> Result<impl Iterator<Item = Session>> {
+    pub fn iter_session(&self, username: &str) -> Result<impl Iterator<Item = Session>> {
         let mut prefix = username.as_bytes().to_vec();
         prefix.push(0xff);
 
@@ -51,33 +54,6 @@ impl ActivityTree {
         
     }
 
-    pub fn iter_all_id(&self, amount: usize) -> Result<impl Iterator<Item = String>> {
-        Ok(self.usernameid_id.iter()
-           .values()
-           .rev()
-           .take(amount)
-           .map(|x| String::from_utf8(x.unwrap().to_vec()).unwrap())
-        )
-    }
-
-    pub fn iter_session(&self, amount: usize) -> Result<impl Iterator<Item = Session>> {
-        Ok(self.usernameid_session.iter()
-            .values()
-            .rev()
-            .take(amount)
-            .map(|x| bincode::deserialize::<Session>(&x.unwrap()).unwrap())
-        )
-    }
-
-    pub fn iter_record(&self, amount: usize) -> Result<impl Iterator<Item = Record>> {
-        Ok(self.usernameid_record.iter()
-            .values()
-            .rev()
-            .take(amount)
-            .map(|x| bincode::deserialize::<Record>(&x.unwrap()).unwrap())
-        )
-    }
-
     pub fn iter_id(&self, username: &str) -> Result<impl Iterator<Item = String>> {
         let mut prefix = username.as_bytes().to_vec();
         prefix.push(0xff);
@@ -86,6 +62,42 @@ impl ActivityTree {
            .values()
            .rev()
            .map(|x| String::from_utf8(x.unwrap().to_vec()).unwrap())
+           )
+    }
+
+    pub fn iter_username_all(&self) -> Result<impl Iterator<Item = String>> {
+        Ok(self.usernameid_username.iter()
+           .values()
+           .rev()
+           .flatten()
+           .map(|x| String::from_utf8(x.to_vec()).unwrap())
+           )
+    }
+
+    pub fn iter_session_all(&self) -> Result<impl Iterator<Item = Session>> {
+        Ok(self.usernameid_session.iter()
+           .values()
+           .rev()
+           .flatten()
+           .map(|x| bincode::deserialize::<Session>(&x).unwrap())
+           )
+    }
+
+    pub fn iter_record_all(&self) -> Result<impl Iterator<Item = Record>> {
+        Ok(self.usernameid_record.iter()
+           .values()
+           .rev()
+           .flatten()
+           .map(|x| bincode::deserialize::<Record>(&x).unwrap())
+           )
+    }
+
+    pub fn iter_id_all(&self) -> Result<impl Iterator<Item = String>> {
+        Ok(self.usernameid_id.iter()
+           .values()
+           .rev()
+           .flatten()
+           .map(|x| String::from_utf8(x.to_vec()).unwrap())
            )
     }
 

@@ -1,7 +1,7 @@
 use askama_actix::{Template, TemplateIntoResponse};
 use actix_web::{Responder, HttpRequest, web};
 use actix_identity::Identity;
-use crate::{Session, Record};
+use crate::Session;
 
 use super::{UrlFor, FormatDuration};
 

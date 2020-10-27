@@ -23,7 +23,6 @@ pub async fn upload(id: Identity, req: HttpRequest) -> impl Responder {
 }
 
 pub async fn upload_post(
-    req: HttpRequest,
     data: web::Data<crate::Database>,
     id: Identity,
     mut payload: Multipart

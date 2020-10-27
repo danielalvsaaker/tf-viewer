@@ -10,6 +10,7 @@ struct LoginTemplate<'a> {
     url: UrlFor,
     title: &'a str,
     message: Option<&'a str>,
+    id: Identity,
 }
 
 
@@ -23,6 +24,7 @@ pub async fn login(
         url: UrlFor::new(&id, req),
         title: "Log in",
         message: None,
+        id,
     }.into_response()
 }
 
@@ -57,6 +59,7 @@ pub async fn login_post(
         url: UrlFor::new(&id, req),
         title: "Login",
         message: Some("Wrong username or password"),
+        id,
     }.into_response()
 }
 
@@ -76,6 +79,7 @@ pub async fn logout(id: Identity) -> impl Responder {
 struct RegisterTemplate<'a> {
     url: UrlFor,
     title: &'a str,
+    id: Identity,
 }
 
 pub async fn register(
@@ -86,6 +90,7 @@ pub async fn register(
     RegisterTemplate {
         url: UrlFor::new(&id, req),
         title: "Register",
+        id,
     }.into_response()
 }
 

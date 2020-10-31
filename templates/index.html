@@ -6,15 +6,15 @@
 
 <div class="activities">
 <table>
-{% for row in session_id_username %}
-{# row.0 is session, row.1 is activity id, row.2 is username #}
+{% for row in session_username_id %}
+{# row.0 is session, row.1 is username, row.2 is activity id #}
     <tr>
         <td>
             <div class="profileimg">
-		<img src="{{ url._static }}/img/user/{{ row.2 }}.png"
+		<img src="{{ url._static }}/img/user/{{ row.1 }}.png"
                     alt="No profile picture"
                     height=100px>
-		<p>{{ row.2 }}</p>
+		<p>{{ row.1 }}</p>
             </div>
         </td>
         <td>
@@ -29,7 +29,7 @@
         </td>
         <td>
             <img
-		src="{{ url._static }}/img/activity/{{ row.1 }}.png">
+		src="{{ url._static }}/img/activity/{{ row.2 }}.png">
         </td>
     </tr>
 {% endfor %}

@@ -3,13 +3,15 @@
 {% if message.is_some() %}
 {{ message.unwrap() }}
 {% endif %}
-<form action="login" method="POST" class="pure-form">
+<div class="container">
+<form action="login" method="POST" class="form-group">
     <fieldset>
       <input type="text" name="username" id="username" placeholder="Username">
       <input type='password' name='password' id='password' placeholder='Password'>
-      <button type="submit" class="pure-button pure-button-primary">Sign in</button>
+      <button type="submit" class="btn btn-primary">Sign in</button>
     </fieldset>
 </form>
 <p>Not registered? <a href="{{ url.register }}">Sign up</a></p>
+</div>
 {% endblock %}
 

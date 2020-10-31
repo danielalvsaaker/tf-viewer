@@ -1,39 +1,30 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h2>Recent activities</h2>
 
-
-<div class="activities">
-<table>
-{% for row in session_id_username %}
-{# row.0 is session, row.1 is activity id, row.2 is username #}
-    <tr>
-        <td>
-            <div class="profileimg">
-		<img src="{{ url._static }}/img/user/{{ row.2 }}.png"
-                    alt="No profile picture"
-                    height=100px>
-		<p>{{ row.2 }}</p>
-            </div>
-        </td>
-        <td>
-            <h3>{{ row.0.start_time.0.format("%d.%m.%Y %H:%M").to_string() }}</h3>
-            <p>{{ row.0.duration_active.to_string() }}
-            {% match row.0.distance -%}
-            	{% when Some with (value) -%}
-        		, {{ value }} km
-        	{% when None -%}
-            {% endmatch -%}	
-            </p>
-        </td>
-        <td>
-            <img
-		src="{{ url._static }}/img/activity/{{ row.1 }}.png">
-        </td>
-    </tr>
+<div class="container">
+<div class="columns">
+<div class="column col-9">
+<h2 class="text-center">Recent activities</h2>
+{% for row in session_username_id %}
+{# row.0 is session, row.1 is username, row.2 is activity id #}
+<div class="tile">
+  <div class="tile-icon">
+	<figure class="avatar avatar-xl">
+		<img src="{{ url._static }}/img/user/{{ row.1 }}.png" alt="">
+	</figure>
+  </div>
+  <div class="tile-content">
+	<p class="tile-title text-centered">{{ row.0.start_time.0.format("%d.%m.%Y %H:%M").to_string() }}</p>
+	<p class="tile-subtitle text-centered">{{ row.0.duration_active.to_string() }}</p>
+  </div>
+  <div class="tile-action">
+	  <img src="{{ url._static }}/img/activity/{{ row.2 }}.png" class="img-fit-contain activity-image" height="150">
+  </div>
+</div>
 {% endfor %}
-</table>
+</div>
+</div>
 </div>
 
 {% endblock %}

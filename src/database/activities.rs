@@ -22,7 +22,7 @@ impl ActivityTree {
     pub fn insert(&self, activity: Activity, username: &str) -> Result<()> {
         let mut key = username.as_bytes().to_vec();
         key.push(0xff);
-        key.extend_from_slice(activity.id.as_bytes());
+        key.extend_from_slice(&activity.id.as_bytes());
 
         let session = bincode::serialize(&activity.session)?;
         self.usernameid_session.insert(&key, session)?;
@@ -33,10 +33,10 @@ impl ActivityTree {
         let lap = bincode::serialize(&activity.lap)?;
         self.usernameid_lap.insert(&key, lap)?;
 
-        self.usernameid_id.insert(&key, activity.id.as_bytes());
-        self.usernameid_gear_id.insert(&key, activity.gear_id.as_bytes());
+        self.usernameid_id.insert(&key, activity.id.as_bytes())?;
+        self.usernameid_gear_id.insert(&key, activity.gear_id.as_bytes())?;
 
-        self.usernameid_username.insert(&key, username.as_bytes());
+        self.usernameid_username.insert(&key, username.as_bytes())?;
 
         Ok(())
     }

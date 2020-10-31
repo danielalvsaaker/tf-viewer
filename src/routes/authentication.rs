@@ -13,8 +13,6 @@ struct LoginTemplate<'a> {
     id: Identity,
 }
 
-
-#[get("/login")]
 pub async fn login(
     req: HttpRequest,
     id: Identity
@@ -34,7 +32,6 @@ pub struct Credentials {
     password: String,
 }
 
-#[post("/login")]
 pub async fn login_post(
     form: web::Form<Credentials>,
     data: web::Data<crate::Database>,
@@ -63,8 +60,6 @@ pub async fn login_post(
     }.into_response()
 }
 
-
-#[get("/logout")]
 pub async fn logout(id: Identity) -> impl Responder {
     id.forget();
 

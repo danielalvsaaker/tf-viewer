@@ -10,7 +10,7 @@ pub use parser::*;
 
 use dotenv::dotenv;
 
-use actix_web::{App, HttpServer, web, guard, HttpResponse, middleware::errhandlers::ErrorHandlers, http};
+use actix_web::{App, HttpServer, web, guard, HttpResponse, middleware::normalize::{NormalizePath, TrailingSlash}, http};
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_files::Files;
 
@@ -41,20 +41,29 @@ async fn main() -> std::io::Result<()> {
                     .secure(false)
                 )
         )
+        //.wrap(NormalizePath::new(TrailingSlash::MergeOnly))
         .app_data(data.clone())
         .default_service(
                 web::route()
                     .guard(guard::Not(guard::Get()))
                     .to(routes::error::ErrorTemplate::not_found)
         )
-        .service(Files::new("/static", "static/"))
+        .service(Files::new("/static", "static"))
         .service(
             web::resource("/static")
             .name("static")
         )
-        .service(login)
-        .service(login_post)
-        .service(logout)
+        .service(
+            web::resource("/login")
+            .name("login")
+            .route(web::get().to(login))
+            .route(web::post().to(login_post))
+        )
+        .service(
+            web::resource("/logout")
+            .name("logout")
+            .to(logout)
+        )
         .service(
             web::resource("/register")
             .name("register")
@@ -89,7 +98,7 @@ async fn main() -> std::io::Result<()> {
                         .to(user)
                 )
                 .service(
-                    web::resource("/{user}/activity/")
+                    web::resource("/{user}/activity")
                     .name("activityindex")
                     .route(web::get().to(activityindex))
                     .route(web::post().to(activityindex_post))
@@ -100,7 +109,7 @@ async fn main() -> std::io::Result<()> {
                     .to(activity)
                 )
                 .service(
-                    web::resource("/{user}/gear/")
+                    web::resource("/{user}/gear")
                     .name("gearindex")
                     .to(gearindex)
                 )

@@ -46,7 +46,7 @@ pub struct UrlActivity {
 }
 
 impl UrlActivity {
-    pub fn new(user: &str, activity: &str, req: HttpRequest) -> Self {
+    pub fn new(user: &str, activity: &str, req: &HttpRequest) -> Self {
         UrlActivity {
             url: req.url_for("activity", &[user, activity]).unwrap(),
         }

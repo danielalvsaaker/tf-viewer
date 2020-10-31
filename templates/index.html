@@ -6,21 +6,20 @@
 
 <div class="activities">
 <table>
-{% for row in session_username_id %}
-{# row.0 is session, row.1 is username, row.2 is activity id #}
+{% for activity in template_data %}
     <tr>
         <td>
             <div class="profileimg">
-		<img src="{{ url._static }}/img/user/{{ row.1 }}.png"
+		<img src="{{ url._static }}/img/user/{{ activity.username }}.png"
                     alt="No profile picture"
                     height=100px>
-		<p>{{ row.1 }}</p>
+		<p>{{ activity.username }}</p>
             </div>
         </td>
         <td>
-            <h3>{{ row.0.start_time.0.format("%d.%m.%Y %H:%M").to_string() }}</h3>
-            <p>{{ row.0.duration_active.to_string() }}
-            {% match row.0.distance -%}
+            <h3>{{ activity.session.start_time.0.format("%d.%m.%Y %H:%M").to_string() }}</h3>
+            <p>{{ activity.session.duration_active.to_string() }}
+            {% match activity.session.distance -%}
             	{% when Some with (value) -%}
         		, {{ value }} km
         	{% when None -%}
@@ -29,7 +28,7 @@
         </td>
         <td>
             <img
-		src="{{ url._static }}/img/activity/{{ row.2 }}.png">
+		src="{{ url._static }}/img/activity/{{ activity.id }}.png">
         </td>
     </tr>
 {% endfor %}

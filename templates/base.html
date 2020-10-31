@@ -16,15 +16,15 @@
 	<a href="{{ url.index }}" class="navbar-brand text-bold text-light mr-2">Tf-viewer</a>
   </div>
   <div class="navbar-section">
-	<a href="{{ url.userindex }}" class="btn btn-link text-gray ">Users</a>
-	<a href="{{ url.activityindex }}" class="btn btn-link text-gray">Activities</a>
-	<a href="{{ url.gearindex }}" class="btn btn-link">Gear</a>
-	<a href="{{ url.upload }}" class="btn btn-link">Upload</a>
+	<a href="{{ url.userindex }}" class="btn btn-link text-light">Users</a>
+	<a href="{{ url.activityindex }}" class="btn btn-link text-light">Activities</a>
+	<a href="{{ url.gearindex }}" class="btn btn-link text-light">Gear</a>
+	<a href="{{ url.upload }}" class="btn btn-link text-light">Upload</a>
 	{% match id.identity() -%}
 	{% when Some with (value) -%}
-	<a href="{{ url.user }}" class="btn btn-link">{{ value }}</a>
+	<a href="{{ url.user }}" class="btn btn-link text-light">{{ value }}</a>
 	{% when None -%}
-	<a href="{{ url.login }}" class="btn btn-link">Log in</a>
+	<a href="{{ url.login }}" class="btn btn-link text-light">Log in</a>
 	{% endmatch %}
   </div>
 </header>

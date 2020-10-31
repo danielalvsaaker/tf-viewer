@@ -1,4 +1,4 @@
-use plotly::{Scatter, Plot, common::Mode};
+use plotly::{Scatter, Plot, common::Mode, layout::{Axis, Layout}};
 use staticmap::{Line, StaticMap, Color};
 //use crate::{Error};
 use anyhow::Result;
@@ -16,6 +16,11 @@ pub fn plot(record: &crate::Record) -> Result<String> {
         .name("Altitude");
 
     let mut plot = Plot::new();
+
+    let axis = Axis::new().tick_suffix(" km");
+    let layout = Layout::new().x_axis(axis);
+
+    plot.set_layout(layout);
     plot.add_trace(heartrate);
     plot.add_trace(speed);
     plot.add_trace(altitude);

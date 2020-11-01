@@ -63,13 +63,13 @@
 	</div>
 	<div class="stats">
 	    <div class="panel">
-		<div class="panel-header">
-		    <div class="card-title-h5">Stats</div>
+		<div class="panel-header stats-header">
+		    <div class="panel-title text-center">Stats</div>
 		</div>
 		<div class="panel-body stats-body">
 		    <ul>
 			<li><strong>User: </strong> {{ user }}</li>
-			<li><strong>Activity type: </strong>{{ session.activity_type }}</li>
+			<li><strong>Activity type: </strong>{{ session.activity_type|capitalize }}</li>
 			<li><strong>Gear: </strong></li>
 			<li><strong>Duration: </strong> {{ session.duration_active.to_string() }}</li>
 			{% match session.distance -%}

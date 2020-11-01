@@ -10,10 +10,17 @@
 }
 
 .tile {
-	margin-top:5%;
+	padding:2%;
+	margin-top:1%;
+	box-shadow: 0 .25rem 1rem rgba(48,55,66,.15);
+	margin-bottom:2%;
 }
 
-.panel {
+.index-tile:hover {
+	box-shadow: 0 1rem 1.2rem rgba(48,55,66,.15);
+}
+
+.card, .panel {
 	z-index:1;
 	box-shadow: 0 .25rem 1rem rgba(48,55,66,.15);
 }
@@ -22,7 +29,21 @@
 	line-height: 1.8vw;
 }
 
+.template {
+	margin: 0.3%;
+}
+
+.tile-title, .tile-subtitle {
+	margin-left:2%;
+}
+
+.stats-header {
+	font-size: 1.2vw;
+	font-weight: 500;
+}
+
 .stats {
+	margin-left:2%;
 	font-size: 0.9vw;
 }
 
@@ -42,8 +63,31 @@
 	padding-bottom: 2%;
 }
 
-.plot {
+#activities, #activities_wrapper, .plot {
 	height:100%;
+}
+
+#previews {
+	text-align: center;
+}
+
+#previews .template.dz-success .progress-bar {
+      opacity: 0;
+      transition: opacity 0.3s linear;
+    }
+
+#previews .template.dz-success .upload-success {
+      opacity: 1;
+      transition: opacity 0.3s linear;
+}
+
+#previews .template.dz-error .upload-error {
+      opacity: 1;
+      transition: opacity 0.3s linear;
+}
+
+.upload-success, .upload-error {
+	opacity: 0;
 }
 
 html, .panel, .container, .stats {

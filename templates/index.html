@@ -6,22 +6,23 @@
 <div class="columns">
 <div class="column col-9">
 <h2 class="text-center">Recent activities</h2>
-{% for row in session_username_id %}
-{# row.0 is session, row.1 is username, row.2 is activity id #}
-<div class="tile">
+{% for activity in template_data %}
+<a href="{{ activity.url.url }}">
+<div class="tile index-tile">
   <div class="tile-icon">
 	<figure class="avatar avatar-xl">
-		<img src="{{ url._static }}/img/user/{{ row.1 }}.png" alt="">
+		<img src="{{ url._static }}/img/user/{{ activity.username }}.png" alt="">
 	</figure>
   </div>
   <div class="tile-content">
-	<p class="tile-title text-centered">{{ row.0.start_time.0.format("%d.%m.%Y %H:%M").to_string() }}</p>
-	<p class="tile-subtitle text-centered">{{ row.0.duration_active.to_string() }}</p>
+	<h3 class="tile-title text-centered ">{{ activity.session.start_time.0.format("%d.%m.%Y %H:%M").to_string() }}</h3>
+	<p class="tile-subtitle text-centered">{{ activity.session.duration_active.to_string() }}</p>
   </div>
   <div class="tile-action">
-	  <img src="{{ url._static }}/img/activity/{{ row.2 }}.png" class="img-fit-contain activity-image" height="150">
+	  <img src="{{ url._static }}/img/activity/{{ activity.id }}.png" class="img-fit-contain activity-image" height="150">
   </div>
 </div>
+</a>
 {% endfor %}
 </div>
 </div>

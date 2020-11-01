@@ -2,16 +2,24 @@ use askama_actix::{Template, TemplateIntoResponse};
 use actix_web::{Responder, HttpRequest, web};
 use actix_identity::Identity;
 use crate::Session;
+use url::Url;
 
-use super::{UrlFor, FormatDuration};
+use super::{UrlFor, UrlActivity, FormatDuration};
 
 #[derive(Template)]
 #[template(path = "index.html")]
 struct IndexTemplate<'a> {
     url: UrlFor,
     id: Identity,
-    session_username_id: &'a Vec<(crate::Session, String, String)>,
+    template_data: &'a Vec<TemplateData>,
     title: &'a str,
+}
+
+struct TemplateData {
+    session: Session,
+    url: UrlActivity,
+    username: String,
+    id: String,
 }
 
 pub async fn index(
@@ -53,15 +61,22 @@ pub async fn index(
     }
 
     // This is necessary because Askama does not allow zipping iterators inside a template
-    let session_username_id: Vec<(crate::Session, String, String)> = session.into_iter()
+    let template_data: Vec<TemplateData> = session.into_iter()
         .zip(username_id)
-        .map(|(x, (y, z))| (x, y, z))
+        .map(|(x, (y, z))| 
+             TemplateData {
+                 session: x,
+                 url: UrlActivity::new(&y, &z, &req),
+                 username: y,
+                 id: z,
+             }
+        )
         .collect();
 
     IndexTemplate {
         url: UrlFor::new(&id, req),
         id,
-        session_username_id: &session_username_id,
+        template_data: &template_data,
         title: "Index",
     }.into_response()
 }

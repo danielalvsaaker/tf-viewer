@@ -55,7 +55,7 @@
 		previewNode.parentNode.removeChild(previewNode);
 
 		var myDropzone = new Dropzone(document.body, { // Make the whole body a dropzone
-  		    url: "/upload", // Set the url
+		    url: "{{ url.upload|safe }}", // Set the url
   		    parallelUploads: 20,
 		    maxFilesize: 50,
 		    acceptedFiles: ".fit",

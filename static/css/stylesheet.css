@@ -17,7 +17,7 @@
 }
 
 .index-tile:hover {
-	box-shadow: 0 1rem 1.2rem rgba(48,55,66,.15);
+	box-shadow: 0 0.8rem 1.2rem rgba(48,55,66,.15);
 }
 
 .card, .panel {
@@ -44,7 +44,7 @@
 
 .stats {
 	margin-left:2%;
-	font-size: 0.9vw;
+	font-size: 0.8rem;
 }
 
 #map {
@@ -64,7 +64,7 @@
 }
 
 #activities, #activities_wrapper, .plot {
-	height:100%;
+	height:auto;
 }
 
 #previews {

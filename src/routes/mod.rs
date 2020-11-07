@@ -33,18 +33,14 @@ impl UrlFor {
                 .url_for("user", &[&user.identity().unwrap_or("None".to_string())])
                 .unwrap(),
             userindex: req.url_for_static("userindex")?,
-            activityindex: req
-                .url_for(
-                    "activityindex",
-                    &[&user.identity().unwrap_or("None".to_string())],
-                )
-                .unwrap(),
-            gearindex: req
-                .url_for(
-                    "gearindex",
-                    &[&user.identity().unwrap_or("None".to_string())],
-                )
-                .unwrap(),
+            activityindex: req.url_for(
+                "activityindex",
+                &[&user.identity().unwrap_or("None".to_string())],
+            )?,
+            gearindex: req.url_for(
+                "gearindex",
+                &[&user.identity().unwrap_or("None".to_string())],
+            )?,
             upload: req.url_for_static("upload")?,
             login: req.url_for_static("login")?,
             register: req.url_for_static("register")?,

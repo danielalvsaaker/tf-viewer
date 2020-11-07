@@ -1,5 +1,5 @@
 use crate::Gear;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 #[derive(Clone)]
 pub struct GearTree {
@@ -20,7 +20,7 @@ impl GearTree {
         key.push(0xff);
         key.extend_from_slice(gear.name.as_bytes());
 
-        let serialized = bincode::serialize(&gear).expect("Failed to serialize gear");
+        let serialized = bincode::serialize(&gear)?;
         self.usernameid_gear.insert(key, serialized)?;
 
         Ok(())
@@ -39,6 +39,10 @@ impl GearTree {
         key.extend_from_slice(id.as_bytes());
 
         let get = self.usernameid_gear.get(&key)?;
-        Ok(bincode::deserialize::<Gear>(&get.unwrap()).unwrap())
+
+        match get {
+            Some(x) => Ok(bincode::deserialize::<Gear>(&x).unwrap()),
+            None => Err(anyhow!("Failed to deserialize gear")),
+        }
     }
 }

@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{Lap, Session};
 use actix_identity::Identity;
-use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use actix_web::{web, HttpRequest, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
 
 #[derive(Template)]
@@ -50,7 +50,7 @@ pub async fn activity(
     };
 
     ActivityTemplate {
-        url: UrlFor::new(&id, req),
+        url: UrlFor::new(&id, req)?,
         id,
         user: &user,
         session: &activity.session,
@@ -82,7 +82,7 @@ pub async fn activityindex(
     user: web::Path<String>,
 ) -> impl Responder {
     ActivityIndexTemplate {
-        url: UrlFor::new(&id, req),
+        url: UrlFor::new(&id, req)?,
         id,
         user: &user,
         title: "Activities",

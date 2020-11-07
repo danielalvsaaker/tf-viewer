@@ -16,11 +16,7 @@ use dotenv::dotenv;
 
 use actix_files::Files;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
-use actix_web::{
-    guard, http,
-    middleware::normalize::{NormalizePath, TrailingSlash},
-    web, App, HttpResponse, HttpServer,
-};
+use actix_web::{guard, web, App, HttpServer};
 
 use routes::{
     activity::{activity, activityindex, activityindex_post},

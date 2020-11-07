@@ -3,7 +3,7 @@ use std::task::{Context, Poll};
 use actix_identity::Identity;
 use actix_service::{Service, Transform};
 use actix_web::dev::{Payload, ServiceRequest, ServiceResponse};
-use actix_web::{http, http::StatusCode, Error, FromRequest, HttpRequest, HttpResponse};
+use actix_web::{http, Error, FromRequest, HttpRequest, HttpResponse};
 use futures::future::{ok, Either, Ready};
 
 /// Login middleware

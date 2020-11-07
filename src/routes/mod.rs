@@ -1,5 +1,5 @@
 use actix_identity::Identity;
-use actix_web::HttpRequest;
+use actix_web::{error::UrlGenerationError, HttpRequest};
 use url::Url;
 
 pub mod activity;
@@ -25,14 +25,14 @@ pub struct UrlFor {
 }
 
 impl UrlFor {
-    pub fn new(user: &Identity, req: HttpRequest) -> Self {
-        UrlFor {
-            _static: req.url_for_static("static").unwrap(),
-            index: req.url_for_static("index").unwrap(),
+    pub fn new(user: &Identity, req: HttpRequest) -> Result<Self, UrlGenerationError> {
+        Ok(UrlFor {
+            _static: req.url_for_static("static")?,
+            index: req.url_for_static("index")?,
             user: req
                 .url_for("user", &[&user.identity().unwrap_or("None".to_string())])
                 .unwrap(),
-            userindex: req.url_for_static("userindex").unwrap(),
+            userindex: req.url_for_static("userindex")?,
             activityindex: req
                 .url_for(
                     "activityindex",
@@ -45,10 +45,10 @@ impl UrlFor {
                     &[&user.identity().unwrap_or("None".to_string())],
                 )
                 .unwrap(),
-            upload: req.url_for_static("upload").unwrap(),
-            login: req.url_for_static("login").unwrap(),
-            register: req.url_for_static("register").unwrap(),
-        }
+            upload: req.url_for_static("upload")?,
+            login: req.url_for_static("login")?,
+            register: req.url_for_static("register")?,
+        })
     }
 }
 
@@ -57,10 +57,10 @@ pub struct UrlActivity {
 }
 
 impl UrlActivity {
-    pub fn new(user: &str, activity: &str, req: &HttpRequest) -> Self {
-        UrlActivity {
-            url: req.url_for("activity", &[user, activity]).unwrap(),
-        }
+    pub fn new(user: &str, activity: &str, req: &HttpRequest) -> Result<Self, UrlGenerationError> {
+        Ok(UrlActivity {
+            url: req.url_for("activity", &[user, activity])?,
+        })
     }
 }
 

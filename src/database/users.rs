@@ -72,7 +72,8 @@ impl UserTree {
             .username_user
             .iter()
             .values()
-            .map(|x| bincode::deserialize::<User>(&x.unwrap()).unwrap()))
+            .flatten()
+            .map(|x| bincode::deserialize::<User>(&x).unwrap()))
     }
 
     pub fn iter_id(&self) -> Result<impl Iterator<Item = String>> {
@@ -80,6 +81,7 @@ impl UserTree {
             .username_user
             .iter()
             .keys()
-            .map(|x| String::from_utf8(x.unwrap().to_vec()).unwrap()))
+            .flatten()
+            .map(|x| String::from_utf8(x.to_vec()).unwrap()))
     }
 }

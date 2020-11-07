@@ -4,7 +4,7 @@ use super::{
     UrlFor,
 };
 use actix_identity::Identity;
-use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use actix_web::{web, HttpRequest, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
 
 #[derive(Template)]
@@ -24,7 +24,7 @@ pub async fn user(
 ) -> impl Responder {
     match data.as_ref().users.exists(&user) {
         Ok(true) => UserTemplate {
-            url: UrlFor::new(&id, req),
+            url: UrlFor::new(&id, req)?,
             id,
             user: &user,
             title: &user,
@@ -51,7 +51,7 @@ pub async fn userindex(
     let users: Vec<String> = data.as_ref().users.iter_id().unwrap().collect();
 
     UserIndexTemplate {
-        url: UrlFor::new(&id, req),
+        url: UrlFor::new(&id, req)?,
         id,
         title: "Users",
         users,

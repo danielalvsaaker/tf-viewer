@@ -52,14 +52,8 @@ pub fn generate_thumb(record: crate::Record, path: std::path::PathBuf) -> Result
     let coordinates: Vec<(f64, f64)> = record
         .lon
         .into_iter()
-        .zip(record.lat)
-        .map(|(x, y)| {
-            if let (Some(a), Some(b)) = (x, y) {
-                (a, b)
-            } else {
-                (0., 0.)
-            }
-        })
+        .flatten()
+        .zip(record.lat.into_iter().flatten())
         .collect();
 
     let line = Line {

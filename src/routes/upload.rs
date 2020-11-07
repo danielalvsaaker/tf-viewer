@@ -16,7 +16,7 @@ struct UploadTemplate<'a> {
 
 pub async fn upload(id: Identity, req: HttpRequest) -> impl Responder {
     UploadTemplate {
-        url: UrlFor::new(&id, req),
+        url: UrlFor::new(&id, req)?,
         id,
         title: "Upload",
     }

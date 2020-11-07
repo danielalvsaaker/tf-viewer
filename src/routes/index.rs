@@ -2,7 +2,6 @@ use crate::Session;
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
-use url::Url;
 
 use super::{FormatDuration, UrlActivity, UrlFor};
 
@@ -27,13 +26,11 @@ pub async fn index(
     req: HttpRequest,
     data: web::Data<crate::Database>,
 ) -> impl Responder {
-    //let sessions: Vec<Session> = data.as_ref().activities.iter_session_all().unwrap().take(5).collect();
-
     let usernames = data.as_ref().activities.iter_username_all().unwrap();
     let ids = data.as_ref().activities.iter_id_all().unwrap();
     let mut username_id: Vec<(String, String)> = usernames.zip(ids).collect();
 
-    username_id.sort_by_key(|(a, k)| k.parse::<u64>().unwrap());
+    username_id.sort_by_key(|(_, k)| k.parse::<u64>().unwrap());
     username_id.reverse();
     username_id.truncate(5);
 
@@ -68,14 +65,14 @@ pub async fn index(
         .zip(username_id)
         .map(|(x, (y, z))| TemplateData {
             session: x,
-            url: UrlActivity::new(&y, &z, &req),
+            url: UrlActivity::new(&y, &z, &req).unwrap(),
             username: y,
             id: z,
         })
         .collect();
 
     IndexTemplate {
-        url: UrlFor::new(&id, req),
+        url: UrlFor::new(&id, req)?,
         id,
         template_data: &template_data,
         title: "Index",

@@ -1,6 +1,6 @@
 use super::UrlFor;
 use actix_identity::Identity;
-use actix_web::{get, http, post, web, HttpRequest, HttpResponse, Responder};
+use actix_web::{http, web, HttpRequest, HttpResponse, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
 use serde::Deserialize;
 
@@ -15,7 +15,7 @@ struct LoginTemplate<'a> {
 
 pub async fn login(req: HttpRequest, id: Identity) -> impl Responder {
     LoginTemplate {
-        url: UrlFor::new(&id, req),
+        url: UrlFor::new(&id, req)?,
         title: "Log in",
         message: None,
         id,
@@ -52,7 +52,7 @@ pub async fn login_post(
     }
 
     LoginTemplate {
-        url: UrlFor::new(&id, req),
+        url: UrlFor::new(&id, req)?,
         title: "Login",
         message: Some("Wrong username or password"),
         id,
@@ -80,7 +80,7 @@ struct RegisterTemplate<'a> {
 
 pub async fn register(req: HttpRequest, id: Identity) -> impl Responder {
     RegisterTemplate {
-        url: UrlFor::new(&id, req),
+        url: UrlFor::new(&id, req)?,
         title: "Register",
         message: None,
         id,

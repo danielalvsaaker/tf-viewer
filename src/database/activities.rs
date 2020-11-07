@@ -64,7 +64,8 @@ impl ActivityTree {
             .scan_prefix(&prefix)
             .values()
             .rev()
-            .map(|x| String::from_utf8(x.unwrap().to_vec()).unwrap()))
+            .flatten()
+            .map(|x| String::from_utf8(x.to_vec()).unwrap()))
     }
 
     pub fn iter_username_all(&self) -> Result<impl Iterator<Item = String>> {

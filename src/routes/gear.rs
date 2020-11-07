@@ -19,7 +19,7 @@ pub async fn gear(
     web::Path((user, gear)): web::Path<(String, String)>,
 ) -> impl Responder {
     GearTemplate {
-        url: UrlFor::new(&id, req),
+        url: UrlFor::new(&id, req)?,
         id,
         user: &user,
         gear: &gear,
@@ -39,7 +39,7 @@ struct GearIndexTemplate<'a> {
 
 pub async fn gearindex(req: HttpRequest, id: Identity, user: web::Path<String>) -> impl Responder {
     GearIndexTemplate {
-        url: UrlFor::new(&id, req),
+        url: UrlFor::new(&id, req)?,
         id,
         user: &user,
         title: "Gear",

@@ -52,7 +52,7 @@ impl ActivityTree {
             .values()
             .rev()
             .flatten()
-            .map(|x| bincode::deserialize::<Session>(&x).unwrap()))
+            .flat_map(|x| bincode::deserialize::<Session>(&x)))
     }
 
     pub fn iter_id(&self, username: &str) -> Result<impl Iterator<Item = String>> {
@@ -65,7 +65,7 @@ impl ActivityTree {
             .values()
             .rev()
             .flatten()
-            .map(|x| String::from_utf8(x.to_vec()).unwrap()))
+            .flat_map(|x| String::from_utf8(x.to_vec())))
     }
 
     pub fn iter_username_all(&self) -> Result<impl Iterator<Item = String>> {
@@ -75,7 +75,7 @@ impl ActivityTree {
             .values()
             .rev()
             .flatten()
-            .map(|x| String::from_utf8(x.to_vec()).unwrap()))
+            .flat_map(|x| String::from_utf8(x.to_vec())))
     }
 
     pub fn iter_session_all(&self) -> Result<impl Iterator<Item = Session>> {
@@ -85,7 +85,7 @@ impl ActivityTree {
             .values()
             .rev()
             .flatten()
-            .map(|x| bincode::deserialize::<Session>(&x).unwrap()))
+            .flat_map(|x| bincode::deserialize::<Session>(&x)))
     }
 
     pub fn iter_record_all(&self) -> Result<impl Iterator<Item = Record>> {
@@ -95,7 +95,7 @@ impl ActivityTree {
             .values()
             .rev()
             .flatten()
-            .map(|x| bincode::deserialize::<Record>(&x).unwrap()))
+            .flat_map(|x| bincode::deserialize::<Record>(&x)))
     }
 
     pub fn iter_id_all(&self) -> Result<impl Iterator<Item = String>> {
@@ -105,7 +105,7 @@ impl ActivityTree {
             .values()
             .rev()
             .flatten()
-            .map(|x| String::from_utf8(x.to_vec()).unwrap()))
+            .flat_map(|x| String::from_utf8(x.to_vec())))
     }
 
     pub fn get_session(&self, username: &str, id: &str) -> Result<Session> {

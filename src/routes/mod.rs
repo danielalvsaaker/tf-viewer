@@ -30,8 +30,7 @@ impl UrlFor {
             _static: req.url_for_static("static")?,
             index: req.url_for_static("index")?,
             user: req
-                .url_for("user", &[&user.identity().unwrap_or("None".to_string())])
-                .unwrap(),
+                .url_for("user", &[&user.identity().unwrap_or("None".to_string())])?,
             userindex: req.url_for_static("userindex")?,
             activityindex: req.url_for(
                 "activityindex",

@@ -21,9 +21,9 @@ impl Default for TimeStamp {
     }
 }
 
-impl TimeStamp {
-    pub fn to_string(self) -> String {
-        self.0.format("%d.%m.%Y %H:%M").to_string()
+impl std::fmt::Display for TimeStamp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.format("%d.%m.%Y %H:%M").to_string())
     }
 }
 

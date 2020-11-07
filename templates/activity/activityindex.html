@@ -22,10 +22,10 @@
 	    "pageLength": 25,
 	    "searching": false,	
 	    "ajax": {
-		"url": "/user/{{ user }}/activity",
-		"contentType": "application/json",
-		"type": "POST",
-		"data": function (data) {
+		  "url": "{{ url.activityindex.path()|safe }}",
+		  "contentType": "application/json",
+		  "type": "POST",
+		  "data": function (data) {
 		    return JSON.stringify({
 			draw: data.draw,
 			start: data.start,
@@ -65,7 +65,8 @@
     });
 </script>
 
-<table id="activities" class="display" style="width:100%">
+<div class="container">
+<table id="activities" class="table" style="width:100%">
     <thead>
 	<tr>
 	    <th>Date</th>
@@ -86,5 +87,6 @@
     <tbody>
     </tbody>
 </table>
+</div>
 
 {% endblock %}

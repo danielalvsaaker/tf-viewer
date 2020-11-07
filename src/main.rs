@@ -4,6 +4,10 @@ mod models;
 mod middleware;
 pub mod parser;
 
+#[cfg(feature = "jemalloc")]
+#[global_allocator]
+static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
+
 pub use database::Database;
 pub use models::{Activity, Session, Record, Lap, TimeStamp, User, Gear};
 pub use parser::*;

@@ -1,12 +1,19 @@
 {% extends "base.html" %}
 {% block content %}
-<form action="register" method="POST" class="pure-form">
+{% match message %}
+{% when Some with (value) %}
+    {{ value }}
+{% when None %}
+{% endmatch %}
+<div class="container">
+<form action="register" method="POST" class="form-group">
     <fieldset>
       <input type="text" name="username" id="username" placeholder="Username">
       <input type='password' name='password' id='password' placeholder='Password'>
-      <button type="submit" class="pure-button pure-button-primary">Register</button>
+      <button type="submit" class="btn btn-primary">Sign in</button>
     </fieldset>
 </form>
 <p>Already registered? <a href="{{ url.login }}">Log in</a></p>
+</div>
 {% endblock %}
 

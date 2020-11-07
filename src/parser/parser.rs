@@ -22,9 +22,9 @@ pub fn parse(fit_data: &[u8], gear_id: &str) -> Result<Activity> {
     for data in file {
         let lap = Lap::new();
         match data.kind() {
-            MesgNum::Session => session = parse_session(data.into_vec(), session),
-            MesgNum::Record => record = parse_record(data.into_vec(), record),
-            MesgNum::Lap => lap_vec.push(parse_lap(data.into_vec(), lap)),
+            MesgNum::Session => session = parse_session(data.into_vec(), session)?,
+            MesgNum::Record => record = parse_record(data.into_vec(), record)?,
+            MesgNum::Lap => lap_vec.push(parse_lap(data.into_vec(), lap)?),
             _ => (),
         }
     }
@@ -40,7 +40,7 @@ pub fn parse(fit_data: &[u8], gear_id: &str) -> Result<Activity> {
 }
 
 
-fn parse_session(fields: Vec<FitDataField>, mut session:  Session) -> Session {
+fn parse_session(fields: Vec<FitDataField>, mut session:  Session) -> Result<Session> {
 
     // Semicircle to degree
     let multiplier = 180f64 / 2f64.powi(31);
@@ -141,10 +141,10 @@ fn parse_session(fields: Vec<FitDataField>, mut session:  Session) -> Session {
         }
     }
 
-    session
+    Ok(session)
 }
 
-fn parse_record(fields: Vec<FitDataField>, mut record: Record) -> Record {
+fn parse_record(fields: Vec<FitDataField>, mut record: Record) -> Result<Record> {
 
     // Semicircle to degree
     let multiplier = 180f64 / 2f64.powi(31);
@@ -186,14 +186,10 @@ fn parse_record(fields: Vec<FitDataField>, mut record: Record) -> Record {
         }
     }
 
-    if record.timestamp.len() > 1 {
-        record.duration.push(chrono::Duration::to_std(&record.timestamp.last().unwrap().0.signed_duration_since(record.timestamp.first().unwrap().0)).unwrap());
-    }
-
-    record
+    Ok(record)
 }
 
-fn parse_lap(fields: Vec<FitDataField>, mut lap: Lap) -> Lap {
+fn parse_lap(fields: Vec<FitDataField>, mut lap: Lap) -> Result<Lap> {
 
     // Semicircle to degree
     let multiplier = 180f64 / 2f64.powi(31);
@@ -266,5 +262,5 @@ fn parse_lap(fields: Vec<FitDataField>, mut lap: Lap) -> Lap {
         }
     }
 
-    lap
+    Ok(lap)
 }

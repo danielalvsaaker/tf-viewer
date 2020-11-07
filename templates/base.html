@@ -4,40 +4,32 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }} - Tf-viewer</title>
-    <link rel="stylesheet" href="{{ url._static }}/css/pure-min.css">
-    <link rel="stylesheet" href="{{ url._static }}/css/grids-responsive-min.css">
-    <link rel="stylesheet" href="{{ url._static }}/css/font-awesome.css">
-    <link rel="stylesheet" href="{{ url._static }}/css/styles.css">
+    <link rel="stylesheet" href="{{ url._static }}/css/spectre.min.css">
+    <link rel="stylesheet" href="{{ url._static }}/css/spectre-exp.min.css">
+    <link rel="stylesheet" href="{{ url._static }}/css/spectre-icons.min.css">
     <link rel="stylesheet" href="{{ url._static }}/css/stylesheet.css">
     <link rel="icon" href="{{ url._static }}/img/favicon.png">
 </head>
 <body>
-
-<div class="header">
-    <div class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
-	    <a class="pure-menu-heading" href="{{ url.index }}">Tf-viewer</a>
-
-        <ul class="pure-menu-list">
-	    <li class="pure-menu-item"><a href="{{ url.userindex }}" class="pure-menu-link">Users</a></li>
-	    <li class="pure-menu-item"><a href="{{ url.activityindex }}" class="pure-menu-link">Activities</a></li>
-	    <li class="pure-menu-item"><a href="{{ url.gearindex }}" class="pure-menu-link">Gear</a></li>
-	    <li class="pure-menu-item"><a href="{{ url.upload }}" class="pure-menu-link">Upload</a></li>
+<header class="navbar">
+  <div class="navbar-section">
+	<a href="{{ url.index }}" class="navbar-brand text-bold text-light mr-2">Tf-viewer</a>
+  </div>
+  <div class="navbar-section">
+	<a href="{{ url.userindex }}" class="btn btn-link text-light">Users</a>
+	<a href="{{ url.activityindex }}" class="btn btn-link text-light">Activities</a>
+	<a href="{{ url.gearindex }}" class="btn btn-link text-light">Gear</a>
+	<a href="{{ url.upload }}" class="btn btn-link text-light">Upload</a>
 	{% match id.identity() -%}
-	    {% when Some with (value) -%}
-	    <li class="pure-menu-item"><a href="{{ url.user }}" class="pure-menu-link">{{ value }}</a></li>
-	    {% when None -%}
-	    <li class="pure-menu-item"><a href="{{ url.login }}" class="pure-menu-link">Log in</a></li>
-	{% endmatch -%}
-        </ul>
-    </div>
-</div>
+	{% when Some with (value) -%}
+	<a href="{{ url.user }}" class="btn btn-link text-light">{{ value }}</a>
+	{% when None -%}
+	<a href="{{ url.login }}" class="btn btn-link text-light">Log in</a>
+	{% endmatch %}
+  </div>
+</header>
 
-<div class="content-wrapper">
-    <div class="content">
-	    {% block content %}
-	    {% endblock %}
-    </div>
-</div>
-
+{% block content %}
+{% endblock %}
 </body>
 </html>

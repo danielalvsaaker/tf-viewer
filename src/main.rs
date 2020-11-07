@@ -45,6 +45,7 @@ async fn main() -> std::io::Result<()> {
                     .secure(false)
                 )
         )
+        //.wrap(NormalizePath::new(TrailingSlash::MergeOnly))
         .app_data(data.clone())
         .default_service(
                 web::route()

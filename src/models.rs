@@ -62,7 +62,6 @@ pub struct Record {
     pub lat: Vec<Option<f64>>,
     pub lon: Vec<Option<f64>>,
     pub timestamp: Vec<TimeStamp>,
-    pub duration: Vec<Duration>,
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -93,10 +92,7 @@ impl Session {
 
 impl Record {
     pub fn new() -> Self {
-        Record {
-            duration: vec![Duration::from_secs(0)],
-            ..Default::default()
-        }
+        Default::default()
     }
 }
 

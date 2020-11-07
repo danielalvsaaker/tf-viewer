@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-{% if message.is_some() %}
-{{ message.unwrap() }}
-{% endif %}
+{% match message %}
+{% when Some with (value) %}
+    {{ value }}
+{% when None %}
+{% endmatch %}
 <div class="container">
 <form action="login" method="POST" class="form-group">
     <fieldset>

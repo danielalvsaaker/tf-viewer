@@ -74,6 +74,7 @@ pub async fn logout(id: Identity) -> impl Responder {
 struct RegisterTemplate<'a> {
     url: UrlFor,
     title: &'a str,
+    message: Option<&'a str>,
     id: Identity,
 }
 
@@ -85,6 +86,7 @@ pub async fn register(
     RegisterTemplate {
         url: UrlFor::new(&id, req),
         title: "Register",
+        message: None,
         id,
     }.into_response()
 }

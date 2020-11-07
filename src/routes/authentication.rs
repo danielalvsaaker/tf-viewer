@@ -1,8 +1,8 @@
-use actix_web::{get, post, Responder, web, HttpRequest, HttpResponse, http};
+use super::UrlFor;
 use actix_identity::Identity;
+use actix_web::{get, http, post, web, HttpRequest, HttpResponse, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
 use serde::Deserialize;
-use super::UrlFor;
 
 #[derive(Template)]
 #[template(path = "auth/login.html")]
@@ -13,17 +13,14 @@ struct LoginTemplate<'a> {
     id: Identity,
 }
 
-pub async fn login(
-    req: HttpRequest,
-    id: Identity
-    ) -> impl Responder {
-
+pub async fn login(req: HttpRequest, id: Identity) -> impl Responder {
     LoginTemplate {
         url: UrlFor::new(&id, req),
         title: "Log in",
         message: None,
         id,
-    }.into_response()
+    }
+    .into_response()
 }
 
 #[derive(Deserialize)]
@@ -36,20 +33,22 @@ pub async fn login_post(
     form: web::Form<Credentials>,
     data: web::Data<crate::Database>,
     req: HttpRequest,
-    id: Identity
-    ) -> impl Responder {
-
+    id: Identity,
+) -> impl Responder {
     let username = form.username.clone();
     let password = form.password.clone();
 
-    if data.get_ref().users.exists(&form.username).unwrap() && 
-        web::block(move || data.get_ref().users.verify_hash(&username, &password)).await.unwrap() {
-            id.remember(form.username.to_owned());
+    if data.get_ref().users.exists(&form.username).unwrap()
+        && web::block(move || data.get_ref().users.verify_hash(&username, &password))
+            .await
+            .unwrap()
+    {
+        id.remember(form.username.to_owned());
 
-            return Ok(HttpResponse::Found()
-                .header(http::header::LOCATION, "/")
-                .finish()
-                .into_body())
+        return Ok(HttpResponse::Found()
+            .header(http::header::LOCATION, "/")
+            .finish()
+            .into_body());
     }
 
     LoginTemplate {
@@ -57,7 +56,8 @@ pub async fn login_post(
         title: "Login",
         message: Some("Wrong username or password"),
         id,
-    }.into_response()
+    }
+    .into_response()
 }
 
 pub async fn logout(id: Identity) -> impl Responder {
@@ -78,31 +78,28 @@ struct RegisterTemplate<'a> {
     id: Identity,
 }
 
-pub async fn register(
-    req: HttpRequest,
-    id: Identity
-    ) -> impl Responder {
-
+pub async fn register(req: HttpRequest, id: Identity) -> impl Responder {
     RegisterTemplate {
         url: UrlFor::new(&id, req),
         title: "Register",
         message: None,
         id,
-    }.into_response()
+    }
+    .into_response()
 }
 
 pub async fn register_post(
     form: web::Form<Credentials>,
     data: web::Data<crate::Database>,
-    id: Identity
-    ) -> impl Responder {
-
+    id: Identity,
+) -> impl Responder {
     if !data.get_ref().users.exists(&form.username).unwrap() {
-        web::block(move ||data.get_ref().users.insert(
-            crate::User::new(),
-            &form.username,
-            &form.password
-            )).await;
+        web::block(move || {
+            data.get_ref()
+                .users
+                .insert(crate::User::new(), &form.username, &form.password)
+        })
+        .await;
     }
 
     HttpResponse::Found()

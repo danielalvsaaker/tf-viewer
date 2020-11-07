@@ -1,10 +1,13 @@
-use plotly::{Scatter, Plot, common::Mode, layout::{Axis, Layout}};
-use staticmap::{Line, StaticMap, Color};
+use plotly::{
+    common::Mode,
+    layout::{Axis, Layout},
+    Plot, Scatter,
+};
+use staticmap::{Color, Line, StaticMap};
 //use crate::{Error};
 use anyhow::Result;
 
 pub fn plot(record: &crate::Record) -> Result<String> {
-
     let heartrate = Scatter::new(record.distance.clone(), record.heartrate.clone())
         .mode(Mode::Lines)
         .name("Heart rate");
@@ -30,7 +33,7 @@ pub fn plot(record: &crate::Record) -> Result<String> {
 
 pub fn generate_thumb(record: crate::Record, path: std::path::PathBuf) -> Result<()> {
     if record.lon.is_empty() {
-        return Ok(())
+        return Ok(());
     }
 
     let mut map = StaticMap {
@@ -46,17 +49,17 @@ pub fn generate_thumb(record: crate::Record, path: std::path::PathBuf) -> Result
         zoom: 0,
     };
 
-    let coordinates: Vec<(f64, f64)> = record.lon
+    let coordinates: Vec<(f64, f64)> = record
+        .lon
         .into_iter()
         .zip(record.lat)
-        .map(|(x, y)|
-             if let (Some(a), Some(b)) = (x, y) {
-                 (a, b)
-             }
-             else {
+        .map(|(x, y)| {
+            if let (Some(a), Some(b)) = (x, y) {
+                (a, b)
+            } else {
                 (0., 0.)
-             }
-        )
+            }
+        })
         .collect();
 
     let line = Line {

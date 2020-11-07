@@ -1,11 +1,12 @@
-use actix_web::{Responder, web, HttpRequest, HttpResponse};
-use actix_identity::Identity;
-use askama_actix::{Template, TemplateIntoResponse};
-use super::{UrlFor, FormatDuration,
-           api::{DataRequest, DataResponse, ActivityData},
-           error::ErrorTemplate
+use super::{
+    api::{ActivityData, DataRequest, DataResponse},
+    error::ErrorTemplate,
+    FormatDuration, UrlFor,
 };
-use crate::{Session, Lap};
+use crate::{Lap, Session};
+use actix_identity::Identity;
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use askama_actix::{Template, TemplateIntoResponse};
 
 #[derive(Template)]
 #[template(path = "activity/activity.html")]
@@ -25,18 +26,27 @@ pub async fn activity(
     data: web::Data<crate::Database>,
     id: Identity,
     web::Path((user, activity_id)): web::Path<(String, String)>,
-    ) -> impl Responder {
-
-
-    if !data.as_ref().activities.exists(&user, &activity_id).unwrap() {
-        return ErrorTemplate::not_found(req, id).await
+) -> impl Responder {
+    if !data
+        .as_ref()
+        .activities
+        .exists(&user, &activity_id)
+        .unwrap()
+    {
+        return ErrorTemplate::not_found(req, id).await;
     }
 
-    let activity = data.as_ref().activities.get_activity(&user, &activity_id).unwrap();
+    let activity = data
+        .as_ref()
+        .activities
+        .get_activity(&user, &activity_id)
+        .unwrap();
 
     let plot = {
         let record = activity.record.clone();
-        web::block(move || super::utils::plot(&record)).await.unwrap()
+        web::block(move || super::utils::plot(&record))
+            .await
+            .unwrap()
     };
 
     ActivityTemplate {
@@ -45,12 +55,17 @@ pub async fn activity(
         user: &user,
         session: &activity.session,
         laps: &activity.lap,
-        coords: &activity.record.lon.into_iter().zip(activity.record.lat).collect(),
+        coords: &activity
+            .record
+            .lon
+            .into_iter()
+            .zip(activity.record.lat)
+            .collect(),
         plot: &plot,
         title: "Activity",
-    }.into_response()
+    }
+    .into_response()
 }
-
 
 #[derive(Template)]
 #[template(path = "activity/activityindex.html")]
@@ -64,45 +79,49 @@ struct ActivityIndexTemplate<'a> {
 pub async fn activityindex(
     req: HttpRequest,
     id: Identity,
-    user: web::Path<String>
-    ) -> impl Responder {
-
+    user: web::Path<String>,
+) -> impl Responder {
     ActivityIndexTemplate {
         url: UrlFor::new(&id, req),
         id,
         user: &user,
         title: "Activities",
-    }.into_response()
+    }
+    .into_response()
 }
 
 pub async fn activityindex_post(
     request: web::Json<DataRequest>,
     data: web::Data<crate::Database>,
-    user: web::Path<String>
-    ) -> impl Responder {
-
-    let iter = data.as_ref().activities.iter_session(&user.to_owned())
+    user: web::Path<String>,
+) -> impl Responder {
+    let iter = data
+        .as_ref()
+        .activities
+        .iter_session(&user.to_owned())
         .unwrap();
 
     let id = data.as_ref().activities.iter_id(&user).unwrap();
-   
+
     let mut sessions: Vec<ActivityData> = iter
         .zip(id)
-        .map(|(x,y)| -> ActivityData {  ActivityData {
-            date: x.start_time.0,
-            activity_type: x.activity_type,
-            duration: x.duration_active.to_string(),
-            distance: x.distance,
-            calories: x.calories,
-            cadence_avg: x.cadence_avg,
-            heartrate_avg: x.heartrate_avg,
-            heartrate_max: x.heartrate_max,
-            speed_avg: x.speed_avg,
-            speed_max: x.speed_max,
-            ascent: x.ascent,
-            descent: x.descent,
-            id: y,
-        }})
+        .map(|(x, y)| -> ActivityData {
+            ActivityData {
+                date: x.start_time.0,
+                activity_type: x.activity_type,
+                duration: x.duration_active.to_string(),
+                distance: x.distance,
+                calories: x.calories,
+                cadence_avg: x.cadence_avg,
+                heartrate_avg: x.heartrate_avg,
+                heartrate_max: x.heartrate_max,
+                speed_avg: x.speed_avg,
+                speed_max: x.speed_max,
+                ascent: x.ascent,
+                descent: x.descent,
+                id: y,
+            }
+        })
         .collect();
 
     let amount = sessions.len();
@@ -132,13 +151,10 @@ pub async fn activityindex_post(
         .take(request.length)
         .collect();
 
-
-    web::Json(
-        DataResponse {
-            draw: request.draw,
-            recordsTotal: amount,
-            recordsFiltered: amount,
-            data: results,
-        }
-    )
+    web::Json(DataResponse {
+        draw: request.draw,
+        recordsTotal: amount,
+        recordsFiltered: amount,
+        data: results,
+    })
 }

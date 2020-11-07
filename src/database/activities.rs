@@ -1,5 +1,5 @@
-use crate::{Activity, Session, Record, Lap};
-use anyhow::{Result, anyhow};
+use crate::{Activity, Lap, Record, Session};
+use anyhow::{anyhow, Result};
 
 #[derive(Clone)]
 pub struct ActivityTree {
@@ -34,7 +34,8 @@ impl ActivityTree {
         self.usernameid_lap.insert(&key, lap)?;
 
         self.usernameid_id.insert(&key, activity.id.as_bytes())?;
-        self.usernameid_gear_id.insert(&key, activity.gear_id.as_bytes())?;
+        self.usernameid_gear_id
+            .insert(&key, activity.gear_id.as_bytes())?;
 
         self.usernameid_username.insert(&key, username.as_bytes())?;
 
@@ -45,60 +46,65 @@ impl ActivityTree {
         let mut prefix = username.as_bytes().to_vec();
         prefix.push(0xff);
 
-        Ok(self.usernameid_session.scan_prefix(&prefix)
+        Ok(self
+            .usernameid_session
+            .scan_prefix(&prefix)
             .values()
             .rev()
             .flatten()
-            .map(|x| bincode::deserialize::<Session>(&x).unwrap())
-        )
-        
+            .map(|x| bincode::deserialize::<Session>(&x).unwrap()))
     }
 
     pub fn iter_id(&self, username: &str) -> Result<impl Iterator<Item = String>> {
         let mut prefix = username.as_bytes().to_vec();
         prefix.push(0xff);
 
-        Ok(self.usernameid_id.scan_prefix(&prefix)
-           .values()
-           .rev()
-           .map(|x| String::from_utf8(x.unwrap().to_vec()).unwrap())
-           )
+        Ok(self
+            .usernameid_id
+            .scan_prefix(&prefix)
+            .values()
+            .rev()
+            .map(|x| String::from_utf8(x.unwrap().to_vec()).unwrap()))
     }
 
     pub fn iter_username_all(&self) -> Result<impl Iterator<Item = String>> {
-        Ok(self.usernameid_username.iter()
-           .values()
-           .rev()
-           .flatten()
-           .map(|x| String::from_utf8(x.to_vec()).unwrap())
-           )
+        Ok(self
+            .usernameid_username
+            .iter()
+            .values()
+            .rev()
+            .flatten()
+            .map(|x| String::from_utf8(x.to_vec()).unwrap()))
     }
 
     pub fn iter_session_all(&self) -> Result<impl Iterator<Item = Session>> {
-        Ok(self.usernameid_session.iter()
-           .values()
-           .rev()
-           .flatten()
-           .map(|x| bincode::deserialize::<Session>(&x).unwrap())
-           )
+        Ok(self
+            .usernameid_session
+            .iter()
+            .values()
+            .rev()
+            .flatten()
+            .map(|x| bincode::deserialize::<Session>(&x).unwrap()))
     }
 
     pub fn iter_record_all(&self) -> Result<impl Iterator<Item = Record>> {
-        Ok(self.usernameid_record.iter()
-           .values()
-           .rev()
-           .flatten()
-           .map(|x| bincode::deserialize::<Record>(&x).unwrap())
-           )
+        Ok(self
+            .usernameid_record
+            .iter()
+            .values()
+            .rev()
+            .flatten()
+            .map(|x| bincode::deserialize::<Record>(&x).unwrap()))
     }
 
     pub fn iter_id_all(&self) -> Result<impl Iterator<Item = String>> {
-        Ok(self.usernameid_id.iter()
-           .values()
-           .rev()
-           .flatten()
-           .map(|x| String::from_utf8(x.to_vec()).unwrap())
-           )
+        Ok(self
+            .usernameid_id
+            .iter()
+            .values()
+            .rev()
+            .flatten()
+            .map(|x| String::from_utf8(x.to_vec()).unwrap()))
     }
 
     pub fn get_session(&self, username: &str, id: &str) -> Result<Session> {

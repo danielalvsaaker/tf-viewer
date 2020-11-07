@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use super::date_format;
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
 pub struct DataRequest {
@@ -11,7 +11,7 @@ pub struct DataRequest {
 }
 
 #[derive(Serialize, Debug)]
-pub struct DataResponse<T: Serialize>{
+pub struct DataResponse<T: Serialize> {
     pub draw: usize,
     pub recordsTotal: usize,
     pub recordsFiltered: usize,

@@ -1,4 +1,4 @@
-use crate::{Gear};
+use crate::Gear;
 use anyhow::Result;
 
 #[derive(Clone)]

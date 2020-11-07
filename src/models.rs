@@ -1,6 +1,6 @@
-use serde::{Serialize, Deserialize};
 use chrono::offset::Local;
 use chrono::DateTime;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 #[derive(Serialize, Deserialize)]
@@ -23,11 +23,9 @@ impl Default for TimeStamp {
 
 impl TimeStamp {
     pub fn to_string(self) -> String {
-        self.0.format("%d.%m.%Y %H:%M").to_string() 
+        self.0.format("%d.%m.%Y %H:%M").to_string()
     }
 }
-
-
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]
 pub struct Session {
@@ -101,7 +99,6 @@ impl Lap {
         Default::default()
     }
 }
-
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Gear {

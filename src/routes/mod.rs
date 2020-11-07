@@ -1,18 +1,17 @@
-use actix_web::HttpRequest;
 use actix_identity::Identity;
+use actix_web::HttpRequest;
 use url::Url;
 
+pub mod activity;
+pub mod api;
 pub mod authentication;
+pub mod error;
+pub mod gear;
 pub mod index;
 pub mod upload;
 pub mod user;
-pub mod activity;
-pub mod gear;
 pub mod utils;
-pub mod api;
-pub mod error;
 
-         
 pub struct UrlFor {
     pub _static: Url,
     pub index: Url,
@@ -30,10 +29,22 @@ impl UrlFor {
         UrlFor {
             _static: req.url_for_static("static").unwrap(),
             index: req.url_for_static("index").unwrap(),
-            user: req.url_for("user", &[&user.identity().unwrap_or("None".to_string())]).unwrap(),
+            user: req
+                .url_for("user", &[&user.identity().unwrap_or("None".to_string())])
+                .unwrap(),
             userindex: req.url_for_static("userindex").unwrap(),
-            activityindex: req.url_for("activityindex", &[&user.identity().unwrap_or("None".to_string())]).unwrap(),
-            gearindex: req.url_for("gearindex", &[&user.identity().unwrap_or("None".to_string())]).unwrap(),
+            activityindex: req
+                .url_for(
+                    "activityindex",
+                    &[&user.identity().unwrap_or("None".to_string())],
+                )
+                .unwrap(),
+            gearindex: req
+                .url_for(
+                    "gearindex",
+                    &[&user.identity().unwrap_or("None".to_string())],
+                )
+                .unwrap(),
             upload: req.url_for_static("upload").unwrap(),
             login: req.url_for_static("login").unwrap(),
             register: req.url_for_static("register").unwrap(),
@@ -57,10 +68,7 @@ mod date_format {
     use chrono::{DateTime, Local};
     use serde::{self, Serializer};
 
-    pub fn serialize<S>(
-        date: &DateTime<Local>,
-        serializer: S,
-    ) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(date: &DateTime<Local>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {

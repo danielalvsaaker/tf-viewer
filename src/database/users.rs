@@ -1,7 +1,7 @@
 use crate::User;
+use anyhow::{anyhow, Result};
 use argonautica::{Hasher, Verifier};
 use dotenv::var;
-use anyhow::{anyhow, Result};
 
 #[derive(Clone)]
 pub struct UserTree {
@@ -24,7 +24,6 @@ impl UserTree {
             .with_secret_key(var("PASSWORD")?)
             .hash()
             .unwrap();
-
 
         self.username_password.insert(username, hash.as_bytes())?;
         self.username_user.insert(username, serialized)?;
@@ -59,30 +58,28 @@ impl UserTree {
     pub fn verify_hash(&self, id: &str, password: &str) -> Result<bool> {
         let hash = String::from_utf8(self.username_password.get(&id)?.unwrap().to_vec())?;
         let mut verifier = Verifier::default();
-        
+
         Ok(verifier
             .with_hash(hash)
             .with_password(password)
             .with_secret_key(var("PASSWORD")?)
-            .verify().unwrap())
-
+            .verify()
+            .unwrap())
     }
 
     pub fn iter_user(&self) -> Result<impl Iterator<Item = User>> {
-
-        Ok(self.username_user.iter()
-           .values()
-           .map(|x| bincode::deserialize::<User>(&x.unwrap()).unwrap())
-           )
+        Ok(self
+            .username_user
+            .iter()
+            .values()
+            .map(|x| bincode::deserialize::<User>(&x.unwrap()).unwrap()))
     }
 
     pub fn iter_id(&self) -> Result<impl Iterator<Item = String>> {
-
-        Ok(self.username_user.iter()
-           .keys()
-           .map(|x| String::from_utf8(x.unwrap().to_vec()).unwrap())
-           )
+        Ok(self
+            .username_user
+            .iter()
+            .keys()
+            .map(|x| String::from_utf8(x.unwrap().to_vec()).unwrap()))
     }
 }
-
-

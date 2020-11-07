@@ -1,10 +1,11 @@
-use actix_web::{Responder, web, HttpRequest, HttpResponse};
-use actix_identity::Identity;
-use askama_actix::{Template, TemplateIntoResponse};
-use super::{UrlFor,
+use super::{
     api::{DataRequest, DataResponse, UserData},
-    error::ErrorTemplate
+    error::ErrorTemplate,
+    UrlFor,
 };
+use actix_identity::Identity;
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use askama_actix::{Template, TemplateIntoResponse};
 
 #[derive(Template)]
 #[template(path = "user/user.html")]
@@ -19,21 +20,17 @@ pub async fn user(
     req: HttpRequest,
     id: Identity,
     data: web::Data<crate::Database>,
-    user: web::Path<String>
-    ) -> impl Responder {
-
+    user: web::Path<String>,
+) -> impl Responder {
     match data.as_ref().users.exists(&user) {
-        Ok(true) => {
-                        UserTemplate {
-                            url: UrlFor::new(&id, req),
-                            id,
-                            user: &user,
-                            title: &user,
-                        }.into_response()
-                    },
-        _ => {
-            ErrorTemplate::not_found(req, id).await
-        },
+        Ok(true) => UserTemplate {
+            url: UrlFor::new(&id, req),
+            id,
+            user: &user,
+            title: &user,
+        }
+        .into_response(),
+        _ => ErrorTemplate::not_found(req, id).await,
     }
 }
 
@@ -49,9 +46,8 @@ struct UserIndexTemplate<'a> {
 pub async fn userindex(
     req: HttpRequest,
     id: Identity,
-    data: web::Data<crate::Database>
-    ) -> impl Responder {
-
+    data: web::Data<crate::Database>,
+) -> impl Responder {
     let users: Vec<String> = data.as_ref().users.iter_id().unwrap().collect();
 
     UserIndexTemplate {
@@ -59,22 +55,17 @@ pub async fn userindex(
         id,
         title: "Users",
         users,
-    }.into_response()
+    }
+    .into_response()
 }
-
 
 pub async fn userindex_post(
     request: web::Json<DataRequest>,
-    data: web::Data<crate::Database>
-    ) -> impl Responder {
-
+    data: web::Data<crate::Database>,
+) -> impl Responder {
     let ids = data.as_ref().users.iter_id().unwrap();
 
-    let mut users: Vec<UserData> = ids
-        .map(|x| UserData {
-            name: x,
-        })
-        .collect();
+    let mut users: Vec<UserData> = ids.map(|x| UserData { name: x }).collect();
 
     let amount = users.len();
 
@@ -88,12 +79,10 @@ pub async fn userindex_post(
         .take(request.length)
         .collect();
 
-    web::Json(
-        DataResponse {
-            draw: request.draw,
-            recordsTotal: amount,
-            recordsFiltered: amount,
-            data: results,
-        }
-    )
+    web::Json(DataResponse {
+        draw: request.draw,
+        recordsTotal: amount,
+        recordsFiltered: amount,
+        data: results,
+    })
 }

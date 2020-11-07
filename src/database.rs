@@ -1,8 +1,8 @@
 use anyhow::Result;
 
-pub mod users;
 pub mod activities;
 pub mod gear;
+pub mod users;
 
 #[derive(Clone)]
 pub struct Database {
@@ -39,5 +39,3 @@ impl Database {
         })
     }
 }
-
-

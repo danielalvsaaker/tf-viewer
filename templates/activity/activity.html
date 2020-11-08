@@ -39,7 +39,7 @@
 
 		var line = L.polyline([
 		{% for coord in coords  -%}
-		    [{{ coord.1.unwrap() }}, {{ coord.0.unwrap() }}],
+		    [{{ coord.1 }}, {{ coord.0 }}],
 		{% endfor -%}
 		],
 		{"bubblingMouseEvents": true, "color": "#FF0000", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#FF0000", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}

@@ -16,7 +16,7 @@ struct ActivityTemplate<'a> {
     user: &'a str,
     session: &'a Session,
     laps: &'a Vec<Lap>,
-    coords: &'a Vec<(Option<f64>, Option<f64>)>,
+    coords: &'a Vec<(f64, f64)>,
     plot: &'a str,
     title: &'a str,
 }
@@ -59,7 +59,8 @@ pub async fn activity(
             .record
             .lon
             .into_iter()
-            .zip(activity.record.lat)
+            .flatten()
+            .zip(activity.record.lat.into_iter().flatten())
             .collect(),
         plot: &plot,
         title: "Activity",

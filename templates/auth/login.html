@@ -1,19 +1,21 @@
 {% extends "base.html" %}
 {% block content %}
+  
 {% match message %}
-{% when Some with (value) %}
+  {% when Some with (value) %}
     {{ value }}
-{% when None %}
+  {% when None %}
 {% endmatch %}
 <div class="container">
-<form action="login" method="POST" class="form-group">
+  <form action="login" method="POST" class="form-group">
     <fieldset>
       <input type="text" name="username" id="username" placeholder="Username">
       <input type='password' name='password' id='password' placeholder='Password'>
       <button type="submit" class="btn btn-primary">Sign in</button>
     </fieldset>
-</form>
-<p>Not registered? <a href="{{ url.register }}">Sign up</a></p>
+  </form>
+  <p>Not registered? <a href="{{ url.register }}">Sign up</a></p>
 </div>
+
 {% endblock %}
 

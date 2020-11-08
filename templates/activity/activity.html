@@ -68,7 +68,7 @@
 	    <li><strong>User: </strong> {{ user }}</li>
 	    <li><strong>Activity type: </strong>{{ session.activity_type|capitalize }}</li>
 	    <li><strong>Gear: </strong></li>
-	    <li><strong>Duration: </strong> {{ session.duration_active.to_string() }}</li>
+	    <li><strong>Duration: </strong> {{ session.duration_active }}</li>
 	    {% match session.distance -%}
 	      {% when Some with (value) -%}
 		<li><strong>Distance: </strong> {{ value }} km</li>
@@ -142,7 +142,7 @@
               {{ loop.index }}
             </td>
             <td>
-              {{ lap.duration_active.to_string() }}
+              {{ lap.duration_active }}
             </td>
             <td>
               {% match lap.distance -%}

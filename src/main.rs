@@ -9,7 +9,7 @@ mod routes;
 static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 pub use database::Database;
-pub use models::{Activity, Gear, Lap, Record, Session, TimeStamp, User};
+pub use models::{Activity, Duration, Gear, Lap, Record, Session, TimeStamp, User};
 pub use parser::*;
 
 use dotenv::dotenv;

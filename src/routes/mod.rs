@@ -57,31 +57,3 @@ impl UrlActivity {
         })
     }
 }
-
-mod date_format {
-    use chrono::{DateTime, Local};
-    use serde::{self, Serializer};
-
-    pub fn serialize<S>(date: &DateTime<Local>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let s = format!("{}", date.format("%d.%m.%Y %H:%M"));
-        serializer.serialize_str(&s)
-    }
-}
-
-pub trait FormatDuration {
-    fn to_string(&self) -> String;
-}
-
-impl FormatDuration for std::time::Duration {
-    fn to_string(&self) -> String {
-        let s = self.as_secs();
-
-        let (h, s) = (s / 3600, s % 3600);
-        let (m, s) = (s / 60, s % 60);
-
-        format!("{:02}:{:02}:{:02}", h, m, s)
-    }
-}

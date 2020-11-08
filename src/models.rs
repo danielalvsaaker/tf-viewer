@@ -1,17 +1,8 @@
 use chrono::offset::Local;
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 
-#[derive(Serialize, Deserialize)]
-pub struct Activity {
-    pub id: String,
-    pub gear_id: String,
-    pub session: Session,
-    pub record: Record,
-    pub lap: Vec<Lap>,
-}
-
+/// Wrapper for chrono::DateTime
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct TimeStamp(pub DateTime<Local>);
 
@@ -25,6 +16,35 @@ impl std::fmt::Display for TimeStamp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0.format("%d.%m.%Y %H:%M").to_string())
     }
+}
+
+/// Wrapper for std::time::Duration
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default)]
+pub struct Duration(pub std::time::Duration);
+
+impl Duration {
+    pub fn from_secs_f64(secs: f64) -> Self {
+        Duration(std::time::Duration::from_secs_f64(secs))
+    }
+}
+
+impl std::fmt::Display for Duration {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = self.0.as_secs();
+        let (h, s) = (s / 3600, s % 3600);
+        let (m, s) = (s / 60, s % 60);
+
+        write!(f, "{:02}:{:02}:{:02}", h, m, s)
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Activity {
+    pub id: String,
+    pub gear_id: String,
+    pub session: Session,
+    pub record: Record,
+    pub lap: Vec<Lap>,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]

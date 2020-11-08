@@ -3,7 +3,7 @@ use actix_identity::Identity;
 use actix_web::{web, HttpRequest, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
 
-use super::{FormatDuration, UrlActivity, UrlFor};
+use super::{UrlActivity, UrlFor};
 
 #[derive(Template)]
 #[template(path = "index.html")]

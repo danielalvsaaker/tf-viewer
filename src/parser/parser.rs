@@ -1,9 +1,8 @@
 use fitparser::profile::field_types::MesgNum;
 use fitparser::FitDataField;
 use fitparser::Value::*;
-use std::time::Duration;
 
-use crate::{Activity, Lap, Record, Session, TimeStamp};
+use crate::{Activity, Duration, Lap, Record, Session, TimeStamp};
 use anyhow::{anyhow, Result};
 
 pub fn parse(fit_data: &[u8], gear_id: &str) -> Result<Activity> {

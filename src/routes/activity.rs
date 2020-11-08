@@ -1,7 +1,7 @@
 use super::{
     api::{ActivityData, DataRequest, DataResponse},
     error::ErrorTemplate,
-    FormatDuration, UrlFor,
+    UrlFor,
 };
 use crate::{Lap, Session};
 use actix_identity::Identity;

@@ -1,4 +1,4 @@
-use super::date_format;
+use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
@@ -21,7 +21,7 @@ pub struct DataResponse<T: Serialize> {
 #[derive(Serialize, Debug)]
 pub struct ActivityData {
     #[serde(with = "date_format")]
-    pub date: chrono::DateTime<chrono::Local>,
+    pub date: DateTime<Local>,
     pub activity_type: String,
     pub duration: String,
     pub distance: Option<f64>,
@@ -39,4 +39,17 @@ pub struct ActivityData {
 #[derive(Serialize, Debug)]
 pub struct UserData {
     pub name: String,
+}
+
+mod date_format {
+    use chrono::{DateTime, Local};
+    use serde::{self, Serializer};
+
+    pub fn serialize<S>(date: &DateTime<Local>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = format!("{}", date.format("%d.%m.%Y %H:%M"));
+        serializer.serialize_str(&s)
+    }
 }

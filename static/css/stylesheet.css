@@ -9,7 +9,11 @@
 	border-radius:50%;
 }
 
-.tile {
+.profile-field {
+  padding-bottom: 3%;
+}
+
+.index-tile {
 	padding:2%;
 	margin-top:1%;
 	box-shadow: 0 .25rem 1rem rgba(48,55,66,.15);

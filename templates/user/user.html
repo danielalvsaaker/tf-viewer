@@ -1,19 +1,49 @@
 {% extends "base.html" %}
 {% block content %}
 
-<p>{{ user }}</p>
-
-<div class="parent">
-<div class="userleft">
-	test
+<div class="container">
+  <div class="columns">
+    <div class="column col-3">
+      <div class="panel">
+	<div class="panel-header text-center">
+	  <figure class="avatar avatar-xl">
+	    <img src="{{ url._static }}/img/user/{{ username }}.png" alt="">
+	  </figure>
+	  <div class="panel-title h5 mt-10">{{ username }}</div>
+	</div>
+	<div class="panel-body">
+	  {% match user.heartrate_max %}
+	    {% when Some with (value) %}
+	      <div class="tile tile-centered profile-field">
+		<div class="tile-content">
+		  <div class="tile-title text-bold">
+		    Max. heart rate
+		  </div>
+		  <div class="tile-subtitle">
+		    {{ value }} bpm
+		  </div>
+		</div>
+	      </div>
+	    {% when None %}
+	  {% endmatch %}
+	  {% match user.heartrate_rest %}
+	    {% when Some with (value) %}
+	      <div class="tile tile-centered profile-field">
+		<div class="tile-content">
+		  <div class="tile-title text-bold">
+		    Resting heart rate
+		  </div>
+		  <div class="tile-subtitle">
+		    {{ value }} bpm
+		  </div>
+		</div>
+	      </div>
+	    {% when None %}
+	  {% endmatch %}
+	</div>
+      </div>
+    </div>
+  </div>
 </div>
-<div class="userright">
-	<img src="{{ url._static }}/img/user/{{ user }}.png"
-	     alt="No profile picture"
-	     height=250px>
-</div>
-</div>
-
-
 
 {% endblock %}

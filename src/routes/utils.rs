@@ -70,7 +70,7 @@ pub fn generate_thumb(record: crate::Record, path: std::path::PathBuf) -> Result
 
     map.add_line(line);
 
-    let image = map.render();
+    let image = map.render()?;
     image.save(path)?;
     Ok(())
 }

@@ -51,11 +51,14 @@ pub async fn index(
         if !path.exists() {
             let record = data.as_ref().activities.get_record(&username, &id).unwrap();
 
-            // Creating file prematurely, preventing more processes from spawning
-            // and performing the same task
-            std::fs::File::create(&path)?;
 
-            std::thread::spawn(move || super::utils::generate_thumb(record, path));
+            std::thread::spawn(move || {
+                // Creating file prematurely, preventing more processes from spawning
+                // and performing the same task
+                std::fs::File::create(&path);
+                
+                super::utils::generate_thumb(record, path);
+            });
         }
     }
 

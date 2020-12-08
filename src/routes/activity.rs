@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{Lap, Session};
 use actix_identity::Identity;
-use actix_web::{web, HttpRequest, Responder};
+use actix_web::{web, web::block, HttpRequest, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
 
 #[derive(Template)]
@@ -45,8 +45,7 @@ pub async fn activity(
     let plot = {
         let record = activity.record.clone();
         web::block(move || super::utils::plot(&record))
-            .await
-            .unwrap()
+            .await?
     };
 
     ActivityTemplate {
@@ -96,13 +95,20 @@ pub async fn activityindex_post(
     data: web::Data<crate::Database>,
     user: web::Path<String>,
 ) -> impl Responder {
-    let iter = data
+
+    let iter = {
+        let data = data.clone();
+        let user = user.to_owned();
+        
+        block(move || data
         .as_ref()
         .activities
-        .iter_session(&user.to_owned())
-        .unwrap();
+        .iter_session(&user)
+        ).await
+        .unwrap()
+    };
 
-    let id = data.as_ref().activities.iter_id(&user).unwrap();
+    let id = block(move || data.as_ref().activities.iter_id(&user)).await.unwrap();
 
     let mut sessions: Vec<ActivityData> = iter
         .zip(id)

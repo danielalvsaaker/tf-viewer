@@ -86,20 +86,20 @@ async fn main() -> std::io::Result<()> {
                             .route(web::get().to(userindex))
                             .route(web::post().to(userindex_post)),
                     )
-                    .service(web::resource("/{user}").name("user").to(user))
+                    .service(web::resource("/{username}").name("user").to(user))
                     .service(
-                        web::resource("/{user}/activity")
+                        web::resource("/{username}/activity")
                             .name("activityindex")
                             .route(web::get().to(activityindex))
                             .route(web::post().to(activityindex_post)),
                     )
                     .service(
-                        web::resource("/{user}/activity/{activity}")
+                        web::resource("/{username}/activity/{activity}")
                             .name("activity")
                             .to(activity),
                     )
                     .service(
-                        web::resource("/{user}/gear")
+                        web::resource("/{username}/gear")
                             .name("gearindex")
                             .to(gearindex),
                     ),

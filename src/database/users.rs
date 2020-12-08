@@ -40,6 +40,7 @@ impl UserTree {
         }
     }
 
+    /*
     pub fn zones(&self, id: &str) -> Result<Vec<u8>> {
         let user = self.get(id)?;
 
@@ -54,6 +55,7 @@ impl UserTree {
 
         Ok(zones)
     }
+    */
 
     pub fn verify_hash(&self, id: &str, password: &str) -> Result<bool> {
         let hash = String::from_utf8(self.username_password.get(&id)?.unwrap().to_vec())?;

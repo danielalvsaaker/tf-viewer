@@ -12,7 +12,8 @@ use askama_actix::{Template, TemplateIntoResponse};
 struct UserTemplate<'a> {
     url: UrlFor,
     id: Identity,
-    user: &'a str,
+    username: &'a str,
+    user: crate::User,
     title: &'a str,
 }
 
@@ -20,18 +21,22 @@ pub async fn user(
     req: HttpRequest,
     id: Identity,
     data: web::Data<crate::Database>,
-    user: web::Path<String>,
+    username: web::Path<String>,
 ) -> impl Responder {
-    match data.as_ref().users.exists(&user) {
-        Ok(true) => UserTemplate {
-            url: UrlFor::new(&id, req)?,
-            id,
-            user: &user,
-            title: &user,
-        }
-        .into_response(),
-        _ => ErrorTemplate::not_found(req, id).await,
+
+    if !data.as_ref().users.exists(&username).unwrap() {
+        return ErrorTemplate::not_found(req, id).await;
     }
+
+    let user = data.as_ref().users.get(&username).unwrap();
+
+    UserTemplate {
+        url: UrlFor::new(&id, req)?,
+        id,
+        username: &username,
+        user,
+        title: &username,
+    }.into_response()
 }
 
 #[derive(Template)]

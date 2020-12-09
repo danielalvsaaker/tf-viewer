@@ -1,7 +1,7 @@
 use crate::User;
 use anyhow::{anyhow, Result};
-use argonautica::{Hasher, Verifier};
-use dotenv::var;
+use argon2::{hash_encoded, verify_encoded, Config};
+use getrandom::getrandom;
 
 #[derive(Clone)]
 pub struct UserTree {
@@ -17,13 +17,10 @@ impl UserTree {
     pub fn insert(&self, user: User, username: &str, password: &str) -> Result<()> {
         let serialized = bincode::serialize(&user)?;
 
-        let mut hasher = Hasher::default();
+        let mut salt = [0u8; 32];
+        getrandom(&mut salt).unwrap();
 
-        let hash = hasher
-            .with_password(password)
-            .with_secret_key(var("PASSWORD")?)
-            .hash()
-            .unwrap();
+        let hash = hash_encoded(password.as_bytes(), &salt, &Config::default())?;
 
         self.username_password.insert(username, hash.as_bytes())?;
         self.username_user.insert(username, serialized)?;
@@ -59,14 +56,8 @@ impl UserTree {
 
     pub fn verify_hash(&self, id: &str, password: &str) -> Result<bool> {
         let hash = String::from_utf8(self.username_password.get(&id)?.unwrap().to_vec())?;
-        let mut verifier = Verifier::default();
 
-        Ok(verifier
-            .with_hash(hash)
-            .with_password(password)
-            .with_secret_key(var("PASSWORD")?)
-            .verify()
-            .unwrap())
+        Ok(verify_encoded(&hash, password.as_bytes())?)
     }
 
     pub fn iter_user(&self) -> Result<impl Iterator<Item = User>> {

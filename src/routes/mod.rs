@@ -16,9 +16,10 @@ pub struct UrlFor {
     pub _static: Url,
     pub index: Url,
     pub user: Url,
-    pub userindex: Url,
-    pub activityindex: Url,
-    pub gearindex: Url,
+    pub user_index: Url,
+    pub activity_index: Url,
+    pub gear_index: Url,
+    pub gear_add: Url,
     pub upload: Url,
     pub login: Url,
     pub register: Url,
@@ -30,13 +31,17 @@ impl UrlFor {
             _static: req.url_for_static("static")?,
             index: req.url_for_static("index")?,
             user: req.url_for("user", &[&user.identity().unwrap_or("None".to_string())])?,
-            userindex: req.url_for_static("userindex")?,
-            activityindex: req.url_for(
-                "activityindex",
+            user_index: req.url_for_static("user_index")?,
+            activity_index: req.url_for(
+                "activity_index",
                 &[&user.identity().unwrap_or("None".to_string())],
             )?,
-            gearindex: req.url_for(
-                "gearindex",
+            gear_index: req.url_for(
+                "gear_index",
+                &[&user.identity().unwrap_or("None".to_string())],
+            )?,
+            gear_add: req.url_for(
+                "gear_add",
                 &[&user.identity().unwrap_or("None".to_string())],
             )?,
             upload: req.url_for_static("upload")?,

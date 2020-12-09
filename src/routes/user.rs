@@ -23,7 +23,6 @@ pub async fn user(
     data: web::Data<crate::Database>,
     username: web::Path<String>,
 ) -> impl Responder {
-
     if !data.as_ref().users.exists(&username).unwrap() {
         return ErrorTemplate::not_found(req, id).await;
     }
@@ -36,11 +35,12 @@ pub async fn user(
         username: &username,
         user,
         title: &username,
-    }.into_response()
+    }
+    .into_response()
 }
 
 #[derive(Template)]
-#[template(path = "user/userindex.html")]
+#[template(path = "user/index.html")]
 struct UserIndexTemplate<'a> {
     url: UrlFor,
     id: Identity,
@@ -48,7 +48,7 @@ struct UserIndexTemplate<'a> {
     title: &'a str,
 }
 
-pub async fn userindex(
+pub async fn user_index(
     req: HttpRequest,
     id: Identity,
     data: web::Data<crate::Database>,
@@ -64,7 +64,7 @@ pub async fn userindex(
     .into_response()
 }
 
-pub async fn userindex_post(
+pub async fn user_index_post(
     request: web::Json<DataRequest>,
     data: web::Data<crate::Database>,
 ) -> impl Responder {

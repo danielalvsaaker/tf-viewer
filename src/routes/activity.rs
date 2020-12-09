@@ -44,8 +44,7 @@ pub async fn activity(
 
     let plot = {
         let record = activity.record.clone();
-        web::block(move || super::utils::plot(&record))
-            .await?
+        web::block(move || super::utils::plot(&record)).await?
     };
 
     ActivityTemplate {
@@ -68,7 +67,7 @@ pub async fn activity(
 }
 
 #[derive(Template)]
-#[template(path = "activity/activityindex.html")]
+#[template(path = "activity/index.html")]
 struct ActivityIndexTemplate<'a> {
     url: UrlFor,
     id: Identity,
@@ -76,7 +75,7 @@ struct ActivityIndexTemplate<'a> {
     title: &'a str,
 }
 
-pub async fn activityindex(
+pub async fn activity_index(
     req: HttpRequest,
     id: Identity,
     user: web::Path<String>,
@@ -90,25 +89,23 @@ pub async fn activityindex(
     .into_response()
 }
 
-pub async fn activityindex_post(
+pub async fn activity_index_post(
     request: web::Json<DataRequest>,
     data: web::Data<crate::Database>,
     user: web::Path<String>,
 ) -> impl Responder {
-
     let iter = {
         let data = data.clone();
         let user = user.to_owned();
-        
-        block(move || data
-        .as_ref()
-        .activities
-        .iter_session(&user)
-        ).await
-        .unwrap()
+
+        block(move || data.as_ref().activities.iter_session(&user))
+            .await
+            .unwrap()
     };
 
-    let id = block(move || data.as_ref().activities.iter_id(&user)).await.unwrap();
+    let id = block(move || data.as_ref().activities.iter_id(&user))
+        .await
+        .unwrap();
 
     let mut sessions: Vec<ActivityData> = iter
         .zip(id)

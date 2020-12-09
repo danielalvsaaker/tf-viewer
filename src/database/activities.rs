@@ -42,6 +42,25 @@ impl ActivityTree {
         Ok(())
     }
 
+    pub fn gear_totals(&self, username: &str, gear: &str) -> (f64, f64) {
+        let mut prefix = username.as_bytes().to_vec();
+        prefix.push(0xff);
+
+        self.usernameid_gear_id
+            .scan_prefix(&prefix)
+            .values()
+            .flatten()
+            .flat_map(|x| String::from_utf8(x.to_vec()))
+            .filter(|x| x == gear)
+            .flat_map(|x| self.get_session(&x, username))
+            .fold((0.0, 0.0), |acc, x| {
+                (
+                    acc.0 + x.distance.unwrap_or(0.0),
+                    acc.1 + x.duration_active.as_secs_f64(),
+                )
+            })
+    }
+
     pub fn iter_session(&self, username: &str) -> Result<impl Iterator<Item = Session>> {
         let mut prefix = username.as_bytes().to_vec();
         prefix.push(0xff);

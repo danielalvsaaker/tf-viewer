@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container">
+  <a href="{{ url.gear_add }}">
+    <button class="btn btn-primary">Add gear</button>
+  </a>
+  <table class="table">
+    <thead>
+      <tr>
+	<th>Name</th>
+	<th>Type</th>
+	<th>Total distance</th>
+	<th>Total duration</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for gear in gears -%}
+	<tr>
+	  <td>{{ gear.1.name }}</td>
+	  <td>{{ gear.1.kind }}</td>
+	  <td>{{ gear.0.0 }}</td>
+	  <td>{{ gear.0.1 }}</td>
+	</tr>
+      {% endfor -%}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

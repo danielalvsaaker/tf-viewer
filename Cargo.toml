@@ -23,8 +23,8 @@ actix-service = "1.0.6"
 actix-files = "0.4.1"
 actix-multipart = "0.3.0"
 url = "2.2.0"
-argonautica = { version = "0.2.0", default-features = false, features = ["simd"] }
-dotenv = { version = "0.15.0", default-features = false }
+rust-argon2 = { version = "0.8", default-features = false }
+getrandom = "0.2"
 anyhow = "1.0.35"
 futures = "0.3.8"
 askama = { version = "0.10.5", default-features = false }

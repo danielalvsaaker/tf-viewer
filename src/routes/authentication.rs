@@ -25,7 +25,7 @@ pub async fn login(req: HttpRequest, id: Identity) -> impl Responder {
 
 #[derive(Deserialize)]
 pub struct Credentials {
-    pub username: String,
+    username: String,
     password: String,
 }
 

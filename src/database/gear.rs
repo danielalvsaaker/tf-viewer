@@ -7,7 +7,7 @@ pub struct GearTree {
 }
 
 impl GearTree {
-    pub fn exists(&self, username: String, id: String) -> Result<bool> {
+    pub fn exists(&self, username: &str, id: &str) -> Result<bool> {
         let mut key = username.as_bytes().to_vec();
         key.push(0xff);
         key.extend_from_slice(id.as_bytes());
@@ -15,7 +15,7 @@ impl GearTree {
         Ok(self.usernameid_gear.contains_key(&key)?)
     }
 
-    pub fn insert(&self, gear: Gear, username: String) -> Result<()> {
+    pub fn insert(&self, gear: Gear, username: &str) -> Result<()> {
         let mut key = username.as_bytes().to_vec();
         key.push(0xff);
         key.extend_from_slice(gear.name.as_bytes());

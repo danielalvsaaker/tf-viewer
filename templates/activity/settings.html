@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+  
+<div class="container">
+  <form action="settings" method="POST" class="form-group">
+    <fieldset>
+      <select name="activity_type" id="activity_type">
+	<option value="cycling">Cycling</option>
+	<option value="running">Running</option>
+      </select>
+      <select name="gear" id="gear">
+      </select>
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </fieldset>
+  </form>
+</div>
+
+{% endblock %}

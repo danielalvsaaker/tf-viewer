@@ -5,6 +5,7 @@
   <form action="add" method="POST" class="form-group">
     <fieldset>
       <input type="text" name="name" id="name" placeholder="Name">
+      <input type="number" step="0.1" min="0" name="fixed_distance" id="fixed_distance" placeholder="Fixed distance">
       <select name="kind" id="kind">
 	<option value="road bike">Road bike</option>
 	<option value="hybrid bike">Hybrid bike</option>
@@ -12,10 +13,9 @@
 	<option value="offroad bike">Offroad bike</option>
 	<option value="running shoes">Running shoes</option>
       </select>
-      <button type="submit" class="btn btn-primary">Sign in</button>
+      <button type="submit" class="btn btn-primary">Submit</button>
     </fieldset>
   </form>
-  <p>Not registered? <a href="{{ url.register }}">Sign up</a></p>
 </div>
 
 {% endblock %}

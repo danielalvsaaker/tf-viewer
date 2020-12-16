@@ -86,8 +86,8 @@ pub async fn user_index_post(
 
     web::Json(DataResponse {
         draw: request.draw,
-        recordsTotal: amount,
-        recordsFiltered: amount,
+        records_total: amount,
+        records_filtered: amount,
         data: results,
     })
 }

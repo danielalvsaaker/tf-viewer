@@ -21,8 +21,8 @@ pub struct UrlFor {
     pub gear_index: Url,
     pub gear_add: Url,
     pub upload: Url,
-    pub login: Url,
-    pub register: Url,
+    pub signin: Url,
+    pub signup: Url,
 }
 
 impl UrlFor {
@@ -45,8 +45,8 @@ impl UrlFor {
                 &[&user.identity().unwrap_or("None".to_string())],
             )?,
             upload: req.url_for_static("upload")?,
-            login: req.url_for_static("login")?,
-            register: req.url_for_static("register")?,
+            signin: req.url_for_static("signin")?,
+            signup: req.url_for_static("signup")?,
         })
     }
 }

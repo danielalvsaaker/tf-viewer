@@ -16,10 +16,11 @@ use actix_files::Files;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{guard, web, App, HttpServer};
 
+use middleware::{CheckLogin, AuthType, Restricted};
 use routes::{
     activity::{activity, activity_index, activity_index_post},
-    authentication::{login, login_post, logout, register, register_post},
-    gear::{gear, gear_add, gear_index},
+    authentication::{signout, signin, signin_post, signup, signup_post},
+    gear::{gear, gear_add, gear_add_post, gear_index},
     index::index,
     upload::{upload, upload_post},
     user::{user, user_index, user_index_post},
@@ -47,61 +48,62 @@ async fn main() -> std::io::Result<()> {
             .service(Files::new("/static", "static"))
             .service(web::resource("/static").name("static"))
             .service(
-                web::resource("/login")
-                    .name("login")
-                    .route(web::get().to(login))
-                    .route(web::post().to(login_post)),
-            )
-            .service(web::resource("/logout").name("logout").to(logout))
-            .service(
-                web::resource("/register")
-                    .name("register")
-                    .route(web::get().to(register))
-                    .route(web::post().to(register_post)),
+                web::resource("/signin")
+                    .name("signin")
+                    .wrap(CheckLogin::new(AuthType::Public))
+                    .route(web::get().to(signin))
+                    .route(web::post().to(signin_post)),
             )
             .service(
-                web::resource("/")
-                    .name("index")
-                    .wrap(middleware::CheckLogin)
-                    .to(index),
+                web::resource("/signup")
+                    .name("signup")
+                    .wrap(CheckLogin::new(AuthType::Public))
+                    .route(web::get().to(signup))
+                    .route(web::post().to(signup_post)),
             )
             .service(
-                web::resource("/upload")
-                    .name("upload")
-                    .wrap(middleware::CheckLogin)
-                    .route(web::get().to(upload))
-                    .route(web::post().to(upload_post)),
-            )
-            .service(
-                web::scope("/user")
-                    .wrap(middleware::CheckLogin)
+                web::scope("")
+                    .wrap(CheckLogin::new(AuthType::Restricted))
+                    .service(web::resource("/").name("index").to(index))
+                    .service(web::resource("/signout").name("signout").to(signout))
                     .service(
-                        web::resource("/")
-                            .name("user_index")
-                            .route(web::get().to(user_index))
-                            .route(web::post().to(user_index_post)),
-                    )
-                    .service(web::resource("/{username}").name("user").to(user))
-                    .service(
-                        web::resource("/{username}/activity")
-                            .name("activity_index")
-                            .route(web::get().to(activity_index))
-                            .route(web::post().to(activity_index_post)),
+                        web::resource("/upload")
+                            .name("upload")
+                            .route(web::get().to(upload))
+                            .route(web::post().to(upload_post)),
                     )
                     .service(
-                        web::resource("/{username}/activity/{activity}")
-                            .name("activity")
-                            .to(activity),
-                    )
-                    .service(
-                        web::resource("/{username}/gear")
-                            .name("gear_index")
-                            .to(gear_index),
-                    )
-                    .service(
-                        web::resource("/{username}/gear/add")
-                            .name("gear_add")
-                            .to(gear_add),
+                        web::scope("user")
+                            .service(
+                                web::resource("/")
+                                    .name("user_index")
+                                    .route(web::get().to(user_index))
+                                    .route(web::post().to(user_index_post)),
+                            )
+                            .service(web::resource("/{username}").name("user").to(user))
+                            .service(
+                                web::resource("/{username}/activity")
+                                    .name("activity_index")
+                                    .route(web::get().to(activity_index))
+                                    .route(web::post().to(activity_index_post)),
+                            )
+                            .service(
+                                web::resource("/{username}/activity/{activity}")
+                                    .name("activity")
+                                    .to(activity),
+                            )
+                            .service(
+                                web::resource("/{username}/gear")
+                                    .name("gear_index")
+                                    .to(gear_index),
+                            )
+                            .service(
+                                web::resource("/{username}/gear/add")
+                                    .name("gear_add")
+                                    .wrap(Restricted)
+                                    .route(web::get().to(gear_add))
+                                    .route(web::post().to(gear_add_post)),
+                            ),
                     ),
             )
     })

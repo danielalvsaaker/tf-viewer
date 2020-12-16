@@ -13,8 +13,10 @@ pub struct DataRequest {
 #[derive(Serialize, Debug)]
 pub struct DataResponse<T: Serialize> {
     pub draw: usize,
-    pub recordsTotal: usize,
-    pub recordsFiltered: usize,
+    #[serde(rename = "recordsTotal")]
+    pub records_total: usize,
+    #[serde(rename = "recordsFiltered")]
+    pub records_filtered: usize,
     pub data: Vec<T>,
 }
 

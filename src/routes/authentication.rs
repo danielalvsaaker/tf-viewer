@@ -5,18 +5,18 @@ use askama_actix::{Template, TemplateIntoResponse};
 use serde::Deserialize;
 
 #[derive(Template)]
-#[template(path = "auth/login.html")]
-struct LoginTemplate<'a> {
+#[template(path = "auth/signin.html")]
+struct SigninTemplate<'a> {
     url: UrlFor,
     title: &'a str,
     message: Option<&'a str>,
     id: Identity,
 }
 
-pub async fn login(req: HttpRequest, id: Identity) -> impl Responder {
-    LoginTemplate {
+pub async fn signin(req: HttpRequest, id: Identity) -> impl Responder {
+    SigninTemplate {
         url: UrlFor::new(&id, req)?,
-        title: "Log in",
+        title: "Sign in",
         message: None,
         id,
     }
@@ -29,7 +29,7 @@ pub struct Credentials {
     password: String,
 }
 
-pub async fn login_post(
+pub async fn signin_post(
     form: web::Form<Credentials>,
     data: web::Data<crate::Database>,
     req: HttpRequest,
@@ -51,16 +51,16 @@ pub async fn login_post(
             .into_body());
     }
 
-    LoginTemplate {
+    SigninTemplate {
         url: UrlFor::new(&id, req)?,
-        title: "Login",
+        title: "Sign in",
         message: Some("Wrong username or password"),
         id,
     }
     .into_response()
 }
 
-pub async fn logout(id: Identity) -> impl Responder {
+pub async fn signout(id: Identity) -> impl Responder {
     id.forget();
 
     HttpResponse::Found()
@@ -70,40 +70,61 @@ pub async fn logout(id: Identity) -> impl Responder {
 }
 
 #[derive(Template)]
-#[template(path = "auth/register.html")]
-struct RegisterTemplate<'a> {
+#[template(path = "auth/signup.html")]
+struct SignupTemplate<'a> {
     url: UrlFor,
     title: &'a str,
     message: Option<&'a str>,
     id: Identity,
 }
 
-pub async fn register(req: HttpRequest, id: Identity) -> impl Responder {
-    RegisterTemplate {
+pub async fn signup(req: HttpRequest, id: Identity) -> impl Responder {
+    SignupTemplate {
         url: UrlFor::new(&id, req)?,
-        title: "Register",
+        title: "Sign up",
         message: None,
         id,
     }
     .into_response()
 }
 
-pub async fn register_post(
+pub async fn signup_post(
     form: web::Form<Credentials>,
     data: web::Data<crate::Database>,
+    req: HttpRequest,
     id: Identity,
 ) -> impl Responder {
-    if !data.get_ref().users.exists(&form.username).unwrap() {
+    let result = || {
+        let regex = regex::Regex::new(r#"^[a-zA-Z0-9]+$"#).unwrap();
+        println!("{:#?}", regex.is_match(&form.username));
+        if !regex.is_match(&form.username) {
+            return Some("Invalid username supplied.");
+        }
+        if data.get_ref().users.exists(&form.username).unwrap() {
+            return Some("Username is already taken.");
+        }
+        None
+    };
+
+    if result().is_none() {
         web::block(move || {
             data.get_ref()
                 .users
                 .insert(crate::User::new(), &form.username, &form.password)
         })
         .await;
+
+        return Ok(HttpResponse::Found()
+            .header(http::header::LOCATION, "/signin")
+            .finish()
+            .into_body());
     }
 
-    HttpResponse::Found()
-        .header(http::header::LOCATION, "/login")
-        .finish()
-        .into_body()
+    SignupTemplate {
+        url: UrlFor::new(&id, req)?,
+        title: "Sign up",
+        message: result(),
+        id,
+    }
+    .into_response()
 }

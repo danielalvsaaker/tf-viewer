@@ -29,5 +29,6 @@ anyhow = "1.0.35"
 futures = "0.3.8"
 askama = { version = "0.10.5", default-features = false }
 askama_actix = "0.11.0"
+regex = "1.4.2"
 plotly = "0.6.0"
 staticmap = "0.2.0"

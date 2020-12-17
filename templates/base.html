@@ -24,7 +24,7 @@
       {% when Some with (value) -%}
 	<a href="{{ url.user }}" class="btn btn-link text-light">{{ value }}</a>
       {% when None -%}
-	<a href="{{ url.login }}" class="btn btn-link text-light">Log in</a>
+	<a href="{{ url.signin }}" class="btn btn-link text-light">Sign in</a>
     {% endmatch %}
   </div>
 </header>

@@ -2437,6 +2437,7 @@ dependencies = [
  "getrandom 0.2.0",
  "jemallocator",
  "plotly",
+ "regex",
  "rust-argon2",
  "serde",
  "sled",

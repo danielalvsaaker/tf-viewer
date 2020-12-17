@@ -1,7 +1,8 @@
 use super::UrlFor;
 use crate::Gear;
 use actix_identity::Identity;
-use actix_web::{web, web::block, HttpRequest, Responder};
+use actix_web::http;
+use actix_web::{web, web::block, HttpRequest, HttpResponse, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
 
 #[derive(Template)]
@@ -74,7 +75,56 @@ struct GearAddTemplate<'a> {
     title: &'a str,
 }
 
-pub async fn gear_add(req: HttpRequest, id: Identity, user: web::Path<String>) -> impl Responder {
+pub async fn gear_add(
+    req: HttpRequest,
+    id: Identity,
+    user: web::Path<String>,
+) -> impl Responder {
+    GearAddTemplate {
+        url: UrlFor::new(&id, req)?,
+        id,
+        user: &user,
+        title: "Add new gear",
+    }
+    .into_response()
+}
+
+pub async fn gear_add_post(
+    req: HttpRequest,
+    id: Identity,
+    user: web::Path<String>,
+    data: web::Data<crate::Database>,
+    form: web::Form<Gear>,
+) -> impl Responder {
+    let user = user.into_inner();
+
+    let result = || {
+        let gear_kind = vec![
+            "road bike",
+            "hybrid bike",
+            "tt bike",
+            "offroad bike",
+            "running shoes",
+        ];
+
+        if !gear_kind.iter().any(|x| x == &form.kind) {
+            return Some("Wrong gear kind specified.");
+        }
+
+        None
+    };
+
+    if result().is_none() {
+        web::block(move || data.as_ref().gear.insert(form.into_inner(), &user)).await;
+
+        let url: UrlFor = UrlFor::new(&id, req)?;
+
+        return Ok(HttpResponse::Found()
+            .header(http::header::LOCATION, url.gear_index.as_str())
+            .finish()
+            .into_body());
+    }
+
     GearAddTemplate {
         url: UrlFor::new(&id, req)?,
         id,

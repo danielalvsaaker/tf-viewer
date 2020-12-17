@@ -128,7 +128,7 @@ impl Lap {
 pub struct Gear {
     pub name: String,
     pub kind: String,
-    pub fixed_distance: u64,
+    pub fixed_distance: f64,
 }
 
 #[derive(Serialize, Deserialize, Default)]

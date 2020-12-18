@@ -173,14 +173,49 @@ impl Lap {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
+pub enum GearType {
+    RoadBike,
+    HybridBike,
+    TTBike,
+    OffroadBike,
+    RunningShoes,
+}
+
+impl FromStr for GearType {
+    type Err = anyhow::Error;
+    //Todo: implement proper error
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "road_bike" => Ok(Self::RoadBike),
+            "hybrid_bike" => Ok(Self::HybridBike),
+            "tt_bike" => Ok(Self::HybridBike),
+            "offroad_bike" => Ok(Self::OffroadBike),
+            "running_shoes" => Ok(Self::RunningShoes),
+            _ => Err(anyhow::anyhow!("Cannot parse gear type.")),
+        }
+    }
+}
+
+impl std::fmt::Display for GearType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let gear_type = match self {
+            Self::RoadBike => "Road bike",
+            Self::HybridBike => "Hybrid bike",
+            Self::TTBike => "TT bike",
+            Self::OffroadBike => "Offroad bike",
+            Self::RunningShoes => "Running shoes",
+        };
+        write!(f, "{}", gear_type)
+    }
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct Gear {
     pub name: String,
-    pub kind: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub fixed_distance: Option<f64>,
-    #[serde(default)]
-    pub standard: bool,
+    pub gear_type: GearType,
+    pub fixed_distance: f64,
 }
 
 #[derive(Serialize, Deserialize, Default)]

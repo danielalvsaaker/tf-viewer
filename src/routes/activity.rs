@@ -171,7 +171,8 @@ pub async fn activity_settings_post(
     };
 
     if result.is_none() {
-        activity.session.activity_type = ActivityType::from_str(&form.activity_type).unwrap_or_default();
+        activity.session.activity_type =
+            ActivityType::from_str(&form.activity_type).unwrap_or_default();
         activity.gear_id = Some(form.gear_id);
 
         {

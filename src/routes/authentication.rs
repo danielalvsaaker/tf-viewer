@@ -96,7 +96,6 @@ pub async fn signup_post(
 ) -> impl Responder {
     let result = || {
         let regex = regex::Regex::new(r#"^[a-zA-Z0-9]+$"#).unwrap();
-        println!("{:#?}", regex.is_match(&form.username));
         if !regex.is_match(&form.username) {
             return Some("Invalid username supplied.");
         }

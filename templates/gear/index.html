@@ -37,8 +37,8 @@
       {% for gear in gears -%}
 	<tr>
 	  <td>{{ gear.1.name }}</td>
-	  <td>{{ gear.1.kind|capitalize }}</td>
-	  <td>{{ "{:.2}"|format(gear.0.0 + gear.1.fixed_distance.unwrap_or_default()) }} km</td>
+	  <td>{{ gear.1.gear_type }}</td>
+	  <td>{{ "{:.2}"|format(gear.0.0 + gear.1.fixed_distance) }} km</td>
 	  <td>{{ "{:.2}"|format(gear.0.1) }}</td>
 	  {% match standard_gear -%}
 	    {% when Some with (value) -%}

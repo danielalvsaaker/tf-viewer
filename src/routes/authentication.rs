@@ -15,7 +15,7 @@ struct SigninTemplate<'a> {
 
 pub async fn signin(req: HttpRequest, id: Identity) -> impl Responder {
     SigninTemplate {
-        url: UrlFor::new(&id, req)?,
+        url: UrlFor::new(&id, &req)?,
         title: "Sign in",
         message: None,
         id,
@@ -52,7 +52,7 @@ pub async fn signin_post(
     }
 
     SigninTemplate {
-        url: UrlFor::new(&id, req)?,
+        url: UrlFor::new(&id, &req)?,
         title: "Sign in",
         message: Some("Wrong username or password"),
         id,
@@ -80,7 +80,7 @@ struct SignupTemplate<'a> {
 
 pub async fn signup(req: HttpRequest, id: Identity) -> impl Responder {
     SignupTemplate {
-        url: UrlFor::new(&id, req)?,
+        url: UrlFor::new(&id, &req)?,
         title: "Sign up",
         message: None,
         id,
@@ -121,7 +121,7 @@ pub async fn signup_post(
     }
 
     SignupTemplate {
-        url: UrlFor::new(&id, req)?,
+        url: UrlFor::new(&id, &req)?,
         title: "Sign up",
         message: result(),
         id,

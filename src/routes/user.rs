@@ -13,7 +13,7 @@ struct UserTemplate<'a> {
     url: UrlFor,
     id: Identity,
     username: &'a str,
-    user: crate::User,
+    user: &'a crate::User,
     title: &'a str,
 }
 
@@ -23,17 +23,17 @@ pub async fn user(
     data: web::Data<crate::Database>,
     username: web::Path<String>,
 ) -> impl Responder {
-    if !data.as_ref().users.exists(&username).unwrap() {
-        return ErrorTemplate::not_found(req, id).await;
+    let user = {
+        let username = username.clone();
+        web::block(move || data.as_ref().users.get(&username))
     }
-
-    let user = data.as_ref().users.get(&username).unwrap();
+    .await?;
 
     UserTemplate {
-        url: UrlFor::new(&id, req)?,
+        url: UrlFor::new(&id, &req)?,
         id,
         username: &username,
-        user,
+        user: &user,
         title: &username,
     }
     .into_response()
@@ -53,10 +53,12 @@ pub async fn user_index(
     id: Identity,
     data: web::Data<crate::Database>,
 ) -> impl Responder {
-    let users: Vec<String> = data.as_ref().users.iter_id().unwrap().collect();
+    let users: Vec<String> = web::block(move || data.as_ref().users.iter_id())
+        .await?
+        .collect();
 
     UserIndexTemplate {
-        url: UrlFor::new(&id, req)?,
+        url: UrlFor::new(&id, &req)?,
         id,
         title: "Users",
         users,
@@ -90,4 +92,21 @@ pub async fn user_index_post(
         records_filtered: amount,
         data: results,
     })
+}
+
+#[derive(Template)]
+#[template(path = "user/settings.html")]
+struct UserSettingsTemplate<'a> {
+    url: UrlFor,
+    id: Identity,
+    title: &'a str,
+}
+
+pub async fn user_settings(req: HttpRequest, id: Identity) -> impl Responder {
+    UserSettingsTemplate {
+        url: UrlFor::new(&id, &req)?,
+        id,
+        title: "Settings",
+    }
+    .into_response()
 }

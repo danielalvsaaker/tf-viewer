@@ -7,6 +7,7 @@ use getrandom::getrandom;
 pub struct UserTree {
     pub(super) username_password: sled::Tree,
     pub(super) username_user: sled::Tree,
+    pub(super) username_standard_gear: sled::Tree,
 }
 
 impl UserTree {
@@ -28,12 +29,27 @@ impl UserTree {
         Ok(())
     }
 
+    pub fn set_standard_gear(&self, username: &str, gear: &str) -> Result<()> {
+        self.username_standard_gear.insert(username, gear)?;
+
+        Ok(())
+    }
+
+    pub fn get_standard_gear(&self, username: &str) -> Result<Option<String>> {
+        let get = self.username_standard_gear.get(username)?;
+
+        match get {
+            Some(x) => Ok(Some(String::from_utf8(x.to_vec())?)),
+            None => Ok(None),
+        }
+    }
+
     pub fn get(&self, id: &str) -> Result<User> {
         let get = self.username_user.get(id)?;
 
         match get {
             Some(x) => Ok(bincode::deserialize::<User>(&x)?),
-            None => Err(anyhow!("Failed to deserialize user")),
+            None => Err(anyhow!("User not found")),
         }
     }
 

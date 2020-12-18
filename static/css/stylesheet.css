@@ -14,10 +14,9 @@
 }
 
 .index-tile {
-	padding:2%;
+	padding:1.2%;
 	margin-top:1%;
 	box-shadow: 0 .25rem 1rem rgba(48,55,66,.15);
-	margin-bottom:2%;
 }
 
 .index-tile:hover {

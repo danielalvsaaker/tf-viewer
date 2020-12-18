@@ -1,10 +1,19 @@
 {% extends "base.html" %}
 {% block content %}
 
+<style>
+  .columns {
+    margin-bottom: 2%;
+  }
+  span {
+    display:block;
+  }
+</style>
+
 <div class="container">
   <div class="columns">
     <div class="column col-12">
-      <h2 class="text-center">Recent activities</h2>
+      <h2 class="text-center">{{ title }}</h2>
       {% for activity in template_data -%}
 	<a href="{{ activity.url.url }}">
 	  <div class="tile index-tile">
@@ -16,10 +25,18 @@
 	    </div>
 	    <div class="tile-content">
 	      <h3 class="tile-title text-centered ">{{ activity.session.start_time }}</h3>
-	      <p class="tile-subtitle text-centered">{{ activity.session.duration_active }}</p>
+	      <p class="tile-subtitle text-centered">
+		<span>{{ activity.session.duration_active }}</span>
+		{% match activity.session.distance %}
+		  {% when Some with (value) -%}
+		    <span>{{ value }} km</span>
+		  {% when None -%}
+		{% endmatch -%}
+		<span>{{ activity.session.activity_type }}</span>
+	      </p>
 	    </div>
 	    <div class="tile-action">
-	      <img src="{{ url._static }}/img/activity/{{ activity.id }}.png" class="img-fit-contain activity-image" height="150">
+	      <img src="{{ url._static }}/img/activity/{{ "{}_{}"|format(activity.username, activity.id) }}.png" class="img-fit-contain activity-image" height="150">
 	    </div>
 	  </div>
 	</a>

@@ -16,7 +16,7 @@ struct UploadTemplate<'a> {
 
 pub async fn upload(id: Identity, req: HttpRequest) -> impl Responder {
     UploadTemplate {
-        url: UrlFor::new(&id, req)?,
+        url: UrlFor::new(&id, &req)?,
         id,
         title: "Upload",
     }
@@ -40,10 +40,10 @@ pub async fn upload_post(
     let gear = data
         .as_ref()
         .users
-        .get(id.identity().unwrap().as_str())
-        .unwrap()
-        .standard_gear;
-    let parsed = web::block(move || crate::parser::parse(&f, &gear)).await;
+        .get_standard_gear(id.identity().unwrap().as_str())
+        .unwrap();
+
+    let parsed = web::block(move || crate::parser::parse(&f, gear)).await;
 
     match parsed {
         Ok(x) => {

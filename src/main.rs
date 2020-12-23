@@ -9,21 +9,25 @@ mod routes;
 static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 pub use database::Database;
-pub use models::{Activity, Duration, Gear, Lap, Record, Session, TimeStamp, User};
+pub use models::{
+    Activity, ActivityType, Duration, Gear, GearType, Lap, Record, Session, TimeStamp, User,
+};
 pub use parser::*;
 
 use actix_files::Files;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{guard, web, App, HttpServer};
 
-use middleware::{CheckLogin, AuthType, Restricted};
+use middleware::{AuthType, CheckLogin, Restricted};
 use routes::{
-    activity::{activity, activity_index, activity_index_post},
-    authentication::{signout, signin, signin_post, signup, signup_post},
-    gear::{gear, gear_add, gear_add_post, gear_index},
+    activity::{
+        activity, activity_index, activity_index_post, activity_settings, activity_settings_post,
+    },
+    authentication::{signin, signin_post, signout, signup, signup_post},
+    gear::{gear_add, gear_add_post, gear_index, gear_settings, gear_settings_post},
     index::index,
     upload::{upload, upload_post},
-    user::{user, user_index, user_index_post},
+    user::{user, user_index, user_index_post, user_settings},
 };
 
 #[actix_web::main]
@@ -88,6 +92,19 @@ async fn main() -> std::io::Result<()> {
                                     .route(web::post().to(activity_index_post)),
                             )
                             .service(
+                                web::resource("/{username}/activity/{activity}/settings")
+                                    .name("activity_settings")
+                                    .wrap(Restricted)
+                                    .route(web::get().to(activity_settings))
+                                    .route(web::post().to(activity_settings_post)),
+                            )
+                            .service(
+                                web::resource("/{username}/settings")
+                                    .name("user_settings")
+                                    .wrap(Restricted)
+                                    .route(web::get().to(user_settings)),
+                            )
+                            .service(
                                 web::resource("/{username}/activity/{activity}")
                                     .name("activity")
                                     .to(activity),
@@ -103,6 +120,13 @@ async fn main() -> std::io::Result<()> {
                                     .wrap(Restricted)
                                     .route(web::get().to(gear_add))
                                     .route(web::post().to(gear_add_post)),
+                            )
+                            .service(
+                                web::resource("/{username}/gear/{gear}")
+                                    .name("gear_settings")
+                                    .wrap(Restricted)
+                                    .route(web::get().to(gear_settings))
+                                    .route(web::post().to(gear_settings_post)),
                             ),
                     ),
             )

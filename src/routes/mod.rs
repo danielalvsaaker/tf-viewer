@@ -26,7 +26,7 @@ pub struct UrlFor {
 }
 
 impl UrlFor {
-    pub fn new(user: &Identity, req: HttpRequest) -> Result<Self, UrlGenerationError> {
+    pub fn new(user: &Identity, req: &HttpRequest) -> Result<Self, UrlGenerationError> {
         Ok(UrlFor {
             _static: req.url_for_static("static")?,
             index: req.url_for_static("index")?,

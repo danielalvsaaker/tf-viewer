@@ -1,19 +1,23 @@
 use super::{
     api::{ActivityData, DataRequest, DataResponse},
     error::ErrorTemplate,
-    UrlFor,
+    UrlActivity, UrlFor,
 };
-use crate::{Lap, Session};
+use crate::{ActivityType, Lap, Session};
 use actix_identity::Identity;
-use actix_web::{web, web::block, HttpRequest, Responder};
+use actix_web::{http, web, web::block, HttpRequest, HttpResponse, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
+use serde::Deserialize;
+use std::str::FromStr;
 
 #[derive(Template)]
 #[template(path = "activity/activity.html")]
 struct ActivityTemplate<'a> {
     url: UrlFor,
     id: Identity,
-    user: &'a str,
+    activity_url: &'a str,
+    username: &'a str,
+    gear: Option<String>,
     session: &'a Session,
     laps: &'a Vec<Lap>,
     coords: &'a Vec<(f64, f64)>,
@@ -25,22 +29,17 @@ pub async fn activity(
     req: HttpRequest,
     data: web::Data<crate::Database>,
     id: Identity,
-    web::Path((user, activity_id)): web::Path<(String, String)>,
+    web::Path((username, activity_id)): web::Path<(String, String)>,
 ) -> impl Responder {
-    if !data
-        .as_ref()
-        .activities
-        .exists(&user, &activity_id)
-        .unwrap()
-    {
-        return ErrorTemplate::not_found(req, id).await;
+    let activity = {
+        let username = username.clone();
+        web::block(move || {
+            data.as_ref()
+                .activities
+                .get_activity(&username, &activity_id)
+        })
     }
-
-    let activity = data
-        .as_ref()
-        .activities
-        .get_activity(&user, &activity_id)
-        .unwrap();
+    .await?;
 
     let plot = {
         let record = activity.record.clone();
@@ -48,9 +47,11 @@ pub async fn activity(
     };
 
     ActivityTemplate {
-        url: UrlFor::new(&id, req)?,
+        url: UrlFor::new(&id, &req)?,
         id,
-        user: &user,
+        activity_url: &req.path(),
+        username: &username,
+        gear: activity.gear_id,
         session: &activity.session,
         laps: &activity.lap,
         coords: &activity
@@ -61,7 +62,141 @@ pub async fn activity(
             .zip(activity.record.lat.into_iter().flatten())
             .collect(),
         plot: &plot,
-        title: "Activity",
+        title: &format!("Activity {}", &activity.session.start_time),
+    }
+    .into_response()
+}
+
+#[derive(Template)]
+#[template(path = "activity/settings.html")]
+struct ActivitySettingsTemplate<'a> {
+    url: UrlFor,
+    id: Identity,
+    username: &'a str,
+    activity_type: &'a ActivityType,
+    gears: &'a Vec<String>,
+    title: &'a str,
+    message: Option<&'a str>,
+}
+
+pub async fn activity_settings(
+    req: HttpRequest,
+    id: Identity,
+    data: web::Data<crate::Database>,
+    web::Path((username, activity_id)): web::Path<(String, String)>,
+) -> impl Responder {
+    let activity = {
+        let (username, data) = (username.clone(), data.clone());
+        web::block(move || {
+            data.as_ref()
+                .activities
+                .get_activity(&username, &activity_id)
+        })
+    }
+    .await?;
+
+    let gear_iter = {
+        let (username, data) = (username.clone(), data.clone());
+        web::block(move || data.as_ref().gear.iter(&username))
+    }
+    .await?
+    .map(|x| x.name);
+
+    let mut gears: Vec<String> = Vec::new();
+    if let Some(gear_id) = activity.gear_id {
+        gears = gear_iter.filter(|x| x != &gear_id).collect();
+        gears.insert(0, gear_id);
+    } else {
+        gears = gear_iter.collect();
+    }
+
+    ActivitySettingsTemplate {
+        url: UrlFor::new(&id, &req)?,
+        id,
+        username: &username,
+        activity_type: &activity.session.activity_type,
+        gears: &gears,
+        title: "Settings",
+        message: None,
+    }
+    .into_response()
+}
+
+#[derive(Deserialize)]
+pub struct ActivitySettingsForm {
+    pub activity_type: String,
+    pub gear_id: String,
+}
+
+pub async fn activity_settings_post(
+    req: HttpRequest,
+    id: Identity,
+    data: web::Data<crate::Database>,
+    web::Path((username, activity_id)): web::Path<(String, String)>,
+    form: web::Form<ActivitySettingsForm>,
+) -> impl Responder {
+    let form = form.into_inner();
+
+    let mut activity = {
+        let (username, activity_id, data) = (username.clone(), activity_id.clone(), data.clone());
+        web::block(move || {
+            data.as_ref()
+                .activities
+                .get_activity(&username, &activity_id)
+        })
+    }
+    .await?;
+
+    let gear_iter = {
+        let (username, data) = (username.clone(), data.clone());
+        web::block(move || data.as_ref().gear.iter(&username))
+    }
+    .await?
+    .map(|x| x.name);
+
+    let mut gears: Vec<String> = Vec::new();
+    if let Some(gear_id) = activity.gear_id {
+        gears = gear_iter.filter(|x| x != &gear_id).collect();
+        gears.insert(0, gear_id);
+    } else {
+        gears = gear_iter.collect();
+    }
+
+    let result = {
+        if !gears.iter().any(|x| x == &form.gear_id) {
+            Some("The specified gear does not exist.")
+        } else {
+            None
+        }
+    };
+
+    if result.is_none() {
+        activity.session.activity_type =
+            ActivityType::from_str(&form.activity_type).unwrap_or_default();
+        activity.gear_id = Some(form.gear_id);
+
+        {
+            let username = username.clone();
+            web::block(move || data.as_ref().activities.insert(activity, &username))
+        }
+        .await?;
+
+        let url: UrlActivity = UrlActivity::new(&username, &activity_id, &req)?;
+
+        return Ok(HttpResponse::Found()
+            .header(http::header::LOCATION, url.url.as_str())
+            .finish()
+            .into_body());
+    }
+
+    ActivitySettingsTemplate {
+        url: UrlFor::new(&id, &req)?,
+        id,
+        username: &username,
+        activity_type: &activity.session.activity_type,
+        gears: &gears,
+        title: "Settings",
+        message: result,
     }
     .into_response()
 }
@@ -81,7 +216,7 @@ pub async fn activity_index(
     user: web::Path<String>,
 ) -> impl Responder {
     ActivityIndexTemplate {
-        url: UrlFor::new(&id, req)?,
+        url: UrlFor::new(&id, &req)?,
         id,
         user: &user,
         title: "Activities",
@@ -98,12 +233,12 @@ pub async fn activity_index_post(
         let data = data.clone();
         let user = user.to_owned();
 
-        block(move || data.as_ref().activities.iter_session(&user))
-            .await
-            .unwrap()
-    };
+        web::block(move || data.as_ref().activities.username_iter_session(&user))
+    }
+    .await
+    .unwrap();
 
-    let id = block(move || data.as_ref().activities.iter_id(&user))
+    let id = web::block(move || data.as_ref().activities.username_iter_id(&user))
         .await
         .unwrap();
 

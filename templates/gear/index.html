@@ -1,16 +1,25 @@
 {% extends "base.html" %}
 {% block content %}
 
+{% let is_owner -%}
+{% match id.identity() -%}
+  {% when Some with (value) -%}
+    {% if value == user -%}
+      {% let is_owner = true -%}
+    {% else -%}
+      {% let is_owner = false %}
+    {% endif -%}
+  {% when None -%}
+    {% let is_owner = false %}
+{% endmatch -%}
+
+
 <div class="container">
-  {% match id.identity() -%}
-    {% when Some with (value) -%}
-      {% if value == user -%}
-	<a href="{{ url.gear_add }}">
-	  <button class="btn btn-primary">Add gear</button>
-	</a>
-      {% endif %}
-    {% when None -%}
-  {% endmatch %}
+  {% if is_owner -%}
+    <a href="{{ url.gear_add }}">
+      <button class="btn btn-primary">Add gear</button>
+    </a>
+  {% endif -%}
   <table class="table">
     <thead>
       <tr>
@@ -18,15 +27,36 @@
 	<th>Type</th>
 	<th>Total distance</th>
 	<th>Total duration</th>
+	<th>Standard</th>
+	{% if is_owner -%}
+	  <th>Settings</th>
+	{% endif -%}
       </tr>
     </thead>
     <tbody>
       {% for gear in gears -%}
 	<tr>
 	  <td>{{ gear.1.name }}</td>
-	  <td>{{ gear.1.kind }}</td>
-	  <td>{{ gear.0.0 + gear.1.fixed_distance }}</td>
-	  <td>{{ gear.0.1 }}</td>
+	  <td>{{ gear.1.gear_type }}</td>
+	  <td>{{ "{:.2}"|format(gear.0.0 + gear.1.fixed_distance) }} km</td>
+	  <td>{{ "{:.2}"|format(gear.0.1) }}</td>
+	  {% match standard_gear -%}
+	    {% when Some with (value) -%}
+	      {% if value.as_ref() == gear.1.name -%}
+		<td>✓</td>
+	      {% else %}
+		<td></td>
+	      {% endif -%}
+	    {% when None -%}
+	      <td></td>
+	  {% endmatch -%}
+	  {% if is_owner -%}
+	    <td>
+	      <a href="{{ url.gear_index }}/{{ gear.1.name }}">
+		<button class="btn btn-primary">Settings</button>
+	      </a>
+	    </td>
+	  {% endif -%}
 	</tr>
       {% endfor -%}
     </tbody>

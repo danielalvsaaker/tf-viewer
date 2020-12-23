@@ -4,7 +4,7 @@ use actix_identity::Identity;
 use actix_service::{Service, Transform};
 use actix_web::dev::{Payload, ServiceRequest, ServiceResponse};
 use actix_web::{http, Error, FromRequest, HttpRequest, HttpResponse};
-use futures::future::{ok, Either, Ready, Future};
+use futures::future::{ok, Either, Future, Ready};
 use std::pin::Pin;
 
 pub fn auto_login(req: &HttpRequest, pl: &mut Payload) -> Option<String> {
@@ -69,17 +69,15 @@ where
             let owner = res.request().match_info().query("username");
             if owner == token.unwrap() {
                 Ok(res)
-            }
-            else {
+            } else {
                 let new_body = HttpResponse::Found()
                     .header(http::header::LOCATION, "/")
                     .finish()
                     .into_body();
                 let res = res.into_response(new_body);
-                 
+
                 Ok(res)
             }
-
         })
     }
 }
@@ -113,10 +111,12 @@ where
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        ok(CheckLoginMiddleware { service, auth_type: self.0, })
+        ok(CheckLoginMiddleware {
+            service,
+            auth_type: self.0,
+        })
     }
 }
-
 
 pub struct CheckLoginMiddleware<S> {
     service: S,
@@ -152,13 +152,11 @@ where
         let mut send = |request: Self::Request| Either::Left(self.service.call(request));
         let redirect = |path: &str, request: Self::Request| {
             Either::Right(ok(request.into_response(
-                        HttpResponse::Found()
-                        .header(http::header::LOCATION, path)
-                        .finish()
-                        .into_body()
-                        )
-                    )
-                )
+                HttpResponse::Found()
+                    .header(http::header::LOCATION, path)
+                    .finish()
+                    .into_body(),
+            )))
         };
 
         if token.is_some() {
@@ -166,8 +164,7 @@ where
                 AuthType::Restricted => send(req),
                 AuthType::Public => redirect(path, req),
             }
-        }
-        else {
+        } else {
             match auth_type {
                 AuthType::Restricted => redirect(path, req),
                 AuthType::Public => send(req),

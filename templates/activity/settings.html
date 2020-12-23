@@ -1,15 +1,42 @@
 {% extends "base.html" %}
 {% block content %}
-  
+
 <div class="container">
-  <form action="settings" method="POST" class="form-group">
+  <h2 class="text-center">{{ title }}</h2>
+  {% match message -%}
+    {% when Some with (value) -%}
+      <p>{{ value }}</p>
+    {% when None -%}
+  {% endmatch -%}
+  <form action="settings" method="POST" class="form-group ">
     <fieldset>
-      <select name="activity_type" id="activity_type">
-	<option value="cycling">Cycling</option>
-	<option value="running">Running</option>
-      </select>
-      <select name="gear" id="gear">
-      </select>
+      <div class="form-group">
+	<label class="form-label" for="activity_type">Activity type</label>
+	<select class="form-select" name="activity_type" id="activity_type">
+	  <option value="cycling" 
+	    {%- match activity_type -%}
+	     {% when ActivityType::Cycling -%}
+		selected
+	      {% else -%}	
+	    {%- endmatch %}
+	  >Cycling</option>
+	  <option value="running" 
+	  {% match activity_type -%}
+	    {% when ActivityType::Running -%}
+	      selected 
+	    {% else -%}
+	  {%- endmatch -%}
+	  >Running</option>
+	</select>
+      </div>
+      <div class="form-group">
+	<label class="form-label" for="gear_id">Gear</label>
+	<select class="form-select" name="gear_id" id="gear_id">
+	  {% for gear in gears %}	
+	    <option value="{{ gear }}">{{ gear }}</option>
+	  {% endfor %}
+	</select>
+      </div>
       <button type="submit" class="btn btn-primary">Submit</button>
     </fieldset>
   </form>

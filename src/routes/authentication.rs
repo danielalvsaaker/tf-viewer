@@ -15,7 +15,7 @@ struct SigninTemplate<'a> {
 
 pub async fn signin(req: HttpRequest, id: Identity) -> impl Responder {
     SigninTemplate {
-        url: UrlFor::new(&id, req)?,
+        url: UrlFor::new(&id, &req)?,
         title: "Sign in",
         message: None,
         id,
@@ -52,7 +52,7 @@ pub async fn signin_post(
     }
 
     SigninTemplate {
-        url: UrlFor::new(&id, req)?,
+        url: UrlFor::new(&id, &req)?,
         title: "Sign in",
         message: Some("Wrong username or password"),
         id,
@@ -80,7 +80,7 @@ struct SignupTemplate<'a> {
 
 pub async fn signup(req: HttpRequest, id: Identity) -> impl Responder {
     SignupTemplate {
-        url: UrlFor::new(&id, req)?,
+        url: UrlFor::new(&id, &req)?,
         title: "Sign up",
         message: None,
         id,
@@ -96,7 +96,6 @@ pub async fn signup_post(
 ) -> impl Responder {
     let result = || {
         let regex = regex::Regex::new(r#"^[a-zA-Z0-9]+$"#).unwrap();
-        println!("{:#?}", regex.is_match(&form.username));
         if !regex.is_match(&form.username) {
             return Some("Invalid username supplied.");
         }
@@ -121,7 +120,7 @@ pub async fn signup_post(
     }
 
     SignupTemplate {
-        url: UrlFor::new(&id, req)?,
+        url: UrlFor::new(&id, &req)?,
         title: "Sign up",
         message: result(),
         id,

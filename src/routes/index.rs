@@ -26,30 +26,40 @@ pub async fn index(
     req: HttpRequest,
     data: web::Data<crate::Database>,
 ) -> impl Responder {
-    let usernames = data.as_ref().activities.iter_username_all().unwrap();
-    let ids = data.as_ref().activities.iter_id_all().unwrap();
+    let usernames = {
+        let data = data.clone();
+        web::block(move || data.as_ref().activities.iter_username())
+    }
+    .await?;
+
+    let ids = {
+        let data = data.clone();
+        web::block(move || data.as_ref().activities.iter_id())
+    }
+    .await?;
+
     let mut username_id: Vec<(String, String)> = usernames.zip(ids).collect();
 
     username_id.sort_by_key(|(_, k)| k.parse::<u64>().unwrap());
     username_id.reverse();
     username_id.truncate(5);
 
-    let mut session: Vec<Session> = Vec::new();
-    for (username, id) in &username_id {
-        session.push(
-            data.as_ref()
-                .activities
-                .get_session(&username, &id)
-                .unwrap(),
-        );
+    let mut sessions: Vec<Session> = Vec::new();
+    for (username, id) in username_id.clone().into_iter() {
+        let data = data.clone();
+        let session =
+            web::block(move || data.as_ref().activities.get_session(&username, &id)).await?;
+        sessions.push(session);
     }
 
-    for (username, id) in &username_id {
-        let path = format!("static/img/activity/{}.png", id);
+    for (username, id) in username_id.clone().into_iter() {
+        let path = format!("static/img/activity/{}_{}.png", &username, &id);
         let path = std::path::PathBuf::from(&path);
 
         if !path.exists() {
-            let record = data.as_ref().activities.get_record(&username, &id).unwrap();
+            let data = data.clone();
+            let record =
+                web::block(move || data.as_ref().activities.get_record(&username, &id)).await?;
 
             std::thread::spawn(move || {
                 // Creating file prematurely, preventing more processes from spawning
@@ -62,7 +72,7 @@ pub async fn index(
     }
 
     // This is necessary because Askama does not allow zipping iterators inside a template
-    let template_data: Vec<TemplateData> = session
+    let template_data: Vec<TemplateData> = sessions
         .into_iter()
         .zip(username_id)
         .map(|(x, (y, z))| TemplateData {
@@ -74,10 +84,10 @@ pub async fn index(
         .collect();
 
     IndexTemplate {
-        url: UrlFor::new(&id, req)?,
+        url: UrlFor::new(&id, &req)?,
         id,
         template_data: &template_data,
-        title: "Index",
+        title: "Recent activities",
     }
     .into_response()
 }

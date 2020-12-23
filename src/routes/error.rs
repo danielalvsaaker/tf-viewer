@@ -15,7 +15,7 @@ pub struct ErrorTemplate<'a> {
 impl<'a> ErrorTemplate<'a> {
     pub async fn not_found(req: HttpRequest, id: Identity) -> Result<actix_web::HttpResponse> {
         let body = ErrorTemplate {
-            url: UrlFor::new(&id, req)?,
+            url: UrlFor::new(&id, &req)?,
             id,
             title: "404 Not found",
             text: "Page not found",

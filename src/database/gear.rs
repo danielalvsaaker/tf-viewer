@@ -39,7 +39,7 @@ impl GearTree {
             .flat_map(|x| bincode::deserialize::<Gear>(&x)))
     }
 
-    pub fn get(&self, username: String, id: String) -> Result<Gear> {
+    pub fn get(&self, username: &str, id: &str) -> Result<Gear> {
         let mut key = username.as_bytes().to_vec();
         key.push(0xff);
         key.extend_from_slice(id.as_bytes());
@@ -48,7 +48,7 @@ impl GearTree {
 
         match get {
             Some(x) => Ok(bincode::deserialize::<Gear>(&x).unwrap()),
-            None => Err(anyhow!("Failed to deserialize gear")),
+            None => Err(anyhow!("Gear not found.")),
         }
     }
 }

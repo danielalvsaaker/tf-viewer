@@ -1,6 +1,7 @@
 use chrono::offset::Local;
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
+use std::{ops::Add, str::FromStr};
 
 /// Wrapper for chrono::DateTime
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
@@ -32,26 +33,74 @@ impl Duration {
     }
 }
 
+impl Add for Duration {
+    type Output = Duration;
+
+    fn add(self, rhs: Duration) -> Duration {
+        Duration(
+            self.0
+                .checked_add(rhs.0)
+                .expect("overflow when adding durations"),
+        )
+    }
+}
+
 impl std::fmt::Display for Duration {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = self.0.as_secs();
         let (h, s) = (s / 3600, s % 3600);
         let (m, s) = (s / 60, s % 60);
-
         write!(f, "{:02}:{:02}:{:02}", h, m, s)
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy)]
+pub enum ActivityType {
+    Running,
+    Cycling,
+    Unknown,
+}
+
+impl Default for ActivityType {
+    fn default() -> Self {
+        Self::Unknown
+    }
+}
+
+impl FromStr for ActivityType {
+    type Err = anyhow::Error;
+    //Todo: implement proper error
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "running" => Self::Running,
+            "cycling" => Self::Cycling,
+            _ => Self::Unknown,
+        })
+    }
+}
+
+impl std::fmt::Display for ActivityType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let activity_type = match self {
+            Self::Running => "Running",
+            Self::Cycling => "Cycling",
+            Self::Unknown => "Unknown activity type",
+        };
+        write!(f, "{}", activity_type)
     }
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Activity {
     pub id: String,
-    pub gear_id: String,
+    pub gear_id: Option<String>,
     pub session: Session,
     pub record: Record,
     pub lap: Vec<Lap>,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone)]
+#[derive(Default, Serialize, Deserialize, Clone)]
 pub struct Session {
     pub cadence_avg: Option<u8>,
     pub cadence_max: Option<u8>,
@@ -64,7 +113,7 @@ pub struct Session {
     pub swc_lat: Option<f64>,
     pub swc_lon: Option<f64>,
     pub laps: Option<u16>,
-    pub activity_type: String,
+    pub activity_type: ActivityType,
     pub ascent: Option<u16>,
     pub descent: Option<u16>,
     pub calories: u16,
@@ -124,10 +173,48 @@ impl Lap {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
+pub enum GearType {
+    RoadBike,
+    HybridBike,
+    TTBike,
+    OffroadBike,
+    RunningShoes,
+}
+
+impl FromStr for GearType {
+    type Err = anyhow::Error;
+    //Todo: implement proper error
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "road_bike" => Ok(Self::RoadBike),
+            "hybrid_bike" => Ok(Self::HybridBike),
+            "tt_bike" => Ok(Self::HybridBike),
+            "offroad_bike" => Ok(Self::OffroadBike),
+            "running_shoes" => Ok(Self::RunningShoes),
+            _ => Err(anyhow::anyhow!("Cannot parse gear type.")),
+        }
+    }
+}
+
+impl std::fmt::Display for GearType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let gear_type = match self {
+            Self::RoadBike => "Road bike",
+            Self::HybridBike => "Hybrid bike",
+            Self::TTBike => "TT bike",
+            Self::OffroadBike => "Offroad bike",
+            Self::RunningShoes => "Running shoes",
+        };
+        write!(f, "{}", gear_type)
+    }
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct Gear {
     pub name: String,
-    pub kind: String,
+    pub gear_type: GearType,
     pub fixed_distance: f64,
 }
 

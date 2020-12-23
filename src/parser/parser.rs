@@ -1,11 +1,12 @@
 use fitparser::profile::field_types::MesgNum;
 use fitparser::FitDataField;
 use fitparser::Value::*;
+use std::{str::FromStr, string::String};
 
-use crate::{Activity, Duration, Lap, Record, Session, TimeStamp};
+use crate::{Activity, ActivityType, Duration, Lap, Record, Session, TimeStamp};
 use anyhow::{anyhow, Result};
 
-pub fn parse(fit_data: &[u8], gear_id: &str) -> Result<Activity> {
+pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
     let mut session: Session = Session::new();
     let mut record: Record = Record::new();
     let mut lap_vec: Vec<Lap> = Vec::new();
@@ -28,7 +29,7 @@ pub fn parse(fit_data: &[u8], gear_id: &str) -> Result<Activity> {
 
     Ok(Activity {
         id: session.start_time.0.format("%Y%m%d%H%M").to_string(),
-        gear_id: gear_id.to_owned(),
+        gear_id,
         session,
         record,
         lap: lap_vec,
@@ -109,7 +110,7 @@ fn parse_session(fields: Vec<FitDataField>, mut session: Session) -> Result<Sess
             }
             "sport" => {
                 if let String(x) = field.value() {
-                    session.activity_type = x.to_string();
+                    session.activity_type = ActivityType::from_str(x)?;
                 }
             }
             "total_ascent" => {

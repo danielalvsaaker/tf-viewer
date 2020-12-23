@@ -20,12 +20,14 @@ impl Database {
             users: users::UserTree {
                 username_password: db.open_tree("username_password")?,
                 username_user: db.open_tree("username_user")?,
+                username_standard_gear: db.open_tree("username_standard_gear")?,
             },
 
             activities: activities::ActivityTree {
                 usernameid_username: db.open_tree("usernameid_username")?,
                 usernameid_id: db.open_tree("usernameid_id")?,
-                usernameid_gear_id: db.open_tree("usernameid_gear_id")?,
+                usernameid_gear: db.open_tree("usernameid_gear")?,
+                usernamegearid_id: db.open_tree("usernamegearid_id")?,
                 usernameid_session: db.open_tree("usernameid_session")?,
                 usernameid_record: db.open_tree("usernameid_record")?,
                 usernameid_lap: db.open_tree("usernameid_lap")?,

@@ -1,11 +1,12 @@
-use crate::{Activity, Lap, Record, Session};
+use crate::{Activity, Duration, Lap, Record, Session};
 use anyhow::{anyhow, Result};
 
 #[derive(Clone)]
 pub struct ActivityTree {
     pub usernameid_id: sled::Tree,
     pub usernameid_username: sled::Tree,
-    pub(super) usernameid_gear_id: sled::Tree,
+    pub(super) usernameid_gear: sled::Tree,
+    pub(super) usernamegearid_id: sled::Tree,
     pub(super) usernameid_session: sled::Tree,
     pub(super) usernameid_record: sled::Tree,
     pub(super) usernameid_lap: sled::Tree,
@@ -34,34 +35,56 @@ impl ActivityTree {
         self.usernameid_lap.insert(&key, lap)?;
 
         self.usernameid_id.insert(&key, activity.id.as_bytes())?;
-        self.usernameid_gear_id
-            .insert(&key, activity.gear_id.as_bytes())?;
+
+        if let Some(x) = activity.gear_id {
+            self.usernameid_gear.insert(&key, x.as_bytes())?;
+
+            let mut key = username.as_bytes().to_vec();
+            key.push(0xff);
+            key.extend_from_slice(&x.as_bytes());
+            key.push(0xff);
+            key.extend_from_slice(&activity.id.as_bytes());
+
+            self.usernamegearid_id
+                .insert(&key, activity.id.as_bytes())?;
+        }
 
         self.usernameid_username.insert(&key, username.as_bytes())?;
 
         Ok(())
     }
 
-    pub fn gear_totals(&self, username: &str, gear: &str) -> (f64, f64) {
+    pub fn gear_totals(&self, username: &str, gear: &str) -> (f64, Duration) {
         let mut prefix = username.as_bytes().to_vec();
         prefix.push(0xff);
 
-        self.usernameid_gear_id
-            .scan_prefix(&prefix)
-            .values()
-            .flatten()
-            .flat_map(|x| String::from_utf8(x.to_vec()))
-            .filter(|x| x == gear)
-            .flat_map(|x| self.get_session(&x, username))
-            .fold((0.0, 0.0), |acc, x| {
-                (
-                    acc.0 + x.distance.unwrap_or(0.0),
-                    acc.1 + x.duration_active.as_secs_f64(),
-                )
+        self.username_gear_iter_id(username, gear)
+            .unwrap()
+            .flat_map(|x| self.get_session(username, &x))
+            .fold((0.0, Duration::from_secs_f64(0.0)), |acc, x| {
+                (acc.0 + x.distance.unwrap_or(0.0), acc.1 + x.duration_active)
             })
     }
 
-    pub fn iter_session(&self, username: &str) -> Result<impl Iterator<Item = Session>> {
+    pub fn username_gear_iter_id(
+        &self,
+        username: &str,
+        gear: &str,
+    ) -> Result<impl Iterator<Item = String>> {
+        let mut prefix = username.as_bytes().to_vec();
+        prefix.push(0xff);
+        prefix.extend_from_slice(gear.as_bytes());
+
+        Ok(self
+            .usernamegearid_id
+            .scan_prefix(&prefix)
+            .values()
+            .rev()
+            .flatten()
+            .flat_map(|x| String::from_utf8(x.to_vec())))
+    }
+
+    pub fn username_iter_session(&self, username: &str) -> Result<impl Iterator<Item = Session>> {
         let mut prefix = username.as_bytes().to_vec();
         prefix.push(0xff);
 
@@ -74,7 +97,7 @@ impl ActivityTree {
             .flat_map(|x| bincode::deserialize::<Session>(&x)))
     }
 
-    pub fn iter_id(&self, username: &str) -> Result<impl Iterator<Item = String>> {
+    pub fn username_iter_id(&self, username: &str) -> Result<impl Iterator<Item = String>> {
         let mut prefix = username.as_bytes().to_vec();
         prefix.push(0xff);
 
@@ -87,7 +110,7 @@ impl ActivityTree {
             .flat_map(|x| String::from_utf8(x.to_vec())))
     }
 
-    pub fn iter_username_all(&self) -> Result<impl Iterator<Item = String>> {
+    pub fn iter_username(&self) -> Result<impl Iterator<Item = String>> {
         Ok(self
             .usernameid_username
             .iter()
@@ -97,7 +120,7 @@ impl ActivityTree {
             .flat_map(|x| String::from_utf8(x.to_vec())))
     }
 
-    pub fn iter_session_all(&self) -> Result<impl Iterator<Item = Session>> {
+    pub fn iter_session(&self) -> Result<impl Iterator<Item = Session>> {
         Ok(self
             .usernameid_session
             .iter()
@@ -107,7 +130,7 @@ impl ActivityTree {
             .flat_map(|x| bincode::deserialize::<Session>(&x)))
     }
 
-    pub fn iter_record_all(&self) -> Result<impl Iterator<Item = Record>> {
+    pub fn iter_record(&self) -> Result<impl Iterator<Item = Record>> {
         Ok(self
             .usernameid_record
             .iter()
@@ -117,7 +140,7 @@ impl ActivityTree {
             .flat_map(|x| bincode::deserialize::<Record>(&x)))
     }
 
-    pub fn iter_id_all(&self) -> Result<impl Iterator<Item = String>> {
+    pub fn iter_id(&self) -> Result<impl Iterator<Item = String>> {
         Ok(self
             .usernameid_id
             .iter()
@@ -136,7 +159,7 @@ impl ActivityTree {
 
         match get {
             Some(x) => Ok(bincode::deserialize::<Session>(&x)?),
-            None => Err(anyhow!("Failed to deserialize session")),
+            None => Err(anyhow!("Session not found")),
         }
     }
 
@@ -149,7 +172,7 @@ impl ActivityTree {
 
         match get {
             Some(x) => Ok(bincode::deserialize::<Record>(&x)?),
-            None => Err(anyhow!("Failed to deserialize record")),
+            None => Err(anyhow!("Record not found")),
         }
     }
 
@@ -162,20 +185,20 @@ impl ActivityTree {
 
         match get {
             Some(x) => Ok(bincode::deserialize::<Vec<Lap>>(&x)?),
-            None => Err(anyhow!("Failed to deserialize laps")),
+            None => Err(anyhow!("Lap not found")),
         }
     }
 
-    pub fn get_gear_id(&self, username: &str, id: &str) -> Result<String> {
+    pub fn get_gear_id(&self, username: &str, id: &str) -> Result<Option<String>> {
         let mut key = username.as_bytes().to_vec();
         key.push(0xff);
         key.extend_from_slice(id.as_bytes());
 
-        let get = self.usernameid_gear_id.get(&key)?;
+        let get = self.usernameid_gear.get(&key)?;
 
         match get {
-            Some(x) => Ok(String::from_utf8(x.to_vec())?),
-            None => Err(anyhow!("Failed to get gear id")),
+            Some(x) => Ok(Some(String::from_utf8(x.to_vec())?)),
+            None => Ok(None),
         }
     }
 

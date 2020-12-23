@@ -13,9 +13,22 @@
 .map { grid-area: 1 / 1 / 4 / 5; }
 .stats { grid-area: 1 / 5 / 4 / 6; }
 .plot { grid-area: 4 / 1 / 6 / 6; }
+.override {
+  font-size: 1vw;
+}
 </style>
 
 <div class="container">
+  <div class="columns">
+    <div class="col-11">
+      <h2>{{ title }}</h2>
+    </div>
+    <div class="col-1 text-right">
+      <a href="{{ activity_url }}/settings">
+	<button class="btn">Settings</button>
+      </a>
+    </div>
+  </div>
   <div class="grid-container">
     <div class="map" id="map">
       {% match session.nec_lat -%}
@@ -60,14 +73,18 @@
     </div>
     <div class="stats">
       <div class="panel">
-	<div class="panel-header stats-header">
+	<div class="panel-header stats-header override" style="padding:0.4rem;">
 	  <div class="panel-title text-center">Stats</div>
 	</div>
 	<div class="panel-body stats-body">
 	  <ul>
-	    <li><strong>User: </strong> {{ user }}</li>
-	    <li><strong>Activity type: </strong>{{ session.activity_type|capitalize }}</li>
-	    <li><strong>Gear: </strong></li>
+	    <li><strong>User: </strong> {{ username }}</li>
+	    <li><strong>Activity type: </strong>{{ session.activity_type }}</li>
+	    {% match gear -%}
+	      {% when Some with (value) -%}
+		<li><strong>Gear: </strong> {{ value }}</li>
+	      {% when None -%}
+	    {% endmatch -%}
 	    <li><strong>Duration: </strong> {{ session.duration_active }}</li>
 	    {% match session.distance -%}
 	      {% when Some with (value) -%}

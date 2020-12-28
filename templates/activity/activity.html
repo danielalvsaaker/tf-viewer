@@ -1,6 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
 
+{% let is_owner -%}
+{% match id.identity() -%}
+  {% when Some with (value) -%}
+    {% if value == username -%}
+      {% let is_owner = true -%}
+    {% else -%}
+      {% let is_owner = false %}
+    {% endif -%}
+  {% when None -%}
+    {% let is_owner = false %}
+{% endmatch -%}
+
 <style>
 .grid-container {
   height:100%;
@@ -24,9 +36,11 @@
       <h2>{{ title }}</h2>
     </div>
     <div class="col-1 text-right">
-      <a href="{{ activity_url }}/settings">
-	<button class="btn">Settings</button>
-      </a>
+      {% if is_owner -%}
+	<a href="{{ activity_url }}/settings">
+	  <button class="btn">Settings</button>
+	</a>
+      {% endif -%}
     </div>
   </div>
   <div class="grid-container">
@@ -73,12 +87,16 @@
     </div>
     <div class="stats">
       <div class="panel">
-	<div class="panel-header stats-header override" style="padding:0.4rem;">
-	  <div class="panel-title text-center">Stats</div>
-	</div>
+	<a href="/user/{{ username }}">
+	  <div class="panel-header text-center">
+	    <figure class="avatar avatar-lg" data-initial="{{ "{:.1}"|format(username)|upper }}">
+	      <img src="{{ url._static }}/img/user/{{ username }}.png?{{ crate::models::TimeStamp::default() }}" alt="">
+	    </figure>
+	    <div class="panel-title h5 mt-10 mx-2 d-inline-block">{{ username }}</div>
+	  </div>
+	</a>
 	<div class="panel-body stats-body">
 	  <ul>
-	    <li><strong>User: </strong> {{ username }}</li>
 	    <li><strong>Activity type: </strong>{{ session.activity_type }}</li>
 	    {% match gear -%}
 	      {% when Some with (value) -%}
@@ -135,93 +153,121 @@
 	{{ plot|safe }}
     </div>
   </div>
-  {% if laps.len() > 1 -%}
-    <div style="margin-bottom:5%">
+  <div class="my-3">
+    {% match zones -%}
+      {% when Some with (value) -%}
+	<h4>Heart rate zone duration</h4>
+	<table class="table">
+	  <thead>
+	    <tr>
+	      <th>Zone 0 (&lt;55%)</th>
+	      <th>Zone 1 (55%-72%)</th>
+	      <th>Zone 2 (72%-82%)</th>
+	      <th>Zone 3 (82%-87%)</th>
+	      <th>Zone 4 (87%-92%)</th>
+	      <th>Zone 5 (&lt;92%)</th>
+	      </tr>
+	    </thead>
+	    <tbody>
+	      <tr>
+		{% for zone in value -%}
+		  <td>{{ zone }}</td>
+		{% endfor -%}
+	      </tr>
+	    </tbody>
+	  </table>
+	{% when None -%}
+    {% endmatch -%}
+  </div>
+  <div class="my-3">
+    {% if laps.len() > 1 -%}
+      <h4 >Laps</h4>
       <table class="table">
-        <thead>
-          <tr>
-            <th>Lap</th>
-            <th>Duration</th>
-            <th>Distance</th>
-            <th>Avg. speed</th>
-            <th>Max. speed</th>
-            <th>Avg. heart rate</th>
-            <th>Max. heart rate</th>
-            <th>Avg. cadence</th>
-            <th>Total ascent</th>
-            <th>Total descent</th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for lap in laps -%}
-          <tr>
-            <td>
-              {{ loop.index }}
-            </td>
-            <td>
-              {{ lap.duration_active }}
-            </td>
-            <td>
-              {% match lap.distance -%}
-                {% when Some with (value) -%}
-          	{{ value }} km
-                {% when None -%}
-              {% endmatch -%}
-            </td>
-            <td>
-              {% match lap.speed_avg -%}
-                {% when Some with (value) -%}
-          	{{ value }} km/h
-                {% when None -%}
-              {% endmatch -%}
-            </td>
-            <td>
-              {% match lap.speed_max -%}
-                {% when Some with (value) -%}
-          	{{ value }} km/h
-                {% when None -%}
-              {% endmatch -%}
-            </td>
-            <td>
-              {% match lap.heartrate_avg -%}
-                {% when Some with (value) -%}
-          	{{ value }} bpm
-                {% when None -%}
-              {% endmatch -%}
-            </td>
-            <td>
-              {% match lap.heartrate_max -%}
-                {% when Some with (value) -%}
-          	{{ value }} bpm
-                {% when None -%}
-              {% endmatch -%}
-            </td>
-            <td>
-              {% match lap.cadence_avg -%}
-                {% when Some with (value) -%}
-          	{{ value }} rpm
-                {% when None -%}
-              {% endmatch -%}
-            </td>
-            <td>
-              {% match lap.ascent -%}
-                {% when Some with (value) -%}
-          	{{ value }} m
-                {% when None -%}
-              {% endmatch -%}
-            </td>
-            <td>
-              {% match lap.descent -%}
-                {% when Some with (value) -%}
-          	{{ value }} m
-                {% when None -%}
-              {% endmatch -%}
-            </td>
-          {% endfor -%}
-        </tbody>
+	<thead>
+	  <tr>
+	    <th>Lap</th>
+	    <th>Duration</th>
+	    <th>Distance</th>
+	    <th>Avg. speed</th>
+	    <th>Max. speed</th>
+	    <th>Avg. heart rate</th>
+	    <th>Max. heart rate</th>
+	    <th>Avg. cadence</th>
+	    <th>Total ascent</th>
+	    <th>Total descent</th>
+	  </tr>
+	</thead>
+	<tbody>
+	  {% for lap in laps -%}
+	    <tr>
+	      <td>
+	        {{ loop.index }}
+	      </td>
+	      <td>
+	        {{ lap.duration_active }}
+	      </td>
+	      <td>
+		{% match lap.distance -%}
+	          {% when Some with (value) -%}
+		    {{ value }} km
+	          {% when None -%}
+	        {% endmatch -%}
+	      </td>
+	      <td>
+	        {% match lap.speed_avg -%}
+	          {% when Some with (value) -%}
+		    {{ value }} km/h
+	          {% when None -%}
+	        {% endmatch -%}
+	      </td>
+	      <td>
+	        {% match lap.speed_max -%}
+	          {% when Some with (value) -%}
+		    {{ value }} km/h
+	          {% when None -%}
+	        {% endmatch -%}
+	      </td>
+	      <td>
+	        {% match lap.heartrate_avg -%}
+	          {% when Some with (value) -%}
+		    {{ value }} bpm
+	          {% when None -%}
+	        {% endmatch -%}
+	      </td>
+	      <td>
+	        {% match lap.heartrate_max -%}
+	          {% when Some with (value) -%}
+		    {{ value }} bpm
+	          {% when None -%}
+	        {% endmatch -%}
+	      </td>
+	      <td>
+	        {% match lap.cadence_avg -%}
+	          {% when Some with (value) -%}
+		    {{ value }} rpm
+	          {% when None -%}
+	        {% endmatch -%}
+	      </td>
+	      <td>
+	        {% match lap.ascent -%}
+	          {% when Some with (value) -%}
+		    {{ value }} m
+	          {% when None -%}
+	        {% endmatch -%}
+	      </td>
+	      <td>
+	        {% match lap.descent -%}
+	          {% when Some with (value) -%}
+		    {{ value }} m
+	          {% when None -%}
+	        {% endmatch -%}
+	      </td>
+	    </tr>
+	  {% endfor -%}
+	</tbody>
       </table>
-    </div>
-  {% endif %}
+    {% endif %}
+  </div>
 </div>
 
 {% endblock %}

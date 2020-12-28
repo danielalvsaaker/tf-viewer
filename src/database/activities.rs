@@ -1,5 +1,6 @@
-use crate::{Activity, Duration, Lap, Record, Session};
+use crate::{Activity, Duration, Lap, Record, Session, UserTotals};
 use anyhow::{anyhow, Result};
+use chrono::{self, Datelike, Local};
 
 #[derive(Clone)]
 pub struct ActivityTree {
@@ -21,6 +22,14 @@ impl ActivityTree {
     }
 
     pub fn insert(&self, activity: Activity, username: &str) -> Result<()> {
+        if !self.exists(username, &activity.id)? {
+            self.insert_or_overwrite(activity, username)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn insert_or_overwrite(&self, activity: Activity, username: &str) -> Result<()> {
         let mut key = username.as_bytes().to_vec();
         key.push(0xff);
         key.extend_from_slice(&activity.id.as_bytes());
@@ -54,14 +63,89 @@ impl ActivityTree {
         Ok(())
     }
 
-    pub fn gear_totals(&self, username: &str, gear: &str) -> (f64, Duration) {
-        let mut prefix = username.as_bytes().to_vec();
-        prefix.push(0xff);
+    pub fn user_totals(&self, username: &str) -> Result<UserTotals> {
+        let iter = self
+            .username_iter_session(username)?
+            .collect::<Vec<Session>>();
+        let cycling_iter = iter.iter().filter(|x| x.activity_type.is_cycling());
 
+        let running_iter = iter.iter().filter(|x| x.activity_type.is_running());
+
+        let cycling_month = cycling_iter
+            .clone()
+            .filter(|x| x.start_time.0 > (Local::now() - chrono::Duration::days(30)))
+            .fold((0.0, Duration::new(), 0), |acc, x| {
+                (
+                    acc.0 + x.distance.unwrap_or(0.0),
+                    acc.1 + x.duration_active,
+                    acc.2 + 1,
+                )
+            });
+
+        let running_month = running_iter
+            .clone()
+            .filter(|x| x.start_time.0 > (Local::now() - chrono::Duration::days(30)))
+            .fold((0.0, Duration::new(), 0), |acc, x| {
+                (
+                    acc.0 + x.distance.unwrap_or(0.0),
+                    acc.1 + x.duration_active,
+                    acc.2 + 1,
+                )
+            });
+
+        let cycling_year = cycling_iter
+            .clone()
+            .filter(|x| x.start_time.0.year() == Local::now().year())
+            .fold((0.0, Duration::new(), 0), |acc, x| {
+                (
+                    acc.0 + x.distance.unwrap_or(0.0),
+                    acc.1 + x.duration_active,
+                    acc.2 + 1,
+                )
+            });
+
+        let running_year = running_iter
+            .clone()
+            .filter(|x| x.start_time.0.year() == Local::now().year())
+            .fold((0.0, Duration::new(), 0), |acc, x| {
+                (
+                    acc.0 + x.distance.unwrap_or(0.0),
+                    acc.1 + x.duration_active,
+                    acc.2 + 1,
+                )
+            });
+
+        let cycling_all = cycling_iter.fold((0.0, Duration::new(), 0), |acc, x| {
+            (
+                acc.0 + x.distance.unwrap_or(0.0),
+                acc.1 + x.duration_active,
+                acc.2 + 1,
+            )
+        });
+
+        let running_all = running_iter.fold((0.0, Duration::new(), 0), |acc, x| {
+            (
+                acc.0 + x.distance.unwrap_or(0.0),
+                acc.1 + x.duration_active,
+                acc.2 + 1,
+            )
+        });
+
+        Ok(UserTotals {
+            cycling_month,
+            cycling_year,
+            cycling_all,
+            running_month,
+            running_year,
+            running_all,
+        })
+    }
+
+    pub fn gear_totals(&self, username: &str, gear: &str) -> (f64, Duration) {
         self.username_gear_iter_id(username, gear)
             .unwrap()
             .flat_map(|x| self.get_session(username, &x))
-            .fold((0.0, Duration::from_secs_f64(0.0)), |acc, x| {
+            .fold((0.0, Duration::new()), |acc, x| {
                 (acc.0 + x.distance.unwrap_or(0.0), acc.1 + x.duration_active)
             })
     }

@@ -1,11 +1,10 @@
 use super::{
     api::{ActivityData, DataRequest, DataResponse},
-    error::ErrorTemplate,
     UrlActivity, UrlFor,
 };
 use crate::{ActivityType, Lap, Session};
 use actix_identity::Identity;
-use actix_web::{http, web, web::block, HttpRequest, HttpResponse, Responder};
+use actix_web::{http, web, HttpRequest, HttpResponse, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
 use serde::Deserialize;
 use std::str::FromStr;
@@ -21,6 +20,7 @@ struct ActivityTemplate<'a> {
     session: &'a Session,
     laps: &'a Vec<Lap>,
     coords: &'a Vec<(f64, f64)>,
+    zones: &'a Option<Vec<crate::Duration>>,
     plot: &'a str,
     title: &'a str,
 }
@@ -31,19 +31,16 @@ pub async fn activity(
     id: Identity,
     web::Path((username, activity_id)): web::Path<(String, String)>,
 ) -> impl Responder {
-    let activity = {
-        let username = username.clone();
-        web::block(move || {
-            data.as_ref()
-                .activities
-                .get_activity(&username, &activity_id)
-        })
-    }
-    .await?;
+    let activity = data
+        .activities
+        .get_activity(&username, &activity_id)
+        .unwrap();
 
-    let plot = {
-        let record = activity.record.clone();
-        web::block(move || super::utils::plot(&record)).await?
+    let plot = super::utils::plot(&activity.record).unwrap();
+
+    let zones = {
+        let user = data.users.get_heartrate(&username).unwrap();
+        super::utils::zone_duration(&activity.record, &user).unwrap()
     };
 
     ActivityTemplate {
@@ -61,6 +58,7 @@ pub async fn activity(
             .flatten()
             .zip(activity.record.lat.into_iter().flatten())
             .collect(),
+        zones: &zones,
         plot: &plot,
         title: &format!("Activity {}", &activity.session.start_time),
     }
@@ -72,7 +70,6 @@ pub async fn activity(
 struct ActivitySettingsTemplate<'a> {
     url: UrlFor,
     id: Identity,
-    username: &'a str,
     activity_type: &'a ActivityType,
     gears: &'a Vec<String>,
     title: &'a str,
@@ -85,22 +82,12 @@ pub async fn activity_settings(
     data: web::Data<crate::Database>,
     web::Path((username, activity_id)): web::Path<(String, String)>,
 ) -> impl Responder {
-    let activity = {
-        let (username, data) = (username.clone(), data.clone());
-        web::block(move || {
-            data.as_ref()
-                .activities
-                .get_activity(&username, &activity_id)
-        })
-    }
-    .await?;
+    let activity = data
+        .activities
+        .get_activity(&username, &activity_id)
+        .unwrap();
 
-    let gear_iter = {
-        let (username, data) = (username.clone(), data.clone());
-        web::block(move || data.as_ref().gear.iter(&username))
-    }
-    .await?
-    .map(|x| x.name);
+    let gear_iter = data.gear.iter(&username).unwrap().map(|x| x.name);
 
     let mut gears: Vec<String> = Vec::new();
     if let Some(gear_id) = activity.gear_id {
@@ -113,7 +100,6 @@ pub async fn activity_settings(
     ActivitySettingsTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
-        username: &username,
         activity_type: &activity.session.activity_type,
         gears: &gears,
         title: "Settings",
@@ -137,22 +123,12 @@ pub async fn activity_settings_post(
 ) -> impl Responder {
     let form = form.into_inner();
 
-    let mut activity = {
-        let (username, activity_id, data) = (username.clone(), activity_id.clone(), data.clone());
-        web::block(move || {
-            data.as_ref()
-                .activities
-                .get_activity(&username, &activity_id)
-        })
-    }
-    .await?;
+    let mut activity = data
+        .activities
+        .get_activity(&username, &activity_id)
+        .unwrap();
 
-    let gear_iter = {
-        let (username, data) = (username.clone(), data.clone());
-        web::block(move || data.as_ref().gear.iter(&username))
-    }
-    .await?
-    .map(|x| x.name);
+    let gear_iter = data.gear.iter(&username).unwrap().map(|x| x.name);
 
     let mut gears: Vec<String> = Vec::new();
     if let Some(gear_id) = activity.gear_id {
@@ -175,11 +151,7 @@ pub async fn activity_settings_post(
             ActivityType::from_str(&form.activity_type).unwrap_or_default();
         activity.gear_id = Some(form.gear_id);
 
-        {
-            let username = username.clone();
-            web::block(move || data.as_ref().activities.insert(activity, &username))
-        }
-        .await?;
+        data.activities.insert_or_overwrite(activity, &username);
 
         let url: UrlActivity = UrlActivity::new(&username, &activity_id, &req)?;
 
@@ -192,7 +164,6 @@ pub async fn activity_settings_post(
     ActivitySettingsTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
-        username: &username,
         activity_type: &activity.session.activity_type,
         gears: &gears,
         title: "Settings",
@@ -229,18 +200,8 @@ pub async fn activity_index_post(
     data: web::Data<crate::Database>,
     user: web::Path<String>,
 ) -> impl Responder {
-    let iter = {
-        let data = data.clone();
-        let user = user.to_owned();
-
-        web::block(move || data.as_ref().activities.username_iter_session(&user))
-    }
-    .await
-    .unwrap();
-
-    let id = web::block(move || data.as_ref().activities.username_iter_id(&user))
-        .await
-        .unwrap();
+    let iter = data.activities.username_iter_session(&user).unwrap();
+    let id = data.activities.username_iter_id(&user).unwrap();
 
     let mut sessions: Vec<ActivityData> = iter
         .zip(id)

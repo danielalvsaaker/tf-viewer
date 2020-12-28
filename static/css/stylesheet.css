@@ -9,6 +9,12 @@
 	border-radius:50%;
 }
 
+.avatar.avatar-xxl {
+	font-size:3.2rem;
+	height:6.4rem;
+	width:6.4rem;
+}
+
 .profile-field {
   padding-bottom: 3%;
 }
@@ -20,7 +26,7 @@
 }
 
 .index-tile:hover {
-	box-shadow: 0 0.8rem 1.2rem rgba(48,55,66,.15);
+	box-shadow: 0 0.4rem 1.2rem rgba(48,55,66,.15);
 }
 
 .card, .panel {
@@ -91,6 +97,11 @@
 
 .upload-success, .upload-error {
 	opacity: 0;
+}
+
+.my-3 {
+	margin-top:2% !important;
+	margin-bottom: 2% !important;
 }
 
 html, .panel, .container, .stats {

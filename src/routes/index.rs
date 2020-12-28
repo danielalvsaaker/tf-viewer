@@ -26,40 +26,29 @@ pub async fn index(
     req: HttpRequest,
     data: web::Data<crate::Database>,
 ) -> impl Responder {
-    let usernames = {
-        let data = data.clone();
-        web::block(move || data.as_ref().activities.iter_username())
-    }
-    .await?;
+    let (username_iter, id_iter) = (
+        data.activities.iter_username().unwrap(),
+        data.activities.iter_id().unwrap(),
+    );
 
-    let ids = {
-        let data = data.clone();
-        web::block(move || data.as_ref().activities.iter_id())
-    }
-    .await?;
-
-    let mut username_id: Vec<(String, String)> = usernames.zip(ids).collect();
+    let mut username_id: Vec<(String, String)> = username_iter.zip(id_iter).collect();
 
     username_id.sort_by_key(|(_, k)| k.parse::<u64>().unwrap());
     username_id.reverse();
     username_id.truncate(5);
 
     let mut sessions: Vec<Session> = Vec::new();
-    for (username, id) in username_id.clone().into_iter() {
-        let data = data.clone();
-        let session =
-            web::block(move || data.as_ref().activities.get_session(&username, &id)).await?;
+    for (username, id) in username_id.iter() {
+        let session = data.activities.get_session(&username, &id).unwrap();
         sessions.push(session);
     }
 
-    for (username, id) in username_id.clone().into_iter() {
+    for (username, id) in username_id.iter() {
         let path = format!("static/img/activity/{}_{}.png", &username, &id);
         let path = std::path::PathBuf::from(&path);
 
         if !path.exists() {
-            let data = data.clone();
-            let record =
-                web::block(move || data.as_ref().activities.get_record(&username, &id)).await?;
+            let record = data.activities.get_record(&username, &id).unwrap();
 
             std::thread::spawn(move || {
                 // Creating file prematurely, preventing more processes from spawning

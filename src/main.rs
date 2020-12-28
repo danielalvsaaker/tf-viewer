@@ -10,7 +10,7 @@ static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 pub use database::Database;
 pub use models::{
-    Activity, ActivityType, Duration, Gear, GearType, Lap, Record, Session, TimeStamp, User,
+    Activity, ActivityType, Duration, Gear, GearType, Lap, Record, Session, TimeStamp, UserTotals,
 };
 pub use parser::*;
 
@@ -27,12 +27,15 @@ use routes::{
     gear::{gear_add, gear_add_post, gear_index, gear_settings, gear_settings_post},
     index::index,
     upload::{upload, upload_post},
-    user::{user, user_index, user_index_post, user_settings},
+    user::{
+        user, user_avatar, user_avatar_post, user_index, user_index_post, user_settings,
+        user_settings_post,
+    },
 };
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let data = web::Data::new(Database::load_or_create().expect("Failed to load"));
+    let data = Database::load_or_create().expect("Failed to load");
 
     println!("Running at 127.0.0.1:2000");
 
@@ -43,7 +46,7 @@ async fn main() -> std::io::Result<()> {
                     .name("tf-viewer")
                     .secure(false),
             ))
-            .app_data(data.clone())
+            .data(data.clone())
             .default_service(
                 web::route()
                     .guard(guard::Not(guard::Get()))
@@ -102,7 +105,15 @@ async fn main() -> std::io::Result<()> {
                                 web::resource("/{username}/settings")
                                     .name("user_settings")
                                     .wrap(Restricted)
-                                    .route(web::get().to(user_settings)),
+                                    .route(web::get().to(user_settings))
+                                    .route(web::post().to(user_settings_post)),
+                            )
+                            .service(
+                                web::resource("/{username}/settings/avatar")
+                                    .name("user_avatar")
+                                    .wrap(Restricted)
+                                    .route(web::get().to(user_avatar))
+                                    .route(web::post().to(user_avatar_post)),
                             )
                             .service(
                                 web::resource("/{username}/activity/{activity}")

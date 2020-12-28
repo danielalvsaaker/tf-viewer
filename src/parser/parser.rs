@@ -194,7 +194,17 @@ fn parse_record(fields: Vec<FitDataField>, mut record: Record) -> Result<Record>
             }),
             "timestamp" => {
                 if let Timestamp(x) = field.value() {
-                    record.timestamp.push(TimeStamp(*x));
+                    let timestamp = TimeStamp(*x);
+
+                    match record.timestamp.first() {
+                        Some(x) => {
+                            let duration = Duration::between(&timestamp, x)?;
+                            record.duration.push(duration);
+                        }
+                        None => record.duration.push(Duration::new()),
+                    }
+
+                    record.timestamp.push(timestamp);
                 }
             }
             _ => (),

@@ -1,11 +1,11 @@
+use crate::Duration;
+use anyhow::Result;
 use plotly::{
     common::Mode,
     layout::{Axis, Layout},
     Plot, Scatter,
 };
 use staticmap::{Color, Line, StaticMap};
-//use crate::{Error};
-use anyhow::Result;
 
 pub fn plot(record: &crate::Record) -> Result<String> {
     let heartrate = Scatter::new(record.distance.clone(), record.heartrate.clone())
@@ -73,4 +73,53 @@ pub fn generate_thumb(record: crate::Record, path: std::path::PathBuf) -> Result
     let image = map.render()?;
     image.save(path)?;
     Ok(())
+}
+
+pub fn zone_duration(
+    record: &crate::Record,
+    heartrate: &Option<(u8, u8)>,
+) -> Result<Option<Vec<crate::Duration>>> {
+    let mut zones: Vec<u8> = Vec::with_capacity(7);
+    let mut zones_duration: Vec<crate::Duration> = vec![
+        Duration::new(),
+        Duration::new(),
+        Duration::new(),
+        Duration::new(),
+        Duration::new(),
+        Duration::new(),
+    ];
+
+    if let Some(x) = heartrate {
+        zones.push(x.0);
+        zones.push((x.1 as f32 * 0.55).round() as u8);
+        zones.push((x.1 as f32 * 0.72).round() as u8);
+        zones.push((x.1 as f32 * 0.82).round() as u8);
+        zones.push((x.1 as f32 * 0.87).round() as u8);
+        zones.push((x.1 as f32 * 0.92).round() as u8);
+        // Safety measure, considering that measured heartrate can spike
+        zones.push((x.1 as f32 * 3.00).round() as u8);
+    } else {
+        return Ok(None);
+    }
+
+    let duration_iter = record.duration.iter();
+    let heartrate_iter = record.heartrate.iter();
+
+    // This can probably be done in a prettier way
+    for ((i, duration), heartrate) in duration_iter.enumerate().zip(heartrate_iter) {
+        if i > 0 {
+            let time_diff = *duration - record.duration[i - 1];
+            if let Some(x) = heartrate {
+                if time_diff < Duration::from_secs_f64(30.0) {
+                    for j in 0..=5 {
+                        if x <= &zones[j + 1] && x >= &zones[j] {
+                            zones_duration[j] += time_diff;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(Some(zones_duration))
 }

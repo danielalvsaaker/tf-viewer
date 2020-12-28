@@ -11,15 +11,15 @@
 </style>
 
 <div class="container">
+  <h2>{{ title }}</h2>
   <div class="columns">
     <div class="column col-12">
-      <h2 class="text-center">{{ title }}</h2>
       {% for activity in template_data -%}
 	<a href="{{ activity.url.url }}">
 	  <div class="tile index-tile">
 	    <div class="tile-icon">
-	      <figure class="avatar avatar-xl">
-		<img src="{{ url._static }}/img/user/{{ activity.username }}.png" alt="">
+	      <figure class="avatar avatar-xl" data-initial="{{ "{:.1}"|format(activity.username)|upper }}">
+		<img src="{{ url._static }}/img/user/{{ activity.username }}.png?{{ crate::models::TimeStamp::default() }}" alt="">
 	      </figure>
 	      <p class="text-center">{{ activity.username }}</p>
 	    </div>

@@ -2,28 +2,52 @@
 {% block content %}
   
 <div class="container">
- <div class="columns">
-  <div class="column">
-  <form action="add" method="POST" class="form-group">
-    <fieldset>
-      <input type="text" name="name" id="name" placeholder="Name">
-      <input type="number" step="0.1" min="0" name="fixed_distance" id="fixed_distance" placeholder="Fixed distance">
-      <select name="kind" id="kind">
-	<option value="road bike">Road bike</option>
-	<option value="hybrid bike">Hybrid bike</option>
-	<option value="tt bike">TT bike</option>
-	<option value="offroad bike">Offroad bike</option>
-	<option value="running shoes">Running shoes</option>
-      </select>
-      <button type="submit" class="btn btn-primary">Submit</button>
-    </fieldset>
-  </form>
+  <h2>Settings</h2>
+  <div class="columns">
+    <div class="column">
+      <div class="divider"></div>
+      <h5>Heart rate</h5>
+      <form action="settings" method="POST" class="form-group">
+	<fieldset>
+	  <div class="form-group">
+	    <label class="form-label" for="heartrate_rest">Resting heart rate</label>
+	    <input type="number" class="form-input" step="1" min="0" name="heartrate_rest" id="heartrate_rest" placeholder="{{ heartrate.unwrap_or_default().0 }}">
+	  </div>
+	  <div class="form-group">
+	    <label class="form-label" for="heartrate_max">Max. heart rate</label>
+	    <input type="number" class="form-input" step="1" min="0" name="heartrate_max" id="heartrate_max" placeholder="{{ heartrate.unwrap_or_default().1 }}">
+	  </div>
+	  <button type="submit" class="btn btn-primary">Submit</button>
+	</fieldset>
+      </form>
+      <div class="divider" data-content=""></div>
+      <h5>Password</h5>
+      {% match message -%}
+	{% when Some with (value) -%}
+	  <div class="toast toast-error">
+	    {{ value }}
+	  </div>
+	{% when None -%}
+      {% endmatch -%}
+      <form action="settings" method="POST" class="form-group">
+	<fieldset>
+	  <div class="form-group">
+	    <label class="form-label" for="current_password">Current password</label>
+	    <input type="password" class="form-input" name="current_password" id="current_password">
+	  </div>
+	  <div class="form-group">
+	    <label class="form-label" for="new_password">New password</label>
+	    <input type="password" class="form-input" name="new_password" id="new_password">
+	  </div>
+	  <div class="form-group">
+	    <label class="form-label" for="confirm_password">Confirm password</label>
+	    <input type="password" class="form-input" name="confirm_password" id="confirm_password">
+	  </div>
+	  <button type="submit" class="btn btn-primary">Submit</button>
+	</fieldset>
+      </form>
+    </div>
   </div>
-  <div class="divider-vert" data-content=""></div>
-  <div class="column">
-    <!-- column content -->
-  </div>
-</div> 
 </div>
 
 {% endblock %}

@@ -19,8 +19,9 @@ impl Database {
         Ok(Self {
             users: users::UserTree {
                 username_password: db.open_tree("username_password")?,
-                username_user: db.open_tree("username_user")?,
                 username_standard_gear: db.open_tree("username_standard_gear")?,
+                username_heartrate_rest: db.open_tree("username_heartrate_rest")?,
+                username_heartrate_max: db.open_tree("username_heartrate_max")?,
             },
 
             activities: activities::ActivityTree {

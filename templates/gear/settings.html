@@ -2,7 +2,7 @@
 {% block content %}
   
 <div class="container">
-  <h2 class="text-center">{{ title }}</h2>
+  <h2>{{ title }}</h2>
   {% match message -%}
     {% when Some with (value) -%}
       <p>{{ value }}</p>
@@ -12,8 +12,8 @@
     <fieldset>
       <input type="hidden" id="name" name="name" value="{{ gear.name }}">
       <div class="form-group">
-	<label class="form-label" for="fixed_distance">Fixed distance</label>
-	<input class="form-input" type="number" step="0.1" min="0" name="fixed_distance" id="fixed_distance" placeholder="{{ gear.fixed_distance }} km" value="{{ gear.fixed_distance }}">
+	<label class="form-label" for="fixed_distance">Fixed distance (km)</label>
+	<input class="form-input" type="number" step="0.1" min="0" name="fixed_distance" id="fixed_distance" value="{{ gear.fixed_distance }}">
       </div>
       <div class="form-group">
 	<label class="form-label" for="gear_type">Gear type</label>

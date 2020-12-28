@@ -2,17 +2,19 @@
 {% block content %}
   
 <div class="container">
-  <h2 class="text-center">{{ title }}</h2>
+  <h2>{{ title }}</h2>
   {% match message -%}
     {% when Some with (value) -%}
-      <p>{{ value }}</p>
+      <div class="toast toast-error">
+	{{ value }}
+      </div>
     {% when None -%}
   {% endmatch -%}
   <form action="add" method="POST" class="form-group ">
     <fieldset>
       <div class="form-group">
 	<label class="form-label" for="name">Gear name</label>
-	<input class="form-input" type="text" name="name" id="name" placeholder="Name">
+	<input class="form-input" type="text" name="name" id="name" autofocus required>
       </div>
       <div class="form-group">
 	<label class="form-label" for="fixed_distance">Fixed distance</label>

@@ -1,7 +1,10 @@
 use chrono::offset::Local;
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
-use std::{ops::Add, str::FromStr};
+use std::{
+    ops::{Add, AddAssign, Sub},
+    str::FromStr,
+};
 
 /// Wrapper for chrono::DateTime
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
@@ -20,7 +23,7 @@ impl std::fmt::Display for TimeStamp {
 }
 
 /// Wrapper for std::time::Duration
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default)]
+#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Clone, Copy, Debug, Default)]
 pub struct Duration(std::time::Duration);
 
 impl Duration {
@@ -31,16 +34,42 @@ impl Duration {
     pub fn as_secs_f64(&self) -> f64 {
         self.0.as_secs_f64()
     }
+
+    pub fn between(ts1: &TimeStamp, ts2: &TimeStamp) -> anyhow::Result<Self> {
+        Ok(Duration(chrono::Duration::to_std(
+            &ts1.0.signed_duration_since(ts2.0),
+        )?))
+    }
+
+    pub fn new() -> Self {
+        Duration(std::time::Duration::from_secs_f64(0.0))
+    }
 }
 
 impl Add for Duration {
-    type Output = Duration;
-
-    fn add(self, rhs: Duration) -> Duration {
+    type Output = Self;
+    fn add(self, rhs: Duration) -> Self::Output {
         Duration(
             self.0
                 .checked_add(rhs.0)
-                .expect("overflow when adding durations"),
+                .expect("overflow when adding durations."),
+        )
+    }
+}
+
+impl AddAssign for Duration {
+    fn add_assign(&mut self, rhs: Duration) {
+        self.0 = self.0 + rhs.0;
+    }
+}
+
+impl Sub for Duration {
+    type Output = Duration;
+    fn sub(self, rhs: Duration) -> Duration {
+        Duration(
+            self.0
+                .checked_sub(rhs.0)
+                .expect("overflow when subtracting durations"),
         )
     }
 }
@@ -59,6 +88,16 @@ pub enum ActivityType {
     Running,
     Cycling,
     Unknown,
+}
+
+impl ActivityType {
+    pub const fn is_running(&self) -> bool {
+        matches!(*self, Self::Running)
+    }
+
+    pub const fn is_cycling(&self) -> bool {
+        matches!(*self, Self::Cycling)
+    }
 }
 
 impl Default for ActivityType {
@@ -133,6 +172,7 @@ pub struct Record {
     pub lat: Vec<Option<f64>>,
     pub lon: Vec<Option<f64>>,
     pub timestamp: Vec<TimeStamp>,
+    pub duration: Vec<Duration>,
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -218,15 +258,11 @@ pub struct Gear {
     pub fixed_distance: f64,
 }
 
-#[derive(Serialize, Deserialize, Default)]
-pub struct User {
-    pub heartrate_rest: Option<u8>,
-    pub heartrate_max: Option<u8>,
-    pub standard_gear: String,
-}
-
-impl User {
-    pub fn new() -> Self {
-        Default::default()
-    }
+pub struct UserTotals {
+    pub cycling_month: (f64, Duration, usize),
+    pub cycling_year: (f64, Duration, usize),
+    pub cycling_all: (f64, Duration, usize),
+    pub running_month: (f64, Duration, usize),
+    pub running_year: (f64, Duration, usize),
+    pub running_all: (f64, Duration, usize),
 }

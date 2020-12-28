@@ -1,8 +1,8 @@
-use super::{error::ErrorTemplate, UrlFor};
+use super::UrlFor;
 use crate::{Duration, Gear, GearType};
 use actix_identity::Identity;
 use actix_web::http;
-use actix_web::{web, web::block, HttpRequest, HttpResponse, Responder};
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
 use serde::Deserialize;
 use std::str::FromStr;
@@ -13,7 +13,6 @@ struct GearSettingsTemplate<'a> {
     url: UrlFor,
     id: Identity,
     gear: &'a Gear,
-    user: &'a str,
     title: &'a str,
     message: Option<&'a str>,
 }
@@ -24,17 +23,12 @@ pub async fn gear_settings(
     data: web::Data<crate::Database>,
     web::Path((username, gear_name)): web::Path<(String, String)>,
 ) -> impl Responder {
-    let gear = {
-        let username = username.clone();
-        block(move || data.as_ref().gear.get(&username, &gear_name))
-    }
-    .await?;
+    let gear = data.gear.get(&username, &gear_name).unwrap();
 
     GearSettingsTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
         gear: &gear,
-        user: &username,
         title: &gear.name,
         message: None,
     }
@@ -71,22 +65,16 @@ pub async fn gear_settings_post(
     };
 
     if result.is_none() {
-        let username = username.clone();
         let gear = Gear {
             name: gear_form.name.clone(),
             gear_type: gear_type.unwrap(),
             fixed_distance: gear_form.fixed_distance,
         };
 
-        block(move || {
-            if gear_form.standard {
-                data.as_ref()
-                    .users
-                    .set_standard_gear(&username, &gear_form.name);
-            }
-            data.as_ref().gear.insert(gear, &username)
-        })
-        .await;
+        if gear_form.standard {
+            data.users.set_standard_gear(&username, &gear_form.name);
+        }
+        data.gear.insert(gear, &username);
 
         let url: UrlFor = UrlFor::new(&id, &req)?;
         return Ok(HttpResponse::Found()
@@ -95,17 +83,12 @@ pub async fn gear_settings_post(
             .into_body());
     }
 
-    let gear = {
-        let username = username.clone();
-        block(move || data.as_ref().gear.get(&username, &gear_name))
-    }
-    .await?;
+    let gear = data.gear.get(&username, &gear_name).unwrap();
 
     GearSettingsTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
         gear: &gear,
-        user: &username,
         title: &gear.name,
         message: result,
     }
@@ -119,46 +102,30 @@ struct GearIndexTemplate<'a> {
     id: Identity,
     gears: Vec<((f64, Duration), Gear)>,
     standard_gear: Option<String>,
-    user: &'a str,
+    username: &'a str,
     title: &'a str,
 }
 
 pub async fn gear_index(
     req: HttpRequest,
     id: Identity,
-    user: web::Path<String>,
+    username: web::Path<String>,
     data: web::Data<crate::Database>,
 ) -> impl Responder {
-    let gear_iter = {
-        let (user, data) = (user.clone(), data.clone());
+    let gear_iter = data.gear.iter(&username).unwrap();
 
-        block(move || data.as_ref().gear.iter(&user))
-    }
-    .await?;
+    let standard_gear = data.users.get_standard_gear(&username).unwrap();
 
-    let standard_gear = {
-        let (user, data) = (user.clone(), data.clone());
-
-        block(move || data.as_ref().users.get_standard_gear(&user))
-    }
-    .await?;
-
-    let gears: Vec<((f64, Duration), Gear)> = {
-        let user = user.clone();
-        block::<_, _, actix_web::error::BlockingError<std::io::Error>>(move || {
-            Ok(gear_iter
-                .map(|x| (data.as_ref().activities.gear_totals(&user, &x.name), x))
-                .collect::<Vec<((f64, Duration), Gear)>>())
-        })
-        .await?
-    };
+    let gears: Vec<((f64, Duration), Gear)> = gear_iter
+        .map(|x| (data.activities.gear_totals(&username, &x.name), x))
+        .collect();
 
     GearIndexTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
         gears,
         standard_gear,
-        user: &user,
+        username: &username,
         title: "Gear",
     }
     .into_response()
@@ -169,16 +136,14 @@ pub async fn gear_index(
 struct GearAddTemplate<'a> {
     url: UrlFor,
     id: Identity,
-    user: &'a str,
     title: &'a str,
     message: Option<&'a str>,
 }
 
-pub async fn gear_add(req: HttpRequest, id: Identity, user: web::Path<String>) -> impl Responder {
+pub async fn gear_add(req: HttpRequest, id: Identity) -> impl Responder {
     GearAddTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
-        user: &user,
         title: "Add new gear",
         message: None,
     }
@@ -188,17 +153,21 @@ pub async fn gear_add(req: HttpRequest, id: Identity, user: web::Path<String>) -
 pub async fn gear_add_post(
     req: HttpRequest,
     id: Identity,
-    user: web::Path<String>,
+    username: web::Path<String>,
     data: web::Data<crate::Database>,
     form: web::Form<GearForm>,
 ) -> impl Responder {
-    let user = user.into_inner();
+    let username = username.into_inner();
     let gear_form = form.into_inner();
     let gear_type = GearType::from_str(&gear_form.gear_type);
 
     let result = {
         if gear_type.is_err() {
             Some("Wrong gear type specified.")
+        } else if gear_form.name.is_empty() {
+            Some("Gear name can not be empty.")
+        } else if data.gear.exists(&username, &gear_form.name).unwrap() {
+            Some("A gear with this name already exists.")
         } else {
             None
         }
@@ -211,15 +180,10 @@ pub async fn gear_add_post(
             fixed_distance: gear_form.fixed_distance,
         };
 
-        web::block(move || {
-            if gear_form.standard {
-                data.as_ref()
-                    .users
-                    .set_standard_gear(&user, &gear_form.name);
-            }
-            data.as_ref().gear.insert(gear, &user)
-        })
-        .await;
+        if gear_form.standard {
+            data.users.set_standard_gear(&username, &gear_form.name);
+        }
+        data.gear.insert(gear, &username);
 
         let url: UrlFor = UrlFor::new(&id, &req)?;
 
@@ -232,7 +196,6 @@ pub async fn gear_add_post(
     GearAddTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
-        user: &user,
         title: "Add new gear",
         message: result,
     }

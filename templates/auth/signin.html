@@ -1,16 +1,25 @@
 {% extends "base.html" %}
 {% block content %}
   
-{% match message %}
-  {% when Some with (value) %}
-    {{ value }}
-  {% when None %}
-{% endmatch %}
 <div class="container">
+  <h2>Sign in</h2>
+  {% match message %}
+    {% when Some with (value) %}
+      <div class="toast toast-error">
+	{{ value }}
+      </div>
+    {% when None %}
+  {% endmatch %}
   <form action="signin" method="POST" class="form-group">
     <fieldset>
-      <input type="text" name="username" id="username" placeholder="Username">
-      <input type='password' name='password' id='password' placeholder='Password'>
+      <div class="form-group">
+	<label class="form-label" for="username">Username</label>
+	<input type="text" class="form-input" name="username" id="username" autofocus required>
+      </div>
+      <div class="form-group">
+	<label class="form-label" for="password">Password</label>
+	<input type='password' class="form-input" name='password' id='password' required>
+      </div>
       <button type="submit" class="btn btn-primary">Sign in</button>
     </fieldset>
   </form>

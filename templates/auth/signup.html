@@ -1,17 +1,29 @@
 {% extends "base.html" %}
 {% block content %}
 
-{% match message %}
-  {% when Some with (value) %}
-    {{ value }}
-  {% when None %}
-{% endmatch %}
 <div class="container">
+  <h2>Sign up</h2>
+  {% match message %}
+    {% when Some with (value) %}
+      <div class="toast toast-error">
+	{{ value }}
+      </div>
+    {% when None %}
+  {% endmatch %}
   <form action="signup" method="POST" class="form-group">
     <fieldset>
-      <input type="text" name="username" id="username" pattern="^[a-zA-Z0-9]+$" autofocus required title="Please enter a username consisting of only letters and numbers" placeholder="Username">
-      <input type='password' name='password' id='password' placeholder='Password'>
-      <input type='password' name='confirmpassword' id='confirmpassword' placeholder='Confirm password'>
+      <div class="form-group">
+	<label class="form-label" for="username">Username</label>
+	<input type="text" class="form-input" name="username" id="username" pattern="^[a-zA-Z0-9]+$" autofocus required title="Please enter a username consisting of only letters and numbers">
+      </div>
+      <div class="form-group">
+	<label class="form-label" for="password">Password</label>
+	<input type="password" class="form-input" name="password" id="password" required>
+      </div>
+      <div class="form-group">
+	<label class="form-label" for="confirm_password">Confirm password</label>
+	<input type=2password" class="form-input" name="confirm_password" id="confirm_password" required>
+      </div>
       <button type="submit" class="btn btn-primary">Sign in</button>
     </fieldset>
   </form>

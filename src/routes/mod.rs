@@ -30,19 +30,22 @@ impl UrlFor {
         Ok(UrlFor {
             _static: req.url_for_static("static")?,
             index: req.url_for_static("index")?,
-            user: req.url_for("user", &[&user.identity().unwrap_or("None".to_string())])?,
+            user: req.url_for(
+                "user",
+                &[&user.identity().unwrap_or_else(|| "None".to_string())],
+            )?,
             user_index: req.url_for_static("user_index")?,
             activity_index: req.url_for(
                 "activity_index",
-                &[&user.identity().unwrap_or("None".to_string())],
+                &[&user.identity().unwrap_or_else(|| "None".to_string())],
             )?,
             gear_index: req.url_for(
                 "gear_index",
-                &[&user.identity().unwrap_or("None".to_string())],
+                &[&user.identity().unwrap_or_else(|| "None".to_string())],
             )?,
             gear_add: req.url_for(
                 "gear_add",
-                &[&user.identity().unwrap_or("None".to_string())],
+                &[&user.identity().unwrap_or_else(|| "None".to_string())],
             )?,
             upload: req.url_for_static("upload")?,
             signin: req.url_for_static("signin")?,

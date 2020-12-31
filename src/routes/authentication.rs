@@ -38,10 +38,8 @@ pub async fn signin_post(
     let username = form.username.clone();
     let password = form.password.clone();
 
-    if data.get_ref().users.exists(&form.username).unwrap()
-        && web::block(move || data.get_ref().users.verify_hash(&username, &password))
-            .await
-            .unwrap()
+    if data.users.exists(&form.username).unwrap()
+        && data.users.verify_hash(&username, &password).unwrap()
     {
         id.remember(form.username.to_owned());
 
@@ -106,12 +104,7 @@ pub async fn signup_post(
     };
 
     if result().is_none() {
-        web::block(move || {
-            data.get_ref()
-                .users
-                .insert(crate::User::new(), &form.username, &form.password)
-        })
-        .await;
+        data.users.insert(&form.username, &form.password);
 
         return Ok(HttpResponse::Found()
             .header(http::header::LOCATION, "/signin")

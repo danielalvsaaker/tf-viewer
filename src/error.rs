@@ -1,8 +1,4 @@
-use actix_web::{ http::StatusCode,
-    HttpResponse,
-    dev::HttpResponseBuilder,
-    ResponseError,
-};
+use actix_web::{dev::HttpResponseBuilder, http::StatusCode, HttpResponse, ResponseError};
 use askama_actix::Template;
 use thiserror::Error;
 
@@ -48,8 +44,7 @@ impl ResponseError for Error {
                 ErrorKind::Forbidden => StatusCode::FORBIDDEN,
                 ErrorKind::NotFound => StatusCode::NOT_FOUND,
             }
-        }
-        else {
+        } else {
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }
@@ -68,8 +63,8 @@ impl ResponseError for Error {
             title: &title,
             text: &self,
         }
-            .render()
-            .expect("Failed to render error template");
+        .render()
+        .expect("Failed to render error template");
 
         HttpResponseBuilder::new(self.status_code())
             .content_type("text/html")

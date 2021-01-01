@@ -46,7 +46,8 @@ pub async fn upload_post(
     match parsed {
         Ok(x) => {
             let id = id.identity().unwrap();
-            data.activities.insert(x, &id)
+            data.activities
+                .insert(x, &id)
                 .map(|_| HttpResponse::Ok().finish().into_body())
         }
         Err(x) => Ok(HttpResponse::BadRequest().body(x.to_string())),

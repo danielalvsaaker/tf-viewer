@@ -31,9 +31,7 @@ pub async fn activity(
     id: Identity,
     web::Path((username, activity_id)): web::Path<(String, String)>,
 ) -> impl Responder {
-    let activity = data
-        .activities
-        .get_activity(&username, &activity_id)?;
+    let activity = data.activities.get_activity(&username, &activity_id)?;
 
     let plot = super::utils::plot(&activity.record)?;
 
@@ -81,9 +79,7 @@ pub async fn activity_settings(
     data: web::Data<crate::Database>,
     web::Path((username, activity_id)): web::Path<(String, String)>,
 ) -> impl Responder {
-    let activity = data
-        .activities
-        .get_activity(&username, &activity_id)?;
+    let activity = data.activities.get_activity(&username, &activity_id)?;
 
     let gear_iter = data.gear.iter(&username)?.map(|x| x.name);
 
@@ -122,9 +118,7 @@ pub async fn activity_settings_post(
 ) -> impl Responder {
     let form = form.into_inner();
 
-    let mut activity = data
-        .activities
-        .get_activity(&username, &activity_id)?;
+    let mut activity = data.activities.get_activity(&username, &activity_id)?;
 
     let gear_iter = data.gear.iter(&username)?.map(|x| x.name);
 
@@ -141,8 +135,7 @@ pub async fn activity_settings_post(
         if let Some(ref x) = form.gear_id {
             if !gears.iter().any(|y| y == x) {
                 Some("The specified gear does not exist.")
-            } 
-            else {
+            } else {
                 None
             }
         } else {

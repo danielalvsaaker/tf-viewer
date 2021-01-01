@@ -1,3 +1,4 @@
+use crate::error::{Error, Result};
 use crate::Duration;
 use plotly::{
     common::Mode,
@@ -5,7 +6,6 @@ use plotly::{
     Plot, Scatter,
 };
 use staticmap::{Color, Line, StaticMap};
-use crate::error::{Result, Error};
 
 pub fn plot(record: &crate::Record) -> Result<String> {
     let heartrate = Scatter::new(record.distance.clone(), record.heartrate.clone())

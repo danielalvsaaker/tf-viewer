@@ -1,7 +1,7 @@
+use crate::error::{Error, ErrorKind, Result};
 use argon2::{hash_encoded, verify_encoded, Config};
 use getrandom::getrandom;
 use std::convert::TryInto;
-use crate::error::{Result, Error, ErrorKind};
 
 #[derive(Clone)]
 pub struct UserTree {
@@ -67,14 +67,14 @@ impl UserTree {
             Ok(Some((
                 u8::from_ne_bytes(
                     x.as_ref()
-                    .try_into()
-                    .map_err(|_| Error::BadServerResponse("Failed to get heart rate"))?
+                        .try_into()
+                        .map_err(|_| Error::BadServerResponse("Failed to get heart rate"))?,
                 ),
                 u8::from_ne_bytes(
                     y.as_ref()
-                    .try_into()
-                    .map_err(|_| Error::BadServerResponse("Failed to get heart rate"))?
-                )
+                        .try_into()
+                        .map_err(|_| Error::BadServerResponse("Failed to get heart rate"))?,
+                ),
             )))
         } else {
             Ok(None)
@@ -84,13 +84,17 @@ impl UserTree {
     pub fn verify_hash(&self, id: &str, password: &str) -> Result<bool> {
         let hash = String::from_utf8(
             self.username_password
-            .get(&id)?
-            .ok_or(Error::BadRequest(ErrorKind::BadRequest, "Password not found in database"))?
-            .to_vec()
-        ).map_err(|_| Error::BadServerResponse("Password in database is invalid"))?;
+                .get(&id)?
+                .ok_or(Error::BadRequest(
+                    ErrorKind::BadRequest,
+                    "Password not found in database",
+                ))?
+                .to_vec(),
+        )
+        .map_err(|_| Error::BadServerResponse("Password in database is invalid"))?;
 
         verify_encoded(&hash, password.as_bytes())
-        .map_err(|_| Error::BadServerResponse("Failed to verify password hash"))
+            .map_err(|_| Error::BadServerResponse("Failed to verify password hash"))
     }
 
     pub fn iter_id(&self) -> Result<impl Iterator<Item = String>> {

@@ -1,4 +1,7 @@
-use crate::{Activity, Duration, Lap, Record, Session, UserTotals, error::{Error, ErrorKind, Result}};
+use crate::{
+    error::{Error, ErrorKind, Result},
+    Activity, Duration, Lap, Record, Session, UserTotals,
+};
 use chrono::{self, Datelike, Local};
 
 #[derive(Clone)]
@@ -238,7 +241,8 @@ impl ActivityTree {
         key.push(0xff);
         key.extend_from_slice(id.as_bytes());
 
-        self.usernameid_session.get(&key)?
+        self.usernameid_session
+            .get(&key)?
             .map(|x| bincode::deserialize::<Session>(&x).ok())
             .flatten()
             .ok_or(Error::BadRequest(ErrorKind::NotFound, "Session not found"))
@@ -249,7 +253,8 @@ impl ActivityTree {
         key.push(0xff);
         key.extend_from_slice(id.as_bytes());
 
-        self.usernameid_record.get(&key)?
+        self.usernameid_record
+            .get(&key)?
             .map(|x| bincode::deserialize::<Record>(&x).ok())
             .flatten()
             .ok_or(Error::BadRequest(ErrorKind::NotFound, "Record not found"))
@@ -260,7 +265,8 @@ impl ActivityTree {
         key.push(0xff);
         key.extend_from_slice(id.as_bytes());
 
-        self.usernameid_lap.get(&key)?
+        self.usernameid_lap
+            .get(&key)?
             .map(|x| bincode::deserialize::<Vec<Lap>>(&x).ok())
             .flatten()
             .ok_or(Error::BadRequest(ErrorKind::NotFound, "Laps not found"))

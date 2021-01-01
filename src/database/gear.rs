@@ -1,5 +1,5 @@
-use crate::Gear;
 use crate::error::Result;
+use crate::Gear;
 
 #[derive(Clone)]
 pub struct GearTree {
@@ -44,9 +44,13 @@ impl GearTree {
         key.push(0xff);
         key.extend_from_slice(id.as_bytes());
 
-        self.usernameid_gear.get(&key)?
+        self.usernameid_gear
+            .get(&key)?
             .map(|x| bincode::deserialize::<Gear>(&x).ok())
             .flatten()
-            .ok_or(crate::error::Error::BadRequest(crate::error::ErrorKind::NotFound, "Gear not found"))
+            .ok_or(crate::error::Error::BadRequest(
+                crate::error::ErrorKind::NotFound,
+                "Gear not found",
+            ))
     }
 }

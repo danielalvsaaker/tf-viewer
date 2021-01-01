@@ -3,7 +3,10 @@ use fitparser::FitDataField;
 use fitparser::Value::*;
 use std::{str::FromStr, string::String};
 
-use crate::{Activity, ActivityType, Duration, Lap, Record, Session, TimeStamp, error::{Error, ErrorKind, Result}};
+use crate::{
+    error::{Error, ErrorKind, Result},
+    Activity, ActivityType, Duration, Lap, Record, Session, TimeStamp,
+};
 
 pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
     let mut session: Session = Session::new();
@@ -14,7 +17,10 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
         .map_err(|_| Error::BadRequest(ErrorKind::BadRequest, "File is not a valid .fit-file"))?;
 
     if !file.iter().any(|x| x.kind() == MesgNum::Session) {
-        return Err(Error::BadRequest(ErrorKind::BadRequest, "File does not contain session data."));
+        return Err(Error::BadRequest(
+            ErrorKind::BadRequest,
+            "File does not contain session data.",
+        ));
     }
 
     for data in file {

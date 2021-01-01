@@ -1,3 +1,4 @@
+use crate::error::{Error, Result};
 use chrono::offset::Local;
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
@@ -5,7 +6,6 @@ use std::{
     ops::{Add, AddAssign, Sub},
     str::FromStr,
 };
-use crate::error::{Result, Error};
 
 /// Wrapper for chrono::DateTime
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
@@ -38,10 +38,8 @@ impl Duration {
 
     pub fn between(ts1: &TimeStamp, ts2: &TimeStamp) -> Self {
         Duration(
-            chrono::Duration::to_std(
-                &ts1.0.signed_duration_since(ts2.0)
-            )
-            .expect("Duration out of bounds")
+            chrono::Duration::to_std(&ts1.0.signed_duration_since(ts2.0))
+                .expect("Duration out of bounds"),
         )
     }
 

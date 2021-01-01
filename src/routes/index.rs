@@ -26,10 +26,7 @@ pub async fn index(
     req: HttpRequest,
     data: web::Data<crate::Database>,
 ) -> impl Responder {
-    let (username_iter, id_iter) = (
-        data.activities.iter_username()?,
-        data.activities.iter_id()?,
-    );
+    let (username_iter, id_iter) = (data.activities.iter_username()?, data.activities.iter_id()?);
 
     let mut username_id: Vec<(String, String)> = username_iter.zip(id_iter).collect();
 

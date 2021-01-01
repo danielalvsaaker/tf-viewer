@@ -1,4 +1,4 @@
-use super::{UrlFor};
+use super::UrlFor;
 use actix_identity::Identity;
 use actix_multipart::Multipart;
 use actix_web::{http, web, Either, HttpRequest, HttpResponse, Responder};
@@ -23,9 +23,7 @@ pub async fn user(
     data: web::Data<crate::Database>,
     username: web::Path<String>,
 ) -> impl Responder {
-
     data.users.exists(&username)?;
-
 
     let user_totals = data.activities.user_totals(&username)?;
 
@@ -117,7 +115,8 @@ pub async fn user_settings_post(
             Some("Passwords do not match.")
         } else if !data
             .users
-            .verify_hash(&username, &form.current_password).ok()?
+            .verify_hash(&username, &form.current_password)
+            .ok()?
         {
             Some("Incorrect password.")
         } else {

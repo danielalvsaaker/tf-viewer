@@ -35,7 +35,6 @@ pub async fn signin_post(
     req: HttpRequest,
     id: Identity,
 ) -> impl Responder {
-
     if data.users.exists(&form.username)?
         && data.users.verify_hash(&form.username, &form.password)?
     {

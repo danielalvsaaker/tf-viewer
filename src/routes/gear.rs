@@ -112,9 +112,10 @@ pub async fn gear_index(
     username: web::Path<String>,
     data: web::Data<crate::Database>,
 ) -> impl Responder {
-    let gear_iter = data.gear.iter(&username).unwrap();
+    data.users.exists(&username)?;
 
-    let standard_gear = data.users.get_standard_gear(&username).unwrap();
+    let gear_iter = data.gear.iter(&username)?;
+    let standard_gear = data.users.get_standard_gear(&username)?;
 
     let gears: Vec<((f64, Duration), Gear)> = gear_iter
         .map(|x| (data.activities.gear_totals(&username, &x.name), x))
@@ -166,7 +167,7 @@ pub async fn gear_add_post(
             Some("Wrong gear type specified.")
         } else if gear_form.name.is_empty() {
             Some("Gear name can not be empty.")
-        } else if data.gear.exists(&username, &gear_form.name).unwrap() {
+        } else if data.gear.exists(&username, &gear_form.name)? {
             Some("A gear with this name already exists.")
         } else {
             None
@@ -176,7 +177,7 @@ pub async fn gear_add_post(
     if result.is_none() {
         let gear = Gear {
             name: gear_form.name.clone(),
-            gear_type: gear_type.unwrap(),
+            gear_type: gear_type?,
             fixed_distance: gear_form.fixed_distance,
         };
 

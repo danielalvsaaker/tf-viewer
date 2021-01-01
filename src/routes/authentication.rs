@@ -35,7 +35,7 @@ pub async fn signin_post(
     req: HttpRequest,
     id: Identity,
 ) -> impl Responder {
-    if data.users.exists(&form.username)?
+    if data.users.exists(&form.username).is_ok()
         && data.users.verify_hash(&form.username, &form.password)?
     {
         id.remember(form.username.to_owned());

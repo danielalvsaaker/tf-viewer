@@ -39,7 +39,7 @@ impl GearTree {
             .flat_map(|x| bincode::deserialize::<Gear>(&x)))
     }
 
-    pub fn get(&self, username: &str, id: &str) -> crate::error::Result<Gear> {
+    pub fn get(&self, username: &str, id: &str) -> Result<Gear> {
         let mut key = username.as_bytes().to_vec();
         key.push(0xff);
         key.extend_from_slice(id.as_bytes());
@@ -48,9 +48,6 @@ impl GearTree {
             .get(&key)?
             .map(|x| bincode::deserialize::<Gear>(&x).ok())
             .flatten()
-            .ok_or(crate::error::Error::BadRequest(
-                crate::error::ErrorKind::NotFound,
-                "Gear not found",
-            ))
+            .ok_or(Error::BadRequest(ErrorKind::NotFound, "Gear not found"))
     }
 }

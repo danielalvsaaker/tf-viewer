@@ -25,7 +25,7 @@ actix-multipart = "0.3"
 url = "2.2"
 rust-argon2 = { version = "0.8", default-features = false }
 getrandom = "0.2"
-anyhow = "1.0"
+thiserror = "1.0"
 futures = "0.3"
 askama = { version = "0.10", default-features = false }
 askama_actix = "0.11"

@@ -3,7 +3,7 @@ use std::task::{Context, Poll};
 use actix_identity::Identity;
 use actix_service::{Service, Transform};
 use actix_web::dev::{Payload, ServiceRequest, ServiceResponse};
-use actix_web::{http, Error, FromRequest, HttpRequest, HttpResponse};
+use actix_web::{http, Error, FromRequest, HttpRequest, HttpResponse, ResponseError};
 use futures::future::{ok, Either, Future, Ready};
 use std::pin::Pin;
 
@@ -70,9 +70,10 @@ where
             if owner == token.unwrap() {
                 Ok(res)
             } else {
-                let new_body = HttpResponse::Found()
-                    .header(http::header::LOCATION, "/")
-                    .finish()
+                let new_body = crate::error::Error::BadRequest(
+                    crate::error::ErrorKind::Forbidden,
+                    "User is not authorized to view the requested route")
+                    .error_response()
                     .into_body();
                 let res = res.into_response(new_body);
 

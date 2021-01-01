@@ -31,16 +31,13 @@ pub async fn activity(
     id: Identity,
     web::Path((username, activity_id)): web::Path<(String, String)>,
 ) -> impl Responder {
-    let activity = data
-        .activities
-        .get_activity(&username, &activity_id)
-        .unwrap();
+    let activity = data.activities.get_activity(&username, &activity_id)?;
 
-    let plot = super::utils::plot(&activity.record).unwrap();
+    let plot = super::utils::plot(&activity.record)?;
 
     let zones = {
-        let user = data.users.get_heartrate(&username).unwrap();
-        super::utils::zone_duration(&activity.record, &user).unwrap()
+        let user = data.users.get_heartrate(&username)?;
+        super::utils::zone_duration(&activity.record, &user)?
     };
 
     ActivityTemplate {
@@ -82,13 +79,11 @@ pub async fn activity_settings(
     data: web::Data<crate::Database>,
     web::Path((username, activity_id)): web::Path<(String, String)>,
 ) -> impl Responder {
-    let activity = data
-        .activities
-        .get_activity(&username, &activity_id)
-        .unwrap();
+    let activity = data.activities.get_activity(&username, &activity_id)?;
 
-    let gear_iter = data.gear.iter(&username).unwrap().map(|x| x.name);
+    let gear_iter = data.gear.iter(&username)?.map(|x| x.name);
 
+    #[allow(unused_assignments)]
     let mut gears: Vec<String> = Vec::new();
     if let Some(gear_id) = activity.gear_id {
         gears = gear_iter.filter(|x| x != &gear_id).collect();
@@ -111,7 +106,7 @@ pub async fn activity_settings(
 #[derive(Deserialize)]
 pub struct ActivitySettingsForm {
     pub activity_type: String,
-    pub gear_id: String,
+    pub gear_id: Option<String>,
 }
 
 pub async fn activity_settings_post(
@@ -123,13 +118,11 @@ pub async fn activity_settings_post(
 ) -> impl Responder {
     let form = form.into_inner();
 
-    let mut activity = data
-        .activities
-        .get_activity(&username, &activity_id)
-        .unwrap();
+    let mut activity = data.activities.get_activity(&username, &activity_id)?;
 
-    let gear_iter = data.gear.iter(&username).unwrap().map(|x| x.name);
+    let gear_iter = data.gear.iter(&username)?.map(|x| x.name);
 
+    #[allow(unused_assignments)]
     let mut gears: Vec<String> = Vec::new();
     if let Some(gear_id) = activity.gear_id {
         gears = gear_iter.filter(|x| x != &gear_id).collect();
@@ -139,8 +132,12 @@ pub async fn activity_settings_post(
     }
 
     let result = {
-        if !gears.iter().any(|x| x == &form.gear_id) {
-            Some("The specified gear does not exist.")
+        if let Some(ref x) = form.gear_id {
+            if !gears.iter().any(|y| y == x) {
+                Some("The specified gear does not exist.")
+            } else {
+                None
+            }
         } else {
             None
         }
@@ -149,9 +146,9 @@ pub async fn activity_settings_post(
     if result.is_none() {
         activity.session.activity_type =
             ActivityType::from_str(&form.activity_type).unwrap_or_default();
-        activity.gear_id = Some(form.gear_id);
+        activity.gear_id = form.gear_id;
 
-        data.activities.insert_or_overwrite(activity, &username);
+        data.activities.insert_or_overwrite(activity, &username)?;
 
         let url: UrlActivity = UrlActivity::new(&username, &activity_id, &req)?;
 
@@ -177,19 +174,22 @@ pub async fn activity_settings_post(
 struct ActivityIndexTemplate<'a> {
     url: UrlFor,
     id: Identity,
-    user: &'a str,
+    username: &'a str,
     title: &'a str,
 }
 
 pub async fn activity_index(
     req: HttpRequest,
     id: Identity,
-    user: web::Path<String>,
+    username: web::Path<String>,
+    data: web::Data<crate::Database>,
 ) -> impl Responder {
+    data.users.exists(&username)?;
+
     ActivityIndexTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
-        user: &user,
+        username: &username,
         title: "Activities",
     }
     .into_response()
@@ -197,11 +197,11 @@ pub async fn activity_index(
 
 pub async fn activity_index_post(
     request: web::Json<DataRequest>,
+    username: web::Path<String>,
     data: web::Data<crate::Database>,
-    user: web::Path<String>,
 ) -> impl Responder {
-    let iter = data.activities.username_iter_session(&user).unwrap();
-    let id = data.activities.username_iter_id(&user).unwrap();
+    let iter = data.activities.username_iter_session(&username).unwrap();
+    let id = data.activities.username_iter_id(&username).unwrap();
 
     let mut sessions: Vec<ActivityData> = iter
         .zip(id)

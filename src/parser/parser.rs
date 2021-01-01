@@ -3,18 +3,24 @@ use fitparser::FitDataField;
 use fitparser::Value::*;
 use std::{str::FromStr, string::String};
 
-use crate::{Activity, ActivityType, Duration, Lap, Record, Session, TimeStamp};
-use anyhow::{anyhow, Result};
+use crate::{
+    error::{Error, ErrorKind, Result},
+    Activity, ActivityType, Duration, Lap, Record, Session, TimeStamp,
+};
 
 pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
     let mut session: Session = Session::new();
     let mut record: Record = Record::new();
     let mut lap_vec: Vec<Lap> = Vec::new();
 
-    let file = fitparser::from_bytes(fit_data)?;
+    let file = fitparser::from_bytes(fit_data)
+        .map_err(|_| Error::BadRequest(ErrorKind::BadRequest, "File is not a valid .fit-file"))?;
 
     if !file.iter().any(|x| x.kind() == MesgNum::Session) {
-        return Err(anyhow!("File does not contain session data."));
+        return Err(Error::BadRequest(
+            ErrorKind::BadRequest,
+            "File does not contain session data.",
+        ));
     }
 
     for data in file {
@@ -110,7 +116,8 @@ fn parse_session(fields: Vec<FitDataField>, mut session: Session) -> Result<Sess
             }
             "sport" => {
                 if let String(x) = field.value() {
-                    session.activity_type = ActivityType::from_str(x)?;
+                    session.activity_type = ActivityType::from_str(x)
+                        .map_err(|_| Error::BadServerResponse("Failed to parse activity type"))?;
                 }
             }
             "total_ascent" => {
@@ -198,7 +205,7 @@ fn parse_record(fields: Vec<FitDataField>, mut record: Record) -> Result<Record>
 
                     match record.timestamp.first() {
                         Some(x) => {
-                            let duration = Duration::between(&timestamp, x)?;
+                            let duration = Duration::between(&timestamp, x);
                             record.duration.push(duration);
                         }
                         None => record.duration.push(Duration::new()),

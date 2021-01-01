@@ -1,4 +1,5 @@
 mod database;
+mod error;
 mod middleware;
 mod models;
 pub mod parser;
@@ -16,8 +17,9 @@ pub use parser::*;
 
 use actix_files::Files;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
-use actix_web::{guard, web, App, HttpServer};
+use actix_web::{web, App, HttpServer, ResponseError};
 
+use error::{Error, ErrorKind};
 use middleware::{AuthType, CheckLogin, Restricted};
 use routes::{
     activity::{
@@ -27,10 +29,7 @@ use routes::{
     gear::{gear_add, gear_add_post, gear_index, gear_settings, gear_settings_post},
     index::index,
     upload::{upload, upload_post},
-    user::{
-        user, user_avatar, user_avatar_post, user_index, user_index_post, user_settings,
-        user_settings_post,
-    },
+    user::{user, user_avatar, user_avatar_post, user_index, user_settings, user_settings_post},
 };
 
 #[actix_web::main]
@@ -41,17 +40,17 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .default_service(
+                web::route().to(|| {
+                    Error::BadRequest(ErrorKind::NotFound, "Page not found").error_response()
+                }),
+            )
             .wrap(IdentityService::new(
                 CookieIdentityPolicy::new(&[0; 32])
                     .name("tf-viewer")
                     .secure(false),
             ))
             .data(data.clone())
-            .default_service(
-                web::route()
-                    .guard(guard::Not(guard::Get()))
-                    .to(routes::error::ErrorTemplate::not_found),
-            )
             .service(Files::new("/static", "static"))
             .service(web::resource("/static").name("static"))
             .service(
@@ -84,8 +83,7 @@ async fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/")
                                     .name("user_index")
-                                    .route(web::get().to(user_index))
-                                    .route(web::post().to(user_index_post)),
+                                    .route(web::get().to(user_index)),
                             )
                             .service(web::resource("/{username}").name("user").to(user))
                             .service(

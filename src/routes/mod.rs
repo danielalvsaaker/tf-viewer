@@ -5,7 +5,6 @@ use url::Url;
 pub mod activity;
 pub mod api;
 pub mod authentication;
-pub mod error;
 pub mod gear;
 pub mod index;
 pub mod upload;

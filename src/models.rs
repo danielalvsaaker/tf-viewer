@@ -1,3 +1,4 @@
+use crate::error::{Error, Result};
 use chrono::offset::Local;
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
@@ -35,10 +36,11 @@ impl Duration {
         self.0.as_secs_f64()
     }
 
-    pub fn between(ts1: &TimeStamp, ts2: &TimeStamp) -> anyhow::Result<Self> {
-        Ok(Duration(chrono::Duration::to_std(
-            &ts1.0.signed_duration_since(ts2.0),
-        )?))
+    pub fn between(ts1: &TimeStamp, ts2: &TimeStamp) -> Self {
+        Duration(
+            chrono::Duration::to_std(&ts1.0.signed_duration_since(ts2.0))
+                .expect("Duration out of bounds"),
+        )
     }
 
     pub fn new() -> Self {
@@ -107,10 +109,10 @@ impl Default for ActivityType {
 }
 
 impl FromStr for ActivityType {
-    type Err = anyhow::Error;
+    type Err = Error;
     //Todo: implement proper error
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         Ok(match s {
             "running" => Self::Running,
             "cycling" => Self::Cycling,
@@ -223,17 +225,16 @@ pub enum GearType {
 }
 
 impl FromStr for GearType {
-    type Err = anyhow::Error;
-    //Todo: implement proper error
+    type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         match s {
             "road_bike" => Ok(Self::RoadBike),
             "hybrid_bike" => Ok(Self::HybridBike),
             "tt_bike" => Ok(Self::HybridBike),
             "offroad_bike" => Ok(Self::OffroadBike),
             "running_shoes" => Ok(Self::RunningShoes),
-            _ => Err(anyhow::anyhow!("Cannot parse gear type.")),
+            _ => Err(Error::BadServerResponse("Failed to parse gear type")),
         }
     }
 }

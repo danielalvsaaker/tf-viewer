@@ -1,6 +1,36 @@
-{% extends "base.html" %}
-{% block content %}
-
-<p>{{ text }}</p>
-
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title }} - Tf-viewer</title>
+  <link rel="stylesheet" href="/static/css/spectre.min.css">
+  <link rel="stylesheet" href="/static/css/spectre-exp.min.css">
+  <link rel="stylesheet" href="/static/css/spectre-icons.min.css">
+  <link rel="stylesheet" href="/static/css/stylesheet.css">
+  <link rel="icon" href="/static/img/favicon.png">
+</head>
+<body>
+<header class="navbar">
+  <div class="navbar-section">
+    <a href="/" class="navbar-brand text-bold text-light mr-2">Tf-viewer</a>
+  </div>
+  <div class="navbar-section d-invisible">
+    <a href="" class="btn btn-link text-light">Users</a>
+    <a href="" class="btn btn-link text-light">Activities</a>
+    <a href="" class="btn btn-link text-light">Gear</a>
+    <a href="" class="btn btn-link text-light">Upload</a>
+		<a href="" class="btn btn-link text-light">Sign in</a>
+  </div>
+</header>
+<body>
+  <div class="container">
+    <h2>{{ title }}</h2>
+    <div class="columns">
+      <div class="column col-auto">
+	<p>{{ text }}</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -22,9 +22,9 @@
     <a href="{{ url.upload }}" class="btn btn-link text-light">Upload</a>
     {% match id.identity() -%}
       {% when Some with (value) -%}
-	<a href="{{ url.user }}" class="btn btn-link text-light">{{ value }}</a>
+				<a href="{{ url.user }}" class="btn btn-link text-light">{{ value }}</a>
       {% when None -%}
-	<a href="{{ url.signin }}" class="btn btn-link text-light">Sign in</a>
+				<a href="{{ url.signin }}" class="btn btn-link text-light">Sign in</a>
     {% endmatch %}
   </div>
 </header>

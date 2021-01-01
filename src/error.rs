@@ -1,10 +1,19 @@
-use actix_web::{
-    http::StatusCode,
+use actix_web::{ http::StatusCode,
+    HttpResponse,
+    dev::HttpResponseBuilder,
     ResponseError,
 };
+use askama_actix::Template;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Template)]
+#[template(path = "error.html")]
+struct ErrorTemplate<'a> {
+    title: &'a str,
+    text: &'a Error,
+}
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -24,6 +33,13 @@ pub enum Error {
     BadRequest(ErrorKind, &'static str),
 }
 
+#[derive(Debug)]
+pub enum ErrorKind {
+    BadRequest,
+    Forbidden,
+    NotFound,
+}
+
 impl ResponseError for Error {
     fn status_code(&self) -> StatusCode {
         if let Self::BadRequest(kind, _) = &self {
@@ -37,23 +53,26 @@ impl ResponseError for Error {
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }
-}
 
-
-#[derive(Debug)]
-pub enum ErrorKind {
-    BadRequest,
-    Forbidden,
-    NotFound,
-}
-
-impl std::fmt::Display for ErrorKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let kind = match self {
-            ErrorKind::BadRequest => "Bad request",
-            ErrorKind::Forbidden => "Forbidden",
-            ErrorKind::NotFound => "Not found",
+    // Ugly result, and the trait should optimally serve HttpRequest as a parameter
+    // for this method
+    fn error_response(&self) -> HttpResponse {
+        let title = match self.status_code() {
+            StatusCode::BAD_REQUEST => "Bad request",
+            StatusCode::FORBIDDEN => "Forbidden",
+            StatusCode::NOT_FOUND => "Not found",
+            _ => "Internal server error",
         };
-        write!(f, "{}", kind)
+
+        let response = ErrorTemplate {
+            title: &title,
+            text: &self,
+        }
+            .render()
+            .expect("Failed to render error template");
+
+        HttpResponseBuilder::new(self.status_code())
+            .content_type("text/html")
+            .body(response)
     }
 }

@@ -17,9 +17,10 @@ pub use parser::*;
 
 use actix_files::Files;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
-use actix_web::{web, App, HttpServer};
+use actix_web::{web, App, HttpServer, ResponseError};
 
 use middleware::{AuthType, CheckLogin, Restricted};
+use error::{Error, ErrorKind};
 use routes::{
     activity::{
         activity, activity_index, activity_index_post, activity_settings, activity_settings_post,
@@ -42,6 +43,9 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .default_service(
+                web::route().to(|| Error::BadRequest(ErrorKind::NotFound, "Page not found").error_response())
+            )
             .wrap(IdentityService::new(
                 CookieIdentityPolicy::new(&[0; 32])
                     .name("tf-viewer")

@@ -1,7 +1,4 @@
-use super::{
-    api::{DataRequest, DataResponse, UserData},
-    UrlFor,
-};
+use super::{UrlFor};
 use actix_identity::Identity;
 use actix_multipart::Multipart;
 use actix_web::{http, web, Either, HttpRequest, HttpResponse, Responder};
@@ -26,7 +23,11 @@ pub async fn user(
     data: web::Data<crate::Database>,
     username: web::Path<String>,
 ) -> impl Responder {
-    let user_totals = data.activities.user_totals(&username).unwrap();
+
+    data.users.exists(&username)?;
+
+
+    let user_totals = data.activities.user_totals(&username)?;
 
     UserTemplate {
         url: UrlFor::new(&id, &req)?,
@@ -52,7 +53,7 @@ pub async fn user_index(
     id: Identity,
     data: web::Data<crate::Database>,
 ) -> impl Responder {
-    let users: Vec<String> = data.users.iter_id().unwrap().collect();
+    let users: Vec<String> = data.users.iter_id()?.collect();
 
     UserIndexTemplate {
         url: UrlFor::new(&id, &req)?,
@@ -61,34 +62,6 @@ pub async fn user_index(
         users,
     }
     .into_response()
-}
-
-pub async fn user_index_post(
-    request: web::Json<DataRequest>,
-    data: web::Data<crate::Database>,
-) -> impl Responder {
-    let ids = data.users.iter_id().unwrap();
-
-    let mut users: Vec<UserData> = ids.map(|x| UserData { name: x }).collect();
-
-    let amount = users.len();
-
-    if request.dir.as_str() == "asc" {
-        users.reverse();
-    }
-
-    let results: Vec<UserData> = users
-        .into_iter()
-        .skip(request.start)
-        .take(request.length)
-        .collect();
-
-    web::Json(DataResponse {
-        draw: request.draw,
-        records_total: amount,
-        records_filtered: amount,
-        data: results,
-    })
 }
 
 #[derive(Deserialize, Debug)]
@@ -120,7 +93,7 @@ pub async fn user_settings(
     data: web::Data<crate::Database>,
     username: web::Path<String>,
 ) -> impl Responder {
-    let heartrate = data.users.get_heartrate(&username).unwrap();
+    let heartrate = data.users.get_heartrate(&username)?;
 
     UserSettingsTemplate {
         url: UrlFor::new(&id, &req)?,
@@ -144,8 +117,7 @@ pub async fn user_settings_post(
             Some("Passwords do not match.")
         } else if !data
             .users
-            .verify_hash(&username, &form.current_password)
-            .unwrap()
+            .verify_hash(&username, &form.current_password).ok()?
         {
             Some("Incorrect password.")
         } else {
@@ -156,13 +128,13 @@ pub async fn user_settings_post(
     let form_result = match form {
         Either::A(x) => {
             data.users
-                .set_heartrate(&username, (x.heartrate_rest, x.heartrate_max));
+                .set_heartrate(&username, (x.heartrate_rest, x.heartrate_max))?;
             None
         }
         Either::B(x) => {
             let check_result = password_check(&x);
             if check_result.is_none() {
-                data.users.insert(&username, &x.confirm_password);
+                data.users.insert(&username, &x.confirm_password)?;
                 None
             } else {
                 check_result
@@ -178,7 +150,7 @@ pub async fn user_settings_post(
             .finish()
             .into_body())
     } else {
-        let heartrate = data.users.get_heartrate(&username).unwrap();
+        let heartrate = data.users.get_heartrate(&username)?;
         UserSettingsTemplate {
             url,
             id,

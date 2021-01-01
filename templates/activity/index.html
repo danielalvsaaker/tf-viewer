@@ -58,7 +58,7 @@ tr:hover {
 
     $('#activities').on('click', 'td', function (e) {
       var data = table.row($(this).parents('tr') ).data()['id'];
-      var username = "{{ user }}";
+      var username = "{{ username }}";
       window.location.href = '/user/' + username + '/activity/' + data;
     });
   });

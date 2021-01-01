@@ -1,8 +1,8 @@
-use anyhow::Result;
-
 pub mod activities;
 pub mod gear;
 pub mod users;
+
+use crate::error::Result;
 
 #[derive(Clone)]
 pub struct Database {

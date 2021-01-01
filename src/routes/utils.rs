@@ -1,11 +1,11 @@
 use crate::Duration;
-use anyhow::Result;
 use plotly::{
     common::Mode,
     layout::{Axis, Layout},
     Plot, Scatter,
 };
 use staticmap::{Color, Line, StaticMap};
+use crate::error::{Result, Error};
 
 pub fn plot(record: &crate::Record) -> Result<String> {
     let heartrate = Scatter::new(record.distance.clone(), record.heartrate.clone())
@@ -70,8 +70,12 @@ pub fn generate_thumb(record: crate::Record, path: std::path::PathBuf) -> Result
 
     map.add_line(line);
 
-    let image = map.render()?;
-    image.save(path)?;
+    let image = map
+        .render()
+        .map_err(|_| Error::BadServerResponse("Failed to render activity thumbnail"))?;
+    image
+        .save(path)
+        .map_err(|_| Error::BadServerResponse("Failed to save rendered activity thumbnail"))?;
     Ok(())
 }
 

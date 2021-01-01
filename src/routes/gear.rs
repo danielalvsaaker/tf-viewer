@@ -23,7 +23,7 @@ pub async fn gear_settings(
     data: web::Data<crate::Database>,
     web::Path((username, gear_name)): web::Path<(String, String)>,
 ) -> impl Responder {
-    let gear = data.gear.get(&username, &gear_name).unwrap();
+    let gear = data.gear.get(&username, &gear_name)?;
 
     GearSettingsTemplate {
         url: UrlFor::new(&id, &req)?,
@@ -72,9 +72,9 @@ pub async fn gear_settings_post(
         };
 
         if gear_form.standard {
-            data.users.set_standard_gear(&username, &gear_form.name);
+            data.users.set_standard_gear(&username, &gear_form.name)?;
         }
-        data.gear.insert(gear, &username);
+        data.gear.insert(gear, &username)?;
 
         let url: UrlFor = UrlFor::new(&id, &req)?;
         return Ok(HttpResponse::Found()
@@ -181,9 +181,9 @@ pub async fn gear_add_post(
         };
 
         if gear_form.standard {
-            data.users.set_standard_gear(&username, &gear_form.name);
+            data.users.set_standard_gear(&username, &gear_form.name)?;
         }
-        data.gear.insert(gear, &username);
+        data.gear.insert(gear, &username)?;
 
         let url: UrlFor = UrlFor::new(&id, &req)?;
 

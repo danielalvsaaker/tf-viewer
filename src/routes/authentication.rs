@@ -24,22 +24,20 @@ pub async fn signin(req: HttpRequest, id: Identity) -> impl Responder {
 }
 
 #[derive(Deserialize)]
-pub struct Credentials {
+pub struct AuthForm {
     username: String,
     password: String,
 }
 
 pub async fn signin_post(
-    form: web::Form<Credentials>,
+    form: web::Form<AuthForm>,
     data: web::Data<crate::Database>,
     req: HttpRequest,
     id: Identity,
 ) -> impl Responder {
-    let username = form.username.clone();
-    let password = form.password.clone();
 
-    if data.users.exists(&form.username).unwrap()
-        && data.users.verify_hash(&username, &password).unwrap()
+    if data.users.exists(&form.username)?
+        && data.users.verify_hash(&form.username, &form.password)?
     {
         id.remember(form.username.to_owned());
 
@@ -87,7 +85,7 @@ pub async fn signup(req: HttpRequest, id: Identity) -> impl Responder {
 }
 
 pub async fn signup_post(
-    form: web::Form<Credentials>,
+    form: web::Form<AuthForm>,
     data: web::Data<crate::Database>,
     req: HttpRequest,
     id: Identity,
@@ -97,14 +95,14 @@ pub async fn signup_post(
         if !regex.is_match(&form.username) {
             return Some("Invalid username supplied.");
         }
-        if data.get_ref().users.exists(&form.username).unwrap() {
+        if data.users.exists(&form.username).ok()? {
             return Some("Username is already taken.");
         }
         None
     };
 
     if result().is_none() {
-        data.users.insert(&form.username, &form.password);
+        data.users.insert(&form.username, &form.password)?;
 
         return Ok(HttpResponse::Found()
             .header(http::header::LOCATION, "/signin")

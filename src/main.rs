@@ -3,6 +3,7 @@ mod middleware;
 mod models;
 pub mod parser;
 mod routes;
+mod error;
 
 #[cfg(feature = "jemalloc")]
 #[global_allocator]
@@ -16,7 +17,7 @@ pub use parser::*;
 
 use actix_files::Files;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
-use actix_web::{guard, web, App, HttpServer};
+use actix_web::{web, App, HttpServer};
 
 use middleware::{AuthType, CheckLogin, Restricted};
 use routes::{
@@ -28,7 +29,7 @@ use routes::{
     index::index,
     upload::{upload, upload_post},
     user::{
-        user, user_avatar, user_avatar_post, user_index, user_index_post, user_settings,
+        user, user_avatar, user_avatar_post, user_index, user_settings,
         user_settings_post,
     },
 };
@@ -47,11 +48,6 @@ async fn main() -> std::io::Result<()> {
                     .secure(false),
             ))
             .data(data.clone())
-            .default_service(
-                web::route()
-                    .guard(guard::Not(guard::Get()))
-                    .to(routes::error::ErrorTemplate::not_found),
-            )
             .service(Files::new("/static", "static"))
             .service(web::resource("/static").name("static"))
             .service(
@@ -85,7 +81,6 @@ async fn main() -> std::io::Result<()> {
                                 web::resource("/")
                                     .name("user_index")
                                     .route(web::get().to(user_index))
-                                    .route(web::post().to(user_index_post)),
                             )
                             .service(web::resource("/{username}").name("user").to(user))
                             .service(

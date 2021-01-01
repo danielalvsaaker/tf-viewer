@@ -39,17 +39,16 @@ pub async fn upload_post(
 
     let gear = data
         .users
-        .get_standard_gear(id.identity().unwrap().as_str())
-        .unwrap();
+        .get_standard_gear(id.identity().unwrap().as_str())?;
 
     let parsed = crate::parser::parse(&f, gear);
 
     match parsed {
         Ok(x) => {
             let id = id.identity().unwrap();
-            data.activities.insert(x, &id);
-            HttpResponse::Ok().finish().into_body()
+            data.activities.insert(x, &id)
+                .map(|_| HttpResponse::Ok().finish().into_body())
         }
-        Err(x) => HttpResponse::BadRequest().body(x.to_string()),
+        Err(x) => Ok(HttpResponse::BadRequest().body(x.to_string())),
     }
 }

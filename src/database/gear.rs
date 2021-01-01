@@ -1,5 +1,5 @@
 use crate::Gear;
-use anyhow::{anyhow, Result};
+use crate::error::Result;
 
 #[derive(Clone)]
 pub struct GearTree {
@@ -39,16 +39,14 @@ impl GearTree {
             .flat_map(|x| bincode::deserialize::<Gear>(&x)))
     }
 
-    pub fn get(&self, username: &str, id: &str) -> Result<Gear> {
+    pub fn get(&self, username: &str, id: &str) -> crate::error::Result<Gear> {
         let mut key = username.as_bytes().to_vec();
         key.push(0xff);
         key.extend_from_slice(id.as_bytes());
 
-        let get = self.usernameid_gear.get(&key)?;
-
-        match get {
-            Some(x) => Ok(bincode::deserialize::<Gear>(&x).unwrap()),
-            None => Err(anyhow!("Gear not found.")),
-        }
+        self.usernameid_gear.get(&key)?
+            .map(|x| bincode::deserialize::<Gear>(&x).ok())
+            .flatten()
+            .ok_or(crate::error::Error::BadRequest(crate::error::ErrorKind::NotFound, "Gear not found"))
     }
 }

@@ -1,5 +1,4 @@
-use crate::{Activity, Duration, Lap, Record, Session, UserTotals};
-use anyhow::{anyhow, Result};
+use crate::{Activity, Duration, Lap, Record, Session, UserTotals, error::{Error, ErrorKind, Result}};
 use chrono::{self, Datelike, Local};
 
 #[derive(Clone)]
@@ -239,12 +238,10 @@ impl ActivityTree {
         key.push(0xff);
         key.extend_from_slice(id.as_bytes());
 
-        let get = self.usernameid_session.get(&key)?;
-
-        match get {
-            Some(x) => Ok(bincode::deserialize::<Session>(&x)?),
-            None => Err(anyhow!("Session not found")),
-        }
+        self.usernameid_session.get(&key)?
+            .map(|x| bincode::deserialize::<Session>(&x).ok())
+            .flatten()
+            .ok_or(Error::BadRequest(ErrorKind::NotFound, "Session not found"))
     }
 
     pub fn get_record(&self, username: &str, id: &str) -> Result<Record> {
@@ -252,12 +249,10 @@ impl ActivityTree {
         key.push(0xff);
         key.extend_from_slice(id.as_bytes());
 
-        let get = self.usernameid_record.get(&key)?;
-
-        match get {
-            Some(x) => Ok(bincode::deserialize::<Record>(&x)?),
-            None => Err(anyhow!("Record not found")),
-        }
+        self.usernameid_record.get(&key)?
+            .map(|x| bincode::deserialize::<Record>(&x).ok())
+            .flatten()
+            .ok_or(Error::BadRequest(ErrorKind::NotFound, "Record not found"))
     }
 
     pub fn get_lap(&self, username: &str, id: &str) -> Result<Vec<Lap>> {
@@ -265,12 +260,10 @@ impl ActivityTree {
         key.push(0xff);
         key.extend_from_slice(id.as_bytes());
 
-        let get = self.usernameid_lap.get(&key)?;
-
-        match get {
-            Some(x) => Ok(bincode::deserialize::<Vec<Lap>>(&x)?),
-            None => Err(anyhow!("Lap not found")),
-        }
+        self.usernameid_lap.get(&key)?
+            .map(|x| bincode::deserialize::<Vec<Lap>>(&x).ok())
+            .flatten()
+            .ok_or(Error::BadRequest(ErrorKind::NotFound, "Laps not found"))
     }
 
     pub fn get_gear_id(&self, username: &str, id: &str) -> Result<Option<String>> {
@@ -281,7 +274,7 @@ impl ActivityTree {
         let get = self.usernameid_gear.get(&key)?;
 
         match get {
-            Some(x) => Ok(Some(String::from_utf8(x.to_vec())?)),
+            Some(x) => Ok(String::from_utf8(x.to_vec()).ok()),
             None => Ok(None),
         }
     }

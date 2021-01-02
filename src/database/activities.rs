@@ -1,6 +1,6 @@
 use crate::{
     error::{Error, ErrorKind, Result},
-    Activity, Duration, Lap, Record, Session, UserTotals,
+    models::{Activity, Duration, Lap, Record, Session, UserTotals},
 };
 use chrono::{self, Datelike, Local};
 
@@ -204,26 +204,6 @@ impl ActivityTree {
             .rev()
             .flatten()
             .flat_map(|x| String::from_utf8(x.to_vec())))
-    }
-
-    pub fn iter_session(&self) -> Result<impl Iterator<Item = Session>> {
-        Ok(self
-            .usernameid_session
-            .iter()
-            .values()
-            .rev()
-            .flatten()
-            .flat_map(|x| bincode::deserialize::<Session>(&x)))
-    }
-
-    pub fn iter_record(&self) -> Result<impl Iterator<Item = Record>> {
-        Ok(self
-            .usernameid_record
-            .iter()
-            .values()
-            .rev()
-            .flatten()
-            .flat_map(|x| bincode::deserialize::<Record>(&x)))
     }
 
     pub fn iter_id(&self) -> Result<impl Iterator<Item = String>> {

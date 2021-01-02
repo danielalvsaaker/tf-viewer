@@ -32,10 +32,6 @@ impl Duration {
         Duration(std::time::Duration::from_secs_f64(secs))
     }
 
-    pub fn as_secs_f64(&self) -> f64 {
-        self.0.as_secs_f64()
-    }
-
     pub fn between(ts1: &TimeStamp, ts2: &TimeStamp) -> Self {
         Duration(
             chrono::Duration::to_std(&ts1.0.signed_duration_since(ts2.0))

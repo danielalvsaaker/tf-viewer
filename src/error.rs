@@ -1,8 +1,17 @@
-use actix_web::{dev::HttpResponseBuilder, http::StatusCode, HttpResponse, ResponseError};
+use actix_web::{dev::HttpResponseBuilder, http::StatusCode, web, HttpResponse, ResponseError};
 use askama_actix::Template;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+pub fn config(cfg: &mut web::ServiceConfig) {
+    cfg.app_data(web::FormConfig::default().error_handler(|_, _| {
+        Error::BadRequest(ErrorKind::BadRequest, "Failed to parse form").into()
+    }))
+    .app_data(web::PathConfig::default().error_handler(|_, _| {
+        Error::BadRequest(ErrorKind::BadRequest, "Failed to parse the requested path").into()
+    }));
+}
 
 #[derive(Template)]
 #[template(path = "error.html")]
@@ -23,9 +32,9 @@ pub enum Error {
         #[from]
         source: bincode::Error,
     },
-    #[error("{0}")]
+    #[error("{0}.")]
     BadServerResponse(&'static str),
-    #[error("{1}")]
+    #[error("{1}.")]
     BadRequest(ErrorKind, &'static str),
 }
 

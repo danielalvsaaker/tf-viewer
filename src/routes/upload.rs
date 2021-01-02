@@ -1,10 +1,18 @@
+use super::UrlFor;
 use actix_identity::Identity;
 use actix_multipart::Multipart;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
 use futures::{StreamExt, TryStreamExt};
 
-use super::UrlFor;
+pub fn config(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::resource("/upload")
+            .name("upload")
+            .route(web::get().to(upload))
+            .route(web::post().to(upload_post)),
+    );
+}
 
 #[derive(Template)]
 #[template(path = "upload.html")]
@@ -14,7 +22,7 @@ struct UploadTemplate<'a> {
     title: &'a str,
 }
 
-pub async fn upload(id: Identity, req: HttpRequest) -> impl Responder {
+async fn upload(id: Identity, req: HttpRequest) -> impl Responder {
     UploadTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
@@ -23,7 +31,7 @@ pub async fn upload(id: Identity, req: HttpRequest) -> impl Responder {
     .into_response()
 }
 
-pub async fn upload_post(
+async fn upload_post(
     data: web::Data<crate::Database>,
     id: Identity,
     mut payload: Multipart,

@@ -72,9 +72,10 @@ where
             } else {
                 let new_body = crate::error::Error::BadRequest(
                     crate::error::ErrorKind::Forbidden,
-                    "User is not authorized to view the requested route")
-                    .error_response()
-                    .into_body();
+                    "User is not authorized to view the requested route",
+                )
+                .error_response()
+                .into_body();
                 let res = res.into_response(new_body);
 
                 Ok(res)
@@ -132,6 +133,8 @@ where
     type Request = ServiceRequest;
     type Response = ServiceResponse<B>;
     type Error = Error;
+
+    #[allow(clippy::type_complexity)] // The trait does not allow splitting types
     type Future = Either<S::Future, Ready<Result<Self::Response, Self::Error>>>;
 
     fn poll_ready(&mut self, cx: &mut Context) -> Poll<Result<(), Self::Error>> {

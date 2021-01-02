@@ -5,7 +5,7 @@ use std::{str::FromStr, string::String};
 
 use crate::{
     error::{Error, ErrorKind, Result},
-    Activity, ActivityType, Duration, Lap, Record, Session, TimeStamp,
+    models::{Activity, ActivityType, Duration, Lap, Record, Session, TimeStamp},
 };
 
 pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {

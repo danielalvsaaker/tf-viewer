@@ -1,5 +1,5 @@
 use crate::error::{Error, ErrorKind, Result};
-use crate::Gear;
+use crate::models::Gear;
 
 #[derive(Clone)]
 pub struct GearTree {

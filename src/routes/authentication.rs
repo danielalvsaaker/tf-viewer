@@ -1,8 +1,32 @@
 use super::UrlFor;
+use crate::middleware::{AuthType, CheckLogin};
 use actix_identity::Identity;
 use actix_web::{http, web, HttpRequest, HttpResponse, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
 use serde::Deserialize;
+
+pub fn config(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::resource("/signin")
+            .name("signin")
+            .wrap(CheckLogin::new(AuthType::Public))
+            .route(web::get().to(signin))
+            .route(web::post().to(signin_post)),
+    )
+    .service(
+        web::resource("/signup")
+            .name("signup")
+            .wrap(CheckLogin::new(AuthType::Public))
+            .route(web::get().to(signup))
+            .route(web::post().to(signup_post)),
+    )
+    .service(
+        web::resource("/signout")
+            .name("signout")
+            .wrap(CheckLogin::new(AuthType::Restricted))
+            .to(signout),
+    );
+}
 
 #[derive(Template)]
 #[template(path = "auth/signin.html")]
@@ -13,7 +37,7 @@ struct SigninTemplate<'a> {
     id: Identity,
 }
 
-pub async fn signin(req: HttpRequest, id: Identity) -> impl Responder {
+async fn signin(req: HttpRequest, id: Identity) -> impl Responder {
     SigninTemplate {
         url: UrlFor::new(&id, &req)?,
         title: "Sign in",
@@ -24,12 +48,12 @@ pub async fn signin(req: HttpRequest, id: Identity) -> impl Responder {
 }
 
 #[derive(Deserialize)]
-pub struct AuthForm {
+struct AuthForm {
     username: String,
     password: String,
 }
 
-pub async fn signin_post(
+async fn signin_post(
     form: web::Form<AuthForm>,
     data: web::Data<crate::Database>,
     req: HttpRequest,
@@ -55,7 +79,7 @@ pub async fn signin_post(
     .into_response()
 }
 
-pub async fn signout(id: Identity) -> impl Responder {
+async fn signout(id: Identity) -> impl Responder {
     id.forget();
 
     HttpResponse::Found()
@@ -73,7 +97,7 @@ struct SignupTemplate<'a> {
     id: Identity,
 }
 
-pub async fn signup(req: HttpRequest, id: Identity) -> impl Responder {
+async fn signup(req: HttpRequest, id: Identity) -> impl Responder {
     SignupTemplate {
         url: UrlFor::new(&id, &req)?,
         title: "Sign up",
@@ -83,7 +107,7 @@ pub async fn signup(req: HttpRequest, id: Identity) -> impl Responder {
     .into_response()
 }
 
-pub async fn signup_post(
+async fn signup_post(
     form: web::Form<AuthForm>,
     data: web::Data<crate::Database>,
     req: HttpRequest,

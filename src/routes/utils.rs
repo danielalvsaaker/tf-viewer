@@ -1,5 +1,7 @@
-use crate::error::{Error, Result};
-use crate::Duration;
+use crate::{
+    error::{Error, Result},
+    models::{Duration, Record},
+};
 use plotly::{
     common::Mode,
     layout::{Axis, Layout},
@@ -7,7 +9,7 @@ use plotly::{
 };
 use staticmap::{Color, Line, StaticMap};
 
-pub fn plot(record: &crate::Record) -> Result<String> {
+pub fn plot(record: &Record) -> Result<String> {
     let heartrate = Scatter::new(record.distance.clone(), record.heartrate.clone())
         .mode(Mode::Lines)
         .name("Heart rate");
@@ -31,7 +33,7 @@ pub fn plot(record: &crate::Record) -> Result<String> {
     Ok(plot.to_inline_html(None))
 }
 
-pub fn generate_thumb(record: crate::Record, path: std::path::PathBuf) -> Result<()> {
+pub fn generate_thumb(record: Record, path: &std::path::PathBuf) -> Result<()> {
     if record.lon.is_empty() {
         return Ok(());
     }
@@ -80,11 +82,11 @@ pub fn generate_thumb(record: crate::Record, path: std::path::PathBuf) -> Result
 }
 
 pub fn zone_duration(
-    record: &crate::Record,
+    record: &Record,
     heartrate: &Option<(u8, u8)>,
-) -> Result<Option<Vec<crate::Duration>>> {
+) -> Result<Option<Vec<Duration>>> {
     let mut zones: Vec<u8> = Vec::with_capacity(7);
-    let mut zones_duration: Vec<crate::Duration> = vec![
+    let mut zones_duration: Vec<Duration> = vec![
         Duration::new(),
         Duration::new(),
         Duration::new(),

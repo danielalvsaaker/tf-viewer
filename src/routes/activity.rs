@@ -2,12 +2,36 @@ use super::{
     api::{ActivityData, DataRequest, DataResponse},
     UrlActivity, UrlFor,
 };
-use crate::{ActivityType, Lap, Session};
+use crate::{
+    middleware::Restricted,
+    models::{ActivityType, Duration, Lap, Session},
+};
 use actix_identity::Identity;
 use actix_web::{http, web, HttpRequest, HttpResponse, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
 use serde::Deserialize;
 use std::str::FromStr;
+
+pub fn config(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::resource("/{username}/activity")
+            .name("activity_index")
+            .route(web::get().to(activity_index))
+            .route(web::post().to(activity_index_post)),
+    )
+    .service(
+        web::resource("/{username}/activity/{activity}")
+            .name("activity")
+            .to(activity),
+    )
+    .service(
+        web::resource("/{username}/activity/{activity}/settings")
+            .name("activity_settings")
+            .wrap(Restricted)
+            .route(web::get().to(activity_settings))
+            .route(web::post().to(activity_settings_post)),
+    );
+}
 
 #[derive(Template)]
 #[template(path = "activity/activity.html")]
@@ -20,12 +44,12 @@ struct ActivityTemplate<'a> {
     session: &'a Session,
     laps: &'a Vec<Lap>,
     coords: &'a Vec<(f64, f64)>,
-    zones: &'a Option<Vec<crate::Duration>>,
+    zones: &'a Option<Vec<Duration>>,
     plot: &'a str,
     title: &'a str,
 }
 
-pub async fn activity(
+async fn activity(
     req: HttpRequest,
     data: web::Data<crate::Database>,
     id: Identity,
@@ -73,7 +97,7 @@ struct ActivitySettingsTemplate<'a> {
     message: Option<&'a str>,
 }
 
-pub async fn activity_settings(
+async fn activity_settings(
     req: HttpRequest,
     id: Identity,
     data: web::Data<crate::Database>,
@@ -104,12 +128,12 @@ pub async fn activity_settings(
 }
 
 #[derive(Deserialize)]
-pub struct ActivitySettingsForm {
+struct ActivitySettingsForm {
     pub activity_type: String,
     pub gear_id: Option<String>,
 }
 
-pub async fn activity_settings_post(
+async fn activity_settings_post(
     req: HttpRequest,
     id: Identity,
     data: web::Data<crate::Database>,
@@ -178,7 +202,7 @@ struct ActivityIndexTemplate<'a> {
     title: &'a str,
 }
 
-pub async fn activity_index(
+async fn activity_index(
     req: HttpRequest,
     id: Identity,
     username: web::Path<String>,
@@ -195,7 +219,7 @@ pub async fn activity_index(
     .into_response()
 }
 
-pub async fn activity_index_post(
+async fn activity_index_post(
     request: web::Json<DataRequest>,
     username: web::Path<String>,
     data: web::Data<crate::Database>,

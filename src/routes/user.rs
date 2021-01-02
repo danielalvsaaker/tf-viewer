@@ -1,4 +1,5 @@
 use super::UrlFor;
+use crate::models::UserTotals;
 use actix_identity::Identity;
 use actix_multipart::Multipart;
 use actix_web::{http, web, Either, HttpRequest, HttpResponse, Responder};
@@ -7,17 +8,36 @@ use futures::{StreamExt, TryStreamExt};
 use serde::Deserialize;
 use std::io::Write;
 
+pub fn config(cfg: &mut web::ServiceConfig) {
+    cfg.service(web::resource("/").name("user_index").to(user_index))
+        .service(web::resource("/{username}").name("user").to(user))
+        .service(
+            web::resource("/{username}/settings")
+                .name("user_settings")
+                .wrap(crate::middleware::Restricted)
+                .route(web::get().to(user_settings))
+                .route(web::post().to(user_settings_post)),
+        )
+        .service(
+            web::resource("/{username}/settings/avatar")
+                .name("user_avatar")
+                .wrap(crate::middleware::Restricted)
+                .route(web::get().to(user_avatar))
+                .route(web::post().to(user_avatar_post)),
+        );
+}
+
 #[derive(Template)]
 #[template(path = "user/user.html")]
 struct UserTemplate<'a> {
     url: UrlFor,
     id: Identity,
-    user_totals: &'a crate::UserTotals,
+    user_totals: &'a UserTotals,
     username: &'a str,
     title: &'a str,
 }
 
-pub async fn user(
+async fn user(
     req: HttpRequest,
     id: Identity,
     data: web::Data<crate::Database>,
@@ -46,7 +66,7 @@ struct UserIndexTemplate<'a> {
     title: &'a str,
 }
 
-pub async fn user_index(
+async fn user_index(
     req: HttpRequest,
     id: Identity,
     data: web::Data<crate::Database>,
@@ -63,13 +83,13 @@ pub async fn user_index(
 }
 
 #[derive(Deserialize, Debug)]
-pub struct HeartrateForm {
+struct HeartrateForm {
     heartrate_rest: u8,
     heartrate_max: u8,
 }
 
 #[derive(Deserialize, Debug)]
-pub struct PasswordForm {
+struct PasswordForm {
     current_password: String,
     new_password: String,
     confirm_password: String,
@@ -85,7 +105,7 @@ struct UserSettingsTemplate<'a> {
     title: &'a str,
 }
 
-pub async fn user_settings(
+async fn user_settings(
     req: HttpRequest,
     id: Identity,
     data: web::Data<crate::Database>,
@@ -103,7 +123,7 @@ pub async fn user_settings(
     .into_response()
 }
 
-pub async fn user_settings_post(
+async fn user_settings_post(
     req: HttpRequest,
     id: Identity,
     username: web::Path<String>,
@@ -169,7 +189,7 @@ struct UserAvatarTemplate<'a> {
     title: &'a str,
 }
 
-pub async fn user_avatar(req: HttpRequest, id: Identity) -> impl Responder {
+async fn user_avatar(req: HttpRequest, id: Identity) -> impl Responder {
     UserAvatarTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
@@ -178,10 +198,7 @@ pub async fn user_avatar(req: HttpRequest, id: Identity) -> impl Responder {
     .into_response()
 }
 
-pub async fn user_avatar_post(
-    mut payload: Multipart,
-    username: web::Path<String>,
-) -> impl Responder {
+async fn user_avatar_post(mut payload: Multipart, username: web::Path<String>) -> impl Responder {
     while let Ok(Some(mut field)) = payload.try_next().await {
         // Should be improved, jpg-files are saved as png. Works, but not preferable
         let filepath = format!("static/img/user/{}.png", &username);

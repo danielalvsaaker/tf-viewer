@@ -1,9 +1,12 @@
-use crate::Session;
+use super::{UrlActivity, UrlFor};
+use crate::models::Session;
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
 
-use super::{UrlActivity, UrlFor};
+pub fn config(cfg: &mut web::ServiceConfig) {
+    cfg.service(web::resource("/").name("index").to(index));
+}
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -21,11 +24,7 @@ struct TemplateData {
     id: String,
 }
 
-pub async fn index(
-    id: Identity,
-    req: HttpRequest,
-    data: web::Data<crate::Database>,
-) -> impl Responder {
+async fn index(id: Identity, req: HttpRequest, data: web::Data<crate::Database>) -> impl Responder {
     let (username_iter, id_iter) = (data.activities.iter_username()?, data.activities.iter_id()?);
 
     let mut username_id: Vec<(String, String)> = username_iter.zip(id_iter).collect();
@@ -52,7 +51,7 @@ pub async fn index(
                 // and performing the same task
                 let _ = std::fs::File::create(&path);
 
-                super::utils::generate_thumb(record, path)
+                super::utils::generate_thumb(record, &path)
             });
         }
     }

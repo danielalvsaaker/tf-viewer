@@ -1,13 +1,47 @@
 use crate::{
-    error::{Error, Result},
+    error::{Error, ErrorKind, Result},
     models::{Duration, Record},
 };
+use actix_web::web;
 use plotly::{
     common::Mode,
     layout::{Axis, Layout},
     Plot, Scatter,
 };
 use staticmap::{Color, Line, StaticMap};
+
+pub fn validate_form(
+    form: &super::authentication::AuthForm,
+    data: &web::Data<crate::Database>,
+) -> Result<()> {
+    let username_regex = regex::Regex::new(r#"^[a-zA-Z0-9-_]{2,15}$"#).unwrap();
+    let password_regex =
+        regex::Regex::new(r#"^(.{0,14}|[^0-9]*|[^A-Z]*|[^a-z]*|[a-zA-Z0-9]*)$"#).unwrap();
+
+    if !username_regex.is_match(&form.username) {
+        Err(Error::BadRequest(
+            ErrorKind::BadRequest,
+            "Invalid username supplied",
+        ))
+    } else if password_regex.is_match(&form.password) {
+        Err(Error::BadRequest(
+            ErrorKind::BadRequest,
+            "Invalid password supplied",
+        ))
+    } else if data.users.exists(&form.username).is_ok() {
+        Err(Error::BadRequest(
+            ErrorKind::BadRequest,
+            "Username is not available",
+        ))
+    } else if !(form.password == form.confirm_password) {
+        Err(Error::BadRequest(
+            ErrorKind::BadRequest,
+            "Passwords do not match",
+        ))
+    } else {
+        Ok(())
+    }
+}
 
 pub fn plot(record: &Record) -> Result<String> {
     let heartrate = Scatter::new(record.distance.clone(), record.heartrate.clone())

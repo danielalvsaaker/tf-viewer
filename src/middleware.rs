@@ -1,8 +1,7 @@
 use std::task::{Context, Poll};
 
 use actix_identity::Identity;
-use actix_service::{Service, Transform};
-use actix_web::dev::{Payload, ServiceRequest, ServiceResponse};
+use actix_web::dev::{Payload, Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::{http, Error, FromRequest, HttpRequest, HttpResponse, ResponseError};
 use futures::future::{ok, Either, Future, Ready};
 use std::pin::Pin;

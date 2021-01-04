@@ -1,4 +1,4 @@
-use super::UrlFor;
+use super::{utils, UrlFor};
 use crate::middleware::{AuthType, CheckLogin};
 use actix_identity::Identity;
 use actix_web::{http, web, HttpRequest, HttpResponse, Responder};
@@ -48,9 +48,11 @@ async fn signin(req: HttpRequest, id: Identity) -> impl Responder {
 }
 
 #[derive(Deserialize)]
-struct AuthForm {
-    username: String,
-    password: String,
+pub struct AuthForm {
+    pub username: String,
+    pub password: String,
+    #[serde(default)]
+    pub confirm_password: String,
 }
 
 async fn signin_post(
@@ -73,7 +75,7 @@ async fn signin_post(
     SigninTemplate {
         url: UrlFor::new(&id, &req)?,
         title: "Sign in",
-        message: Some("Wrong username or password"),
+        message: Some("Wrong username or password."),
         id,
     }
     .into_response()
@@ -93,7 +95,7 @@ async fn signout(id: Identity) -> impl Responder {
 struct SignupTemplate<'a> {
     url: UrlFor,
     title: &'a str,
-    message: Option<&'a str>,
+    message: &'a Option<crate::error::Error>,
     id: Identity,
 }
 
@@ -101,7 +103,7 @@ async fn signup(req: HttpRequest, id: Identity) -> impl Responder {
     SignupTemplate {
         url: UrlFor::new(&id, &req)?,
         title: "Sign up",
-        message: None,
+        message: &None,
         id,
     }
     .into_response()
@@ -113,18 +115,9 @@ async fn signup_post(
     req: HttpRequest,
     id: Identity,
 ) -> impl Responder {
-    let result = || {
-        let regex = regex::Regex::new(r#"^[a-zA-Z0-9]+$"#).unwrap();
-        if !regex.is_match(&form.username) {
-            return Some("Invalid username supplied.");
-        }
-        if data.users.exists(&form.username).ok()? {
-            return Some("Username is already taken.");
-        }
-        None
-    };
+    let validation = utils::validate_form(&form, &data);
 
-    if result().is_none() {
+    if validation.is_ok() {
         data.users.insert(&form.username, &form.password)?;
 
         return Ok(HttpResponse::Found()
@@ -136,7 +129,7 @@ async fn signup_post(
     SignupTemplate {
         url: UrlFor::new(&id, &req)?,
         title: "Sign up",
-        message: result(),
+        message: &validation.err(),
         id,
     }
     .into_response()

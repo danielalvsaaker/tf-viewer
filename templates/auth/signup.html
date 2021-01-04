@@ -14,15 +14,17 @@
     <fieldset>
       <div class="form-group">
 	<label class="form-label" for="username">Username</label>
-	<input type="text" class="form-input" name="username" id="username" pattern="^[a-zA-Z0-9]+$" autofocus required title="Please enter a username consisting of only letters and numbers">
+	<input type="text" class="form-input" name="username" id="username" pattern="^[a-zA-Z0-9-_]{2,15}$" autofocus required 
+	  title="Please enter a username consisting of only letters, numbers, hyphen (-) and underscore (_).">
       </div>
       <div class="form-group">
 	<label class="form-label" for="password">Password</label>
-	<input type="password" class="form-input" name="password" id="password" required>
+	<input type="password" class="form-input" name="password" id="password" pattern="^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$ %^&*-]).{14,}$" required 
+	  title="Please enter a password consisting of minimum 14 characters, with at least one uppercase, one lowercase, one number and one special character">
       </div>
       <div class="form-group">
 	<label class="form-label" for="confirm_password">Confirm password</label>
-	<input type=2password" class="form-input" name="confirm_password" id="confirm_password" required>
+	<input type="password" class="form-input" name="confirm_password" id="confirm_password" required>
       </div>
       <button type="submit" class="btn btn-primary">Sign in</button>
     </fieldset>

@@ -1,4 +1,3 @@
-use super::UrlFor;
 use crate::models::UserTotals;
 use actix_identity::Identity;
 use actix_multipart::Multipart;
@@ -7,6 +6,7 @@ use askama_actix::{Template, TemplateIntoResponse};
 use futures::{StreamExt, TryStreamExt};
 use serde::Deserialize;
 use std::io::Write;
+use super::{PasswordEnum, utils, UrlFor};
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/").name("user_index").to(user_index))
@@ -89,10 +89,10 @@ struct HeartrateForm {
 }
 
 #[derive(Deserialize, Debug)]
-struct PasswordForm {
-    current_password: String,
-    new_password: String,
-    confirm_password: String,
+pub struct PasswordForm {
+    pub current_password: String,
+    pub new_password: String,
+    pub confirm_password: String,
 }
 
 #[derive(Template)]
@@ -101,7 +101,7 @@ struct UserSettingsTemplate<'a> {
     url: UrlFor,
     id: Identity,
     heartrate: &'a Option<(u8, u8)>,
-    message: Option<&'a str>,
+    message: &'a Option<crate::error::Error>,
     title: &'a str,
 }
 
@@ -117,7 +117,7 @@ async fn user_settings(
         url: UrlFor::new(&id, &req)?,
         id,
         heartrate: &heartrate,
-        message: None,
+        message: &None,
         title: "Settings",
     }
     .into_response()
@@ -130,40 +130,27 @@ async fn user_settings_post(
     data: web::Data<crate::Database>,
     form: Either<web::Form<HeartrateForm>, web::Form<PasswordForm>>,
 ) -> impl Responder {
-    let password_check = |form: &PasswordForm| {
-        if form.new_password != form.confirm_password {
-            Some("Passwords do not match.")
-        } else if !data
-            .users
-            .verify_hash(&username, &form.current_password)
-            .ok()?
-        {
-            Some("Incorrect password.")
-        } else {
-            None
-        }
-    };
 
     let form_result = match form {
         Either::A(x) => {
             data.users
                 .set_heartrate(&username, (x.heartrate_rest, x.heartrate_max))?;
-            None
+            Ok(())
         }
         Either::B(x) => {
-            let check_result = password_check(&x);
-            if check_result.is_none() {
+            let check_result = utils::validate_form(&PasswordEnum::Settings(&username, &x), &data);
+
+            if check_result.is_ok() {
                 data.users.insert(&username, &x.confirm_password)?;
-                None
-            } else {
-                check_result
             }
+
+            check_result
         }
     };
 
     let url: UrlFor = UrlFor::new(&id, &req)?;
 
-    if form_result.is_none() {
+    if form_result.is_ok() {
         Ok(HttpResponse::Found()
             .header(http::header::LOCATION, url.user.as_str())
             .finish()
@@ -174,7 +161,7 @@ async fn user_settings_post(
             url,
             id,
             heartrate: &heartrate,
-            message: form_result,
+            message: &form_result.err(),
             title: "Settings",
         }
         .into_response()

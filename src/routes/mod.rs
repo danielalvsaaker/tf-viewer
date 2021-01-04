@@ -64,3 +64,8 @@ impl UrlActivity {
         })
     }
 }
+
+pub enum PasswordEnum<'a> {
+    Signup(&'a authentication::AuthForm),
+    Settings(&'a str, &'a user::PasswordForm),
+}

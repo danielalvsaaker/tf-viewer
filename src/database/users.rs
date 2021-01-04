@@ -93,8 +93,10 @@ impl UserTree {
         )
         .map_err(|_| Error::BadServerResponse("Password in database is invalid"))?;
 
-        verify_encoded(&hash, password.as_bytes())
-            .map_err(|_| Error::BadServerResponse("Failed to verify password hash"))
+        match verify_encoded(&hash, password.as_bytes()) {
+            Ok(true) => Ok(true),
+            _ => Err(Error::BadRequest(ErrorKind::NotFound, "Incorrect password")),
+        }
     }
 
     pub fn iter_id(&self) -> Result<impl Iterator<Item = String>> {

@@ -62,7 +62,7 @@ async fn signin_post(
     id: Identity,
 ) -> impl Responder {
     if data.users.exists(&form.username).is_ok()
-        && data.users.verify_hash(&form.username, &form.password)?
+        && data.users.verify_hash(&form.username, &form.password).is_ok()
     {
         id.remember(form.username.to_owned());
 
@@ -115,7 +115,7 @@ async fn signup_post(
     req: HttpRequest,
     id: Identity,
 ) -> impl Responder {
-    let validation = utils::validate_form(&form, &data);
+    let validation = utils::validate_form(&super::PasswordEnum::Signup(&form), &data);
 
     if validation.is_ok() {
         data.users.insert(&form.username, &form.password)?;

@@ -33,15 +33,17 @@
 	<fieldset>
 	  <div class="form-group">
 	    <label class="form-label" for="current_password">Current password</label>
-	    <input type="password" class="form-input" name="current_password" id="current_password">
+	    <input type="password" class="form-input" name="current_password" id="current_password" autofocus required>
 	  </div>
 	  <div class="form-group">
 	    <label class="form-label" for="new_password">New password</label>
-	    <input type="password" class="form-input" name="new_password" id="new_password">
+	    <input type="password" class="form-input" name="new_password" id="new_password" required
+	      pattern="^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$ %^&*-]).{14,}$"
+	      title="Please enter a password consisting of minimum 14 characters, with at least one uppercase, one lowercase, one number and one special character">
 	  </div>
 	  <div class="form-group">
 	    <label class="form-label" for="confirm_password">Confirm password</label>
-	    <input type="password" class="form-input" name="confirm_password" id="confirm_password">
+	    <input type="password" class="form-input" name="confirm_password" id="confirm_password" required>
 	  </div>
 	  <button type="submit" class="btn btn-primary">Submit</button>
 	</fieldset>

@@ -21,7 +21,7 @@ tr:hover {
       'pageLength': 25,
       'searching': false,	
       'ajax': {
-	'url': '{{ url.activity_index.path()|safe }}',
+	'url': '/user/{{ username }}/activity',
 	'contentType': 'application/json',
 	'type': 'POST',
 	'data': function (data) {

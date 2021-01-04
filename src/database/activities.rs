@@ -48,14 +48,30 @@ impl ActivityTree {
         self.usernameid_id.insert(&key, activity.id.as_bytes())?;
 
         if let Some(x) = activity.gear_id {
+            let previous_gear = self.usernameid_gear.get(&key)?;
+
             self.usernameid_gear.insert(&key, x.as_bytes())?;
+             
 
             let mut key = username.as_bytes().to_vec();
             key.push(0xff);
+
+            match previous_gear {
+                Some(x) => {
+                    let mut key = key.clone();
+                    key.extend_from_slice(&x);
+                    key.push(0xff);
+                    key.extend_from_slice(&activity.id.as_bytes());
+
+                    self.usernamegearid_id.remove(&key)?;
+                },
+                None => (),
+            }
+
             key.extend_from_slice(&x.as_bytes());
             key.push(0xff);
             key.extend_from_slice(&activity.id.as_bytes());
-
+            
             self.usernamegearid_id
                 .insert(&key, activity.id.as_bytes())?;
         }

@@ -16,7 +16,7 @@ pub fn validate_form(
 ) -> Result<()> {
     let username_regex = regex::Regex::new(r#"^[a-zA-Z0-9-_]{2,15}$"#).unwrap();
     let password_regex =
-        regex::Regex::new(r#"^(.{0,14}|[^0-9]*|[^A-Z]*|[^a-z]*|[a-zA-Z0-9]*)$"#).unwrap();
+        regex::Regex::new(r#"^(.{0,13}|[^0-9]*|[^A-Z]*|[^a-z]*|[a-zA-Z0-9]*)$"#).unwrap();
 
     if !username_regex.is_match(&form.username) {
         Err(Error::BadRequest(

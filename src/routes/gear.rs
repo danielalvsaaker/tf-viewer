@@ -140,7 +140,14 @@ async fn gear_index(
     let standard_gear = data.users.get_standard_gear(&username)?;
 
     let gears: Vec<((f64, Duration), Gear)> = gear_iter
-        .map(|x| (data.activities.gear_totals(&username, &x.name), x))
+        .map(|x| {
+            (
+                data.activities
+                    .gear_totals(&username, &x.name)
+                    .unwrap_or_default(),
+                x,
+            )
+        })
         .collect();
 
     GearIndexTemplate {

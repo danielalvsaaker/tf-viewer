@@ -9,7 +9,6 @@ pub struct ActivityTree {
     pub usernameid_id: sled::Tree,
     pub usernameid_username: sled::Tree,
     pub(super) usernameid_gear: sled::Tree,
-    pub(super) usernamegearid_id: sled::Tree,
     pub(super) usernameid_session: sled::Tree,
     pub(super) usernameid_record: sled::Tree,
     pub(super) usernameid_lap: sled::Tree,
@@ -47,34 +46,8 @@ impl ActivityTree {
 
         self.usernameid_id.insert(&key, activity.id.as_bytes())?;
 
-        if let Some(x) = activity.gear_id {
-            let previous_gear = self.usernameid_gear.get(&key)?;
-
-            self.usernameid_gear.insert(&key, x.as_bytes())?;
-             
-
-            let mut key = username.as_bytes().to_vec();
-            key.push(0xff);
-
-            match previous_gear {
-                Some(x) => {
-                    let mut key = key.clone();
-                    key.extend_from_slice(&x);
-                    key.push(0xff);
-                    key.extend_from_slice(&activity.id.as_bytes());
-
-                    self.usernamegearid_id.remove(&key)?;
-                },
-                None => (),
-            }
-
-            key.extend_from_slice(&x.as_bytes());
-            key.push(0xff);
-            key.extend_from_slice(&activity.id.as_bytes());
-            
-            self.usernamegearid_id
-                .insert(&key, activity.id.as_bytes())?;
-        }
+        let gear = bincode::serialize(&activity.gear_id)?;
+        self.usernameid_gear.insert(&key, gear)?;
 
         self.usernameid_username.insert(&key, username.as_bytes())?;
 
@@ -159,31 +132,31 @@ impl ActivityTree {
         })
     }
 
-    pub fn gear_totals(&self, username: &str, gear: &str) -> (f64, Duration) {
-        self.username_gear_iter_id(username, gear)
-            .unwrap()
-            .flat_map(|x| self.get_session(username, &x))
+    pub fn gear_totals(&self, username: &str, gear: &str) -> Result<(f64, Duration)> {
+        Ok(self
+            .username_iter_session(username)?
+            .zip(self.username_iter_gear(username)?)
+            .filter(|(_, y)| y.as_deref() == Some(gear))
+            .map(|(x, _)| x)
             .fold((0.0, Duration::new()), |acc, x| {
                 (acc.0 + x.distance.unwrap_or(0.0), acc.1 + x.duration_active)
-            })
+            }))
     }
 
-    pub fn username_gear_iter_id(
+    pub fn username_iter_gear(
         &self,
         username: &str,
-        gear: &str,
-    ) -> Result<impl Iterator<Item = String>> {
+    ) -> Result<impl Iterator<Item = Option<String>>> {
         let mut prefix = username.as_bytes().to_vec();
         prefix.push(0xff);
-        prefix.extend_from_slice(gear.as_bytes());
 
         Ok(self
-            .usernamegearid_id
+            .usernameid_gear
             .scan_prefix(&prefix)
             .values()
             .rev()
             .flatten()
-            .flat_map(|x| String::from_utf8(x.to_vec())))
+            .flat_map(|x| bincode::deserialize::<Option<String>>(&x)))
     }
 
     pub fn username_iter_session(&self, username: &str) -> Result<impl Iterator<Item = Session>> {
@@ -273,12 +246,11 @@ impl ActivityTree {
         key.push(0xff);
         key.extend_from_slice(id.as_bytes());
 
-        let get = self.usernameid_gear.get(&key)?;
-
-        match get {
-            Some(x) => Ok(String::from_utf8(x.to_vec()).ok()),
-            None => Ok(None),
-        }
+        self.usernameid_gear
+            .get(&key)?
+            .map(|x| bincode::deserialize::<Option<String>>(&x).ok())
+            .flatten()
+            .ok_or(Error::BadRequest(ErrorKind::NotFound, "Gear not found"))
     }
 
     pub fn get_activity(&self, username: &str, id: &str) -> Result<Activity> {

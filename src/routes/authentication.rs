@@ -62,7 +62,10 @@ async fn signin_post(
     id: Identity,
 ) -> impl Responder {
     if data.users.exists(&form.username).is_ok()
-        && data.users.verify_hash(&form.username, &form.password).is_ok()
+        && data
+            .users
+            .verify_hash(&form.username, &form.password)
+            .is_ok()
     {
         id.remember(form.username.to_owned());
 

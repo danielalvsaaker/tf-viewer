@@ -1,3 +1,4 @@
+use super::{utils, PasswordEnum, UrlFor};
 use crate::models::UserTotals;
 use actix_identity::Identity;
 use actix_multipart::Multipart;
@@ -6,7 +7,6 @@ use askama_actix::{Template, TemplateIntoResponse};
 use futures::{StreamExt, TryStreamExt};
 use serde::Deserialize;
 use std::io::Write;
-use super::{PasswordEnum, utils, UrlFor};
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/").name("user_index").to(user_index))
@@ -130,7 +130,6 @@ async fn user_settings_post(
     data: web::Data<crate::Database>,
     form: Either<web::Form<HeartrateForm>, web::Form<PasswordForm>>,
 ) -> impl Responder {
-
     let form_result = match form {
         Either::A(x) => {
             data.users

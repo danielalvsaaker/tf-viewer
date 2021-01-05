@@ -1,8 +1,8 @@
+use super::PasswordEnum;
 use crate::{
     error::{Error, ErrorKind, Result},
     models::{Duration, Record},
 };
-use super::PasswordEnum;
 use actix_web::web;
 use plotly::{
     common::Mode,
@@ -11,21 +11,14 @@ use plotly::{
 };
 use staticmap::{Color, Line, StaticMap};
 
-pub fn validate_form(
-    form: &super::PasswordEnum,
-    data: &web::Data<crate::Database>,
-) -> Result<()> {
+pub fn validate_form(form: &super::PasswordEnum, data: &web::Data<crate::Database>) -> Result<()> {
+    let verify_hash = |username, password| data.users.verify_hash(username, password);
 
-    let verify_hash = |username, password| {
-        data.users.verify_hash(username, password)
-    };
-
-    let valid_username = |username | {
+    let valid_username = |username| {
         let username_regex = regex::Regex::new(r#"^[a-zA-Z0-9-_]{2,15}$"#).unwrap();
         if username_regex.is_match(username) {
             Ok(())
-        }
-        else {
+        } else {
             Err(Error::BadRequest(
                 ErrorKind::BadRequest,
                 "Invalid username supplied",
@@ -34,26 +27,25 @@ pub fn validate_form(
     };
 
     let valid_password = |password| {
-        let password_regex = regex::Regex::new(r#"^(.{0,13}|[^0-9]*|[^A-Z]*|[^a-z]*|[a-zA-Z0-9]*)$"#).unwrap();
+        let password_regex =
+            regex::Regex::new(r#"^(.{0,13}|[^0-9]*|[^A-Z]*|[^a-z]*|[a-zA-Z0-9]*)$"#).unwrap();
         if password_regex.is_match(password) {
             Err(Error::BadRequest(
                 ErrorKind::BadRequest,
                 "Invalid password supplied",
             ))
-        }
-        else {
+        } else {
             Ok(())
         }
     };
 
-    let user_exists = |username | {
+    let user_exists = |username| {
         if data.users.exists(username).is_ok() {
-        Err(Error::BadRequest(
-            ErrorKind::BadRequest,
-            "Username is not available",
-        ))
-        }
-        else {
+            Err(Error::BadRequest(
+                ErrorKind::BadRequest,
+                "Username is not available",
+            ))
+        } else {
             Ok(())
         }
     };
@@ -61,8 +53,7 @@ pub fn validate_form(
     let password_compare = |password, confirm_password| {
         if password == confirm_password {
             Ok(())
-        }
-        else {
+        } else {
             Err(Error::BadRequest(
                 ErrorKind::BadRequest,
                 "Passwords do not match",
@@ -75,13 +66,12 @@ pub fn validate_form(
         user_exists(&form.username)?;
         valid_password(&form.password)?;
         password_compare(&form.password, &form.confirm_password)?;
-    }
-    else if let PasswordEnum::Settings(username, form) = form {
+    } else if let PasswordEnum::Settings(username, form) = form {
         verify_hash(&username, &form.current_password)?;
         valid_password(&form.new_password)?;
         password_compare(&form.new_password, &form.confirm_password)?;
     }
-    
+
     Ok(())
 }
 

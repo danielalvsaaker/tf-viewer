@@ -153,12 +153,12 @@ pub fn zone_duration(
 ) -> Result<Option<Vec<Duration>>> {
     let mut zones: Vec<u8> = Vec::with_capacity(7);
     let mut zones_duration: Vec<Duration> = vec![
-        Duration::new(),
-        Duration::new(),
-        Duration::new(),
-        Duration::new(),
-        Duration::new(),
-        Duration::new(),
+        Duration::default(),
+        Duration::default(),
+        Duration::default(),
+        Duration::default(),
+        Duration::default(),
+        Duration::default(),
     ];
 
     if let Some(x) = heartrate {

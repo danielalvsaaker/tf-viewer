@@ -9,8 +9,8 @@ use crate::{
 };
 
 pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
-    let mut session: Session = Session::new();
-    let mut record: Record = Record::new();
+    let mut session: Session = Session::default();
+    let mut record: Record = Record::default();
     let mut lap_vec: Vec<Lap> = Vec::new();
 
     let file = fitparser::from_bytes(fit_data)
@@ -24,11 +24,13 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
     }
 
     for data in file {
-        let lap = Lap::new();
         match data.kind() {
             MesgNum::Session => session = parse_session(data.into_vec(), session)?,
             MesgNum::Record => record = parse_record(data.into_vec(), record)?,
-            MesgNum::Lap => lap_vec.push(parse_lap(data.into_vec(), lap)?),
+            MesgNum::Lap => {
+                let lap = Lap::default();
+                lap_vec.push(parse_lap(data.into_vec(), lap)?)
+            },
             _ => (),
         }
     }
@@ -208,7 +210,7 @@ fn parse_record(fields: Vec<FitDataField>, mut record: Record) -> Result<Record>
                             let duration = Duration::between(&timestamp, x);
                             record.duration.push(duration);
                         }
-                        None => record.duration.push(Duration::new()),
+                        None => record.duration.push(Duration::default()),
                     }
 
                     record.timestamp.push(timestamp);

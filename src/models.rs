@@ -24,7 +24,7 @@ impl std::fmt::Display for TimeStamp {
 }
 
 /// Wrapper for std::time::Duration
-#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Clone, Copy, Debug, Default)]
+#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Clone, Copy, Default)]
 pub struct Duration(std::time::Duration);
 
 impl Duration {
@@ -37,10 +37,6 @@ impl Duration {
             chrono::Duration::to_std(&ts1.0.signed_duration_since(ts2.0))
                 .expect("Duration out of bounds"),
         )
-    }
-
-    pub fn new() -> Self {
-        Duration(std::time::Duration::from_secs_f64(0.0))
     }
 }
 
@@ -106,7 +102,6 @@ impl Default for ActivityType {
 
 impl FromStr for ActivityType {
     type Err = Error;
-    //Todo: implement proper error
 
     fn from_str(s: &str) -> Result<Self> {
         Ok(match s {
@@ -137,7 +132,7 @@ pub struct Activity {
     pub lap: Vec<Lap>,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone)]
+#[derive(Default, Serialize, Deserialize, Clone, Copy)]
 pub struct Session {
     pub cadence_avg: Option<u8>,
     pub cadence_max: Option<u8>,
@@ -191,24 +186,6 @@ pub struct Lap {
     pub distance: Option<f64>,
     pub duration: Duration,
     pub duration_active: Duration,
-}
-
-impl Session {
-    pub fn new() -> Self {
-        Default::default()
-    }
-}
-
-impl Record {
-    pub fn new() -> Self {
-        Default::default()
-    }
-}
-
-impl Lap {
-    pub fn new() -> Self {
-        Default::default()
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy)]

@@ -65,7 +65,7 @@ impl ActivityTree {
         let cycling_month = cycling_iter
             .clone()
             .filter(|x| x.start_time.0 > (Local::now() - chrono::Duration::days(30)))
-            .fold((0.0, Duration::new(), 0), |acc, x| {
+            .fold((0.0, Duration::default(), 0), |acc, x| {
                 (
                     acc.0 + x.distance.unwrap_or(0.0),
                     acc.1 + x.duration_active,
@@ -76,7 +76,7 @@ impl ActivityTree {
         let running_month = running_iter
             .clone()
             .filter(|x| x.start_time.0 > (Local::now() - chrono::Duration::days(30)))
-            .fold((0.0, Duration::new(), 0), |acc, x| {
+            .fold((0.0, Duration::default(), 0), |acc, x| {
                 (
                     acc.0 + x.distance.unwrap_or(0.0),
                     acc.1 + x.duration_active,
@@ -87,7 +87,7 @@ impl ActivityTree {
         let cycling_year = cycling_iter
             .clone()
             .filter(|x| x.start_time.0.year() == Local::now().year())
-            .fold((0.0, Duration::new(), 0), |acc, x| {
+            .fold((0.0, Duration::default(), 0), |acc, x| {
                 (
                     acc.0 + x.distance.unwrap_or(0.0),
                     acc.1 + x.duration_active,
@@ -98,7 +98,7 @@ impl ActivityTree {
         let running_year = running_iter
             .clone()
             .filter(|x| x.start_time.0.year() == Local::now().year())
-            .fold((0.0, Duration::new(), 0), |acc, x| {
+            .fold((0.0, Duration::default(), 0), |acc, x| {
                 (
                     acc.0 + x.distance.unwrap_or(0.0),
                     acc.1 + x.duration_active,
@@ -106,7 +106,7 @@ impl ActivityTree {
                 )
             });
 
-        let cycling_all = cycling_iter.fold((0.0, Duration::new(), 0), |acc, x| {
+        let cycling_all = cycling_iter.fold((0.0, Duration::default(), 0), |acc, x| {
             (
                 acc.0 + x.distance.unwrap_or(0.0),
                 acc.1 + x.duration_active,
@@ -114,7 +114,7 @@ impl ActivityTree {
             )
         });
 
-        let running_all = running_iter.fold((0.0, Duration::new(), 0), |acc, x| {
+        let running_all = running_iter.fold((0.0, Duration::default(), 0), |acc, x| {
             (
                 acc.0 + x.distance.unwrap_or(0.0),
                 acc.1 + x.duration_active,
@@ -138,7 +138,7 @@ impl ActivityTree {
             .zip(self.username_iter_gear(username)?)
             .filter(|(_, y)| y.as_deref() == Some(gear))
             .map(|(x, _)| x)
-            .fold((0.0, Duration::new()), |acc, x| {
+            .fold((0.0, Duration::default()), |acc, x| {
                 (acc.0 + x.distance.unwrap_or(0.0), acc.1 + x.duration_active)
             }))
     }

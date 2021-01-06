@@ -1,12 +1,9 @@
 use super::{utils, PasswordEnum, UrlFor};
 use crate::models::UserTotals;
 use actix_identity::Identity;
-use actix_multipart::Multipart;
 use actix_web::{http, web, Either, HttpRequest, HttpResponse, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
-use futures::{StreamExt, TryStreamExt};
 use serde::Deserialize;
-use std::io::Write;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/").name("user_index").to(user_index))
@@ -17,13 +14,6 @@ pub fn config(cfg: &mut web::ServiceConfig) {
                 .wrap(crate::middleware::Restricted)
                 .route(web::get().to(user_settings))
                 .route(web::post().to(user_settings_post)),
-        )
-        .service(
-            web::resource("/{username}/settings/avatar")
-                .name("user_avatar")
-                .wrap(crate::middleware::Restricted)
-                .route(web::get().to(user_avatar))
-                .route(web::post().to(user_avatar_post)),
         );
 }
 
@@ -165,40 +155,4 @@ async fn user_settings_post(
         }
         .into_response()
     }
-}
-
-#[derive(Template)]
-#[template(path = "user/avatar.html")]
-struct UserAvatarTemplate<'a> {
-    url: UrlFor,
-    id: Identity,
-    title: &'a str,
-}
-
-async fn user_avatar(req: HttpRequest, id: Identity) -> impl Responder {
-    UserAvatarTemplate {
-        url: UrlFor::new(&id, &req)?,
-        id,
-        title: "Upload profile picture",
-    }
-    .into_response()
-}
-
-async fn user_avatar_post(mut payload: Multipart, username: web::Path<String>) -> impl Responder {
-    while let Ok(Some(mut field)) = payload.try_next().await {
-        // Should be improved, jpg-files are saved as png. Works, but not preferable
-        let filepath = format!("static/img/user/{}.png", &username);
-        let mut f = web::block(|| std::fs::File::create(filepath))
-            .await
-            .unwrap();
-
-        while let Some(chunk) = field.next().await {
-            let chunk = chunk.unwrap();
-            f = web::block(move || f.write_all(&chunk).map(|_| f))
-                .await
-                .unwrap();
-        }
-    }
-
-    HttpResponse::Ok().finish().into_body()
 }

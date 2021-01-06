@@ -25,11 +25,12 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
 
     for data in file {
         match data.kind() {
-            MesgNum::Session => session = parse_session(data.into_vec(), session)?,
-            MesgNum::Record => record = parse_record(data.into_vec(), record)?,
+            MesgNum::Session => parse_session(data.into_vec(), &mut session)?,
+            MesgNum::Record => parse_record(data.into_vec(), &mut record)?,
             MesgNum::Lap => {
-                let lap = Lap::default();
-                lap_vec.push(parse_lap(data.into_vec(), lap)?)
+                let mut lap = Lap::default();
+                parse_lap(data.into_vec(), &mut lap)?;
+                lap_vec.push(lap);
             },
             _ => (),
         }
@@ -44,7 +45,7 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
     })
 }
 
-fn parse_session(fields: Vec<FitDataField>, mut session: Session) -> Result<Session> {
+fn parse_session(fields: Vec<FitDataField>, session: &mut Session) -> Result<()> {
     // Semicircle to degree
     let multiplier = 180f64 / 2f64.powi(31);
 
@@ -164,10 +165,10 @@ fn parse_session(fields: Vec<FitDataField>, mut session: Session) -> Result<Sess
         }
     }
 
-    Ok(session)
+    Ok(())
 }
 
-fn parse_record(fields: Vec<FitDataField>, mut record: Record) -> Result<Record> {
+fn parse_record(fields: Vec<FitDataField>, record: &mut Record) -> Result<()> {
     // Semicircle to degree
     let multiplier = 180f64 / 2f64.powi(31);
 
@@ -220,10 +221,10 @@ fn parse_record(fields: Vec<FitDataField>, mut record: Record) -> Result<Record>
         }
     }
 
-    Ok(record)
+    Ok(())
 }
 
-fn parse_lap(fields: Vec<FitDataField>, mut lap: Lap) -> Result<Lap> {
+fn parse_lap(fields: Vec<FitDataField>, lap: &mut Lap) -> Result<()> {
     // Semicircle to degree
     let multiplier = 180f64 / 2f64.powi(31);
 
@@ -327,5 +328,5 @@ fn parse_lap(fields: Vec<FitDataField>, mut lap: Lap) -> Result<Lap> {
         }
     }
 
-    Ok(lap)
+    Ok(())
 }

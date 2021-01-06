@@ -2383,6 +2383,7 @@ dependencies = [
  "sled",
  "staticmap",
  "thiserror",
+ "toml",
  "url",
 ]
 

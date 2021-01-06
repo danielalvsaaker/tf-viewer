@@ -33,11 +33,9 @@ async fn index(id: Identity, req: HttpRequest, data: web::Data<crate::Database>)
     username_id.reverse();
     username_id.truncate(5);
 
-    let mut sessions: Vec<Session> = Vec::new();
-    for (username, id) in username_id.iter() {
-        let session = data.activities.get_session(&username, &id)?;
-        sessions.push(session);
-    }
+    let sessions: Vec<Session> = username_id.iter()
+        .flat_map(|(x, y)| data.activities.get_session(&x, &y))
+        .collect();
 
     for (username, id) in username_id.iter() {
         let path = format!("static/img/activity/{}_{}.png", &username, &id);

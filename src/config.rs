@@ -1,6 +1,5 @@
 use serde::Deserialize;
 use std::{fs::read, net::Ipv4Addr};
-use toml;
 
 #[derive(Deserialize, Clone)]
 pub struct Config {

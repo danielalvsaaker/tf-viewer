@@ -1,3 +1,4 @@
+mod config;
 mod database;
 mod error;
 mod middleware;
@@ -16,16 +17,19 @@ use database::Database;
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let data = Database::load_or_create().expect("Failed to load");
+    let config = config::config();
+    let (cookie_key, secure_cookies) = (config.get_cookie_key(), config.secure_cookies);
 
-    println!("Running at 127.0.0.1:2000");
+    println!("Running at {}:{}", config.address, config.port);
 
     HttpServer::new(move || {
         App::new()
             .data(data.clone())
             .wrap(IdentityService::new(
-                CookieIdentityPolicy::new(&[0; 32])
+                CookieIdentityPolicy::new(&cookie_key)
                     .name("tf-viewer")
-                    .secure(false),
+                    .http_only(true)
+                    .secure(secure_cookies),
             ))
             .default_service(web::route().to(|| {
                 error::Error::BadRequest(error::ErrorKind::NotFound, "Page not found")
@@ -50,7 +54,7 @@ async fn main() -> std::io::Result<()> {
                     ),
             )
     })
-    .bind("0.0.0.0:2000")?
+    .bind((config.address, config.port))?
     .run()
     .await
 }

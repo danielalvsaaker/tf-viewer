@@ -44,13 +44,13 @@ async fn index(id: Identity, req: HttpRequest, data: web::Data<crate::Database>)
         if !path.exists() {
             let record = data.activities.get_record(&username, &id)?;
 
-            let _ = std::thread::spawn(move || {
+            web::block(move || {
                 // Creating file prematurely, preventing more processes from spawning
                 // and performing the same task
                 let _ = std::fs::File::create(&path);
 
                 super::utils::generate_thumb(record, &path)
-            });
+            }).await?;
         }
     }
 

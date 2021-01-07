@@ -17,6 +17,7 @@ use database::Database;
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let data = Database::load_or_create().expect("Failed to load");
+
     let config = config::config();
     let (cookie_key, secure_cookies) = (config.get_cookie_key(), config.secure_cookies);
 

@@ -8,7 +8,7 @@ use chrono::{self, Datelike, Local};
 pub struct ActivityTree {
     pub(super) usernameid_id: sled::Tree,
     pub(super) usernameid_username: sled::Tree,
-    pub(super) usernameid_gear: sled::Tree,
+    pub(super) usernameid_gearid: sled::Tree,
     pub(super) usernameid_session: sled::Tree,
     pub(super) usernameid_record: sled::Tree,
     pub(super) usernameid_lap: sled::Tree,
@@ -46,8 +46,8 @@ impl ActivityTree {
 
         self.usernameid_id.insert(&key, activity.id.as_bytes())?;
 
-        let gear = bincode::serialize(&activity.gear_id)?;
-        self.usernameid_gear.insert(&key, gear)?;
+        let gear_id = bincode::serialize(&activity.gear_id)?;
+        self.usernameid_gearid.insert(&key, gear_id)?;
 
         self.usernameid_username.insert(&key, username.as_bytes())?;
 
@@ -151,7 +151,7 @@ impl ActivityTree {
         prefix.push(0xff);
 
         Ok(self
-            .usernameid_gear
+            .usernameid_gearid
             .scan_prefix(&prefix)
             .values()
             .rev()
@@ -246,7 +246,7 @@ impl ActivityTree {
         key.push(0xff);
         key.extend_from_slice(id.as_bytes());
 
-        self.usernameid_gear
+        self.usernameid_gearid
             .get(&key)?
             .map(|x| bincode::deserialize::<Option<String>>(&x).ok())
             .flatten()

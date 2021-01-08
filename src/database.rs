@@ -19,22 +19,22 @@ impl Database {
         Ok(Self {
             users: users::UserTree {
                 username_password: db.open_tree("username_password")?,
-                username_standard_gear: db.open_tree("username_standard_gear")?,
-                username_heartrate_rest: db.open_tree("username_heartrate_rest")?,
-                username_heartrate_max: db.open_tree("username_heartrate_max")?,
+                username_standardgear: db.open_tree("username_standardgear")?,
+                username_heartraterest: db.open_tree("username_heartraterest")?,
+                username_heartratemax: db.open_tree("username_heartratemax")?,
             },
 
             activities: activities::ActivityTree {
                 usernameid_username: db.open_tree("usernameid_username")?,
                 usernameid_id: db.open_tree("usernameid_id")?,
-                usernameid_gear: db.open_tree("usernameid_gear")?,
+                usernameid_gearid: db.open_tree("usernameid_gearid")?,
                 usernameid_session: db.open_tree("usernameid_session")?,
                 usernameid_record: db.open_tree("usernameid_record")?,
                 usernameid_lap: db.open_tree("usernameid_lap")?,
             },
 
             gear: gear::GearTree {
-                usernameid_gear: db.open_tree("usernameid_gear_type")?,
+                usernameid_gear: db.open_tree("usernameid_gear")?,
             },
 
             _db: db,

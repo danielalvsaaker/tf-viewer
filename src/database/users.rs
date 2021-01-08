@@ -6,9 +6,9 @@ use std::convert::TryInto;
 #[derive(Clone)]
 pub struct UserTree {
     pub(super) username_password: sled::Tree,
-    pub(super) username_standard_gear: sled::Tree,
-    pub(super) username_heartrate_rest: sled::Tree,
-    pub(super) username_heartrate_max: sled::Tree,
+    pub(super) username_standardgear: sled::Tree,
+    pub(super) username_heartraterest: sled::Tree,
+    pub(super) username_heartratemax: sled::Tree,
 }
 
 impl UserTree {
@@ -32,13 +32,13 @@ impl UserTree {
     }
 
     pub fn set_standard_gear(&self, username: &str, gear: &str) -> Result<()> {
-        self.username_standard_gear.insert(username, gear)?;
+        self.username_standardgear.insert(username, gear)?;
 
         Ok(())
     }
 
     pub fn get_standard_gear(&self, username: &str) -> Result<Option<String>> {
-        let get = self.username_standard_gear.get(username)?;
+        let get = self.username_standardgear.get(username)?;
 
         match get {
             Some(x) => Ok(String::from_utf8(x.to_vec()).ok()),
@@ -49,21 +49,21 @@ impl UserTree {
     pub fn set_heartrate(
         &self,
         username: &str,
-        (heartrate_rest, heartrate_max): (u8, u8),
+        (heartraterest, heartratemax): (u8, u8),
     ) -> Result<()> {
-        self.username_heartrate_rest
-            .insert(username, &heartrate_rest.to_ne_bytes())?;
-        self.username_heartrate_max
-            .insert(username, &heartrate_max.to_ne_bytes())?;
+        self.username_heartraterest
+            .insert(username, &heartraterest.to_ne_bytes())?;
+        self.username_heartratemax
+            .insert(username, &heartratemax.to_ne_bytes())?;
 
         Ok(())
     }
 
     pub fn get_heartrate(&self, username: &str) -> Result<Option<(u8, u8)>> {
-        let heartrate_rest = self.username_heartrate_rest.get(username)?;
-        let heartrate_max = self.username_heartrate_max.get(username)?;
+        let heartraterest = self.username_heartraterest.get(username)?;
+        let heartratemax = self.username_heartratemax.get(username)?;
 
-        if let (Some(x), Some(y)) = (heartrate_rest, heartrate_max) {
+        if let (Some(x), Some(y)) = (heartraterest, heartratemax) {
             Ok(Some((
                 u8::from_ne_bytes(
                     x.as_ref()

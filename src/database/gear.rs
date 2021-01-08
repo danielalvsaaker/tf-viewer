@@ -7,10 +7,10 @@ pub struct GearTree {
 }
 
 impl GearTree {
-    pub fn exists(&self, username: &str, id: &str) -> Result<bool> {
+    pub fn exists(&self, username: &str, gear_id: &str) -> Result<bool> {
         let mut key = username.as_bytes().to_vec();
         key.push(0xff);
-        key.extend_from_slice(id.as_bytes());
+        key.extend_from_slice(gear_id.as_bytes());
 
         Ok(self.usernameid_gear.contains_key(&key)?)
     }
@@ -39,10 +39,10 @@ impl GearTree {
             .flat_map(|x| bincode::deserialize::<Gear>(&x)))
     }
 
-    pub fn get(&self, username: &str, id: &str) -> Result<Gear> {
+    pub fn get(&self, username: &str, gear_id: &str) -> Result<Gear> {
         let mut key = username.as_bytes().to_vec();
         key.push(0xff);
-        key.extend_from_slice(id.as_bytes());
+        key.extend_from_slice(gear_id.as_bytes());
 
         self.usernameid_gear
             .get(&key)?

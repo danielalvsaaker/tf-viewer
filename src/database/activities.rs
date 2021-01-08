@@ -6,8 +6,8 @@ use chrono::{self, Datelike, Local};
 
 #[derive(Clone)]
 pub struct ActivityTree {
-    pub usernameid_id: sled::Tree,
-    pub usernameid_username: sled::Tree,
+    pub(super) usernameid_id: sled::Tree,
+    pub(super) usernameid_username: sled::Tree,
     pub(super) usernameid_gear: sled::Tree,
     pub(super) usernameid_session: sled::Tree,
     pub(super) usernameid_record: sled::Tree,

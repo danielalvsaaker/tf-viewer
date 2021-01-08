@@ -9,7 +9,7 @@ Easy to setup, with minimal interaction.
 - Supports FIT file type (will support TCX and GPX in the future)
 - Embedded database, works out of the box
 - Easy to setup, deploy and maintain
-- Fast
+- Fast, can run on Raspberry Pi (tested on 3A+)
 
 #### Built on
 - [sled](https://github.com/spacejam/sled): High-performance embedded key-value database

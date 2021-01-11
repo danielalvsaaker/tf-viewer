@@ -9,7 +9,7 @@ use crate::{
 use actix_identity::Identity;
 use actix_web::{http, web, HttpRequest, HttpResponse, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
-use serde::Deserialize;
+se serde::Deserialize;
 use std::str::FromStr;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
@@ -106,7 +106,7 @@ async fn activity_settings(
     let activity = data.activities.get_activity(&username, &activity_id)?;
 
     let mut gears: Vec<String> = data.gear.iter(&username)?.map(|x| x.name).collect();
-    gears.sort_by_key(|k| Some(k) == activity.gear_id.as_ref());
+    gears.sort_by_key(|k| Some(k) != activity.gear_id.as_ref());
 
     ActivitySettingsTemplate {
         url: UrlFor::new(&id, &req)?,
@@ -137,7 +137,7 @@ async fn activity_settings_post(
     let mut activity = data.activities.get_activity(&username, &activity_id)?;
 
     let mut gears: Vec<String> = data.gear.iter(&username)?.map(|x| x.name).collect();
-    gears.sort_by_key(|k| Some(k) == form.gear_id.as_ref());
+    gears.sort_by_key(|k| Some(k) != form.gear_id.as_ref());
 
     let result = {
         if !gears.iter().any(|y| Some(y) == form.gear_id.as_ref()) {

@@ -9,7 +9,7 @@ use crate::{
 use actix_identity::Identity;
 use actix_web::{http, web, HttpRequest, HttpResponse, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
-se serde::Deserialize;
+use serde::Deserialize;
 use std::str::FromStr;
 
 pub fn config(cfg: &mut web::ServiceConfig) {

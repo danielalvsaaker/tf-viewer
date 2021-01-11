@@ -105,16 +105,8 @@ async fn activity_settings(
 ) -> impl Responder {
     let activity = data.activities.get_activity(&username, &activity_id)?;
 
-    let gear_iter = data.gear.iter(&username)?.map(|x| x.name);
-
-    #[allow(unused_assignments)]
-    let mut gears: Vec<String> = Vec::new();
-    if let Some(gear_id) = activity.gear_id {
-        gears = gear_iter.filter(|x| x != &gear_id).collect();
-        gears.insert(0, gear_id);
-    } else {
-        gears = gear_iter.collect();
-    }
+    let mut gears: Vec<String> = data.gear.iter(&username)?.map(|x| x.name).collect();
+    gears.sort_by_key(|k| Some(k) == activity.gear_id.as_ref());
 
     ActivitySettingsTemplate {
         url: UrlFor::new(&id, &req)?,
@@ -144,24 +136,12 @@ async fn activity_settings_post(
 
     let mut activity = data.activities.get_activity(&username, &activity_id)?;
 
-    let gear_iter = data.gear.iter(&username)?.map(|x| x.name);
-
-    #[allow(unused_assignments)]
-    let mut gears: Vec<String> = Vec::new();
-    if let Some(gear_id) = activity.gear_id {
-        gears = gear_iter.filter(|x| x != &gear_id).collect();
-        gears.insert(0, gear_id);
-    } else {
-        gears = gear_iter.collect();
-    }
+    let mut gears: Vec<String> = data.gear.iter(&username)?.map(|x| x.name).collect();
+    gears.sort_by_key(|k| Some(k) == form.gear_id.as_ref());
 
     let result = {
-        if let Some(ref x) = form.gear_id {
-            if !gears.iter().any(|y| y == x) {
-                Some("The specified gear does not exist.")
-            } else {
-                None
-            }
+        if !gears.iter().any(|y| Some(y) == form.gear_id.as_ref()) {
+            Some("The specified gear does not exist.")
         } else {
             None
         }

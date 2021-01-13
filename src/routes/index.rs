@@ -33,7 +33,8 @@ async fn index(id: Identity, req: HttpRequest, data: web::Data<crate::Database>)
     username_id.reverse();
     username_id.truncate(5);
 
-    let sessions: Vec<Session> = username_id.iter()
+    let sessions: Vec<Session> = username_id
+        .iter()
         .flat_map(|(x, y)| data.activities.get_session(&x, &y))
         .collect();
 
@@ -50,7 +51,8 @@ async fn index(id: Identity, req: HttpRequest, data: web::Data<crate::Database>)
                 let _ = std::fs::File::create(&path);
 
                 super::utils::generate_thumb(record, &path)
-            }).await?;
+            })
+            .await?;
         }
     }
 

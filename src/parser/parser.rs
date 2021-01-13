@@ -31,7 +31,7 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
                 let mut lap = Lap::default();
                 parse_lap(data.into_vec(), &mut lap)?;
                 lap_vec.push(lap);
-            },
+            }
             _ => (),
         }
     }

@@ -24,7 +24,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
 
 #[cfg(feature="embedded_static")]
 use {
-    actix_web::HttpResponse,
+    actix_web::{HttpResponse, http},
     crate::error::{Error, ErrorKind, Result}
 };
 
@@ -50,6 +50,7 @@ async fn serve_css(file: web::Path<String>) -> Result<HttpResponse> {
 
     Ok(
         HttpResponse::Ok()
+        .header(http::header::CACHE_CONTROL, "max-age=15552000")
         .body(body?)
     )
 }
@@ -71,6 +72,7 @@ async fn serve_js(file: web::Path<String>) -> Result<HttpResponse> {
 
     Ok(
         HttpResponse::Ok()
+        .header(http::header::CACHE_CONTROL, "max-age=15552000")
         .body(body?)
     )
 }
@@ -80,5 +82,6 @@ async fn serve_favicon() -> HttpResponse {
     static FAVICON: &[u8] = include_bytes!("../static/img/favicon.png");
 
     HttpResponse::Ok()
+        .header(http::header::CACHE_CONTROL, "max-age=15552000")
         .body(FAVICON)
 }

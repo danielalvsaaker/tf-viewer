@@ -49,7 +49,7 @@ async fn serve_css(file: web::Path<String>) -> Result<HttpResponse> {
 
 
     Ok(
-        HttpResponse::Ok()
+        HttpResponse::NotModified()
         .header(http::header::CACHE_CONTROL, "max-age=15552000")
         .body(body?)
     )
@@ -71,7 +71,7 @@ async fn serve_js(file: web::Path<String>) -> Result<HttpResponse> {
     };
 
     Ok(
-        HttpResponse::Ok()
+        HttpResponse::NotModified()
         .header(http::header::CACHE_CONTROL, "max-age=15552000")
         .body(body?)
     )
@@ -81,7 +81,7 @@ async fn serve_js(file: web::Path<String>) -> Result<HttpResponse> {
 async fn serve_favicon() -> HttpResponse {
     static FAVICON: &[u8] = include_bytes!("../static/img/favicon.png");
 
-    HttpResponse::Ok()
+    HttpResponse::NotModified()
         .header(http::header::CACHE_CONTROL, "max-age=15552000")
         .body(FAVICON)
 }

@@ -45,10 +45,7 @@ async fn index(id: Identity, req: HttpRequest, data: web::Data<crate::Database>)
         if !path.exists() {
             let record = data.activities.get_record(&username, &id)?;
 
-            web::block(move || {
-                super::utils::generate_thumb(record, &path)
-            })
-            .await?;
+            web::block(move || super::utils::generate_thumb(record, &path)).await?;
         }
     }
 

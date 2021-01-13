@@ -1,34 +1,28 @@
 use actix_web::web;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
-    #[cfg(not(feature="embedded_static"))]
+    #[cfg(not(feature = "embedded_static"))]
     cfg.service(actix_files::Files::new("/static", "static"))
-    .service(web::resource("/static").name("static"));
+        .service(web::resource("/static").name("static"));
 
-    #[cfg(feature="embedded_static")]
-    cfg.service(
-        web::resource("/static/css/{file}")
-            .route(web::get().to(serve_css))
-    )
-    .service(
-        web::resource("/static/js/{file}")
-            .route(web::get().to(serve_js))
-    )
-    .service(
-        web::resource("/static/img/favicon.png")
-            .route(web::get().to(serve_favicon))
-    )
-    .service(actix_files::Files::new("/static/img/activity", "static/img/activity"))
-    .service(web::resource("/static").name("static"));
+    #[cfg(feature = "embedded_static")]
+    cfg.service(web::resource("/static/css/{file}").route(web::get().to(serve_css)))
+        .service(web::resource("/static/js/{file}").route(web::get().to(serve_js)))
+        .service(web::resource("/static/img/favicon.png").route(web::get().to(serve_favicon)))
+        .service(actix_files::Files::new(
+            "/static/img/activity",
+            "static/img/activity",
+        ))
+        .service(web::resource("/static").name("static"));
 }
 
-#[cfg(feature="embedded_static")]
+#[cfg(feature = "embedded_static")]
 use {
-    actix_web::{HttpResponse, http},
-    crate::error::{Error, ErrorKind, Result}
+    crate::error::{Error, ErrorKind, Result},
+    actix_web::{http, HttpResponse},
 };
 
-#[cfg(feature="embedded_static")]
+#[cfg(feature = "embedded_static")]
 async fn serve_css(file: web::Path<String>) -> Result<HttpResponse> {
     static DATATABLES_CSS: &[u8] = include_bytes!("../static/css/datatables.min.css");
     static DROPZONE_CSS: &[u8] = include_bytes!("../static/css/dropzone.min.css");
@@ -47,15 +41,12 @@ async fn serve_css(file: web::Path<String>) -> Result<HttpResponse> {
         _ => Err(Error::BadRequest(ErrorKind::NotFound, "File not found")),
     };
 
-
-    Ok(
-        HttpResponse::NotModified()
+    Ok(HttpResponse::NotModified()
         .header(http::header::CACHE_CONTROL, "max-age=15552000")
-        .body(body?)
-    )
+        .body(body?))
 }
 
-#[cfg(feature="embedded_static")]
+#[cfg(feature = "embedded_static")]
 async fn serve_js(file: web::Path<String>) -> Result<HttpResponse> {
     static DATATABLES_JS: &[u8] = include_bytes!("../static/js/datatables.min.js");
     static DROPZONE_JS: &[u8] = include_bytes!("../static/js/dropzone.min.js");
@@ -70,14 +61,12 @@ async fn serve_js(file: web::Path<String>) -> Result<HttpResponse> {
         _ => Err(Error::BadRequest(ErrorKind::NotFound, "File not found")),
     };
 
-    Ok(
-        HttpResponse::NotModified()
+    Ok(HttpResponse::NotModified()
         .header(http::header::CACHE_CONTROL, "max-age=15552000")
-        .body(body?)
-    )
+        .body(body?))
 }
 
-#[cfg(feature="embedded_static")]
+#[cfg(feature = "embedded_static")]
 async fn serve_favicon() -> HttpResponse {
     static FAVICON: &[u8] = include_bytes!("../static/img/favicon.png");
 

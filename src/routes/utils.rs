@@ -141,6 +141,12 @@ pub fn generate_thumb(record: Record, path: &std::path::PathBuf) -> Result<()> {
     let image = map
         .render()
         .map_err(|_| Error::BadServerResponse("Failed to render activity thumbnail"))?;
+
+    if !path.exists() {
+        std::fs::create_dir_all(path.parent().unwrap())
+            .map_err(|_| Error::BadServerResponse("Failed to create thumbnail directory"))?;
+    }
+
     image
         .save(path)
         .map_err(|_| Error::BadServerResponse("Failed to save rendered activity thumbnail"))?;

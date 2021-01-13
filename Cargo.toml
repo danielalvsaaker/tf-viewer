@@ -8,7 +8,9 @@ include = ["src/**/*", "LICENSE", "README.md", "templates", "static"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+default = ["embedded_static"]
 jemalloc = ["jemallocator"]
+embedded_static = []
 
 [dependencies]
 jemallocator = { version = "0.3.2", optional = true }

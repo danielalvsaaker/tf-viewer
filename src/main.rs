@@ -5,6 +5,7 @@ mod middleware;
 mod models;
 mod parser;
 mod routes;
+mod static_files;
 
 #[cfg(feature = "jemalloc")]
 #[global_allocator]
@@ -36,9 +37,8 @@ async fn main() -> std::io::Result<()> {
                 error::Error::BadRequest(error::ErrorKind::NotFound, "Page not found")
                     .error_response()
             }))
-            .service(actix_files::Files::new("/static", "static"))
-            .service(web::resource("/static").name("static"))
             .configure(error::config)
+            .configure(static_files::config)
             .configure(routes::authentication::config)
             .service(
                 web::scope("")

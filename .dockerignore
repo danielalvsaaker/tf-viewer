@@ -1,4 +1,6 @@
 .git
+target
+db
 .gitignore
 Dockerfile
 LICENSE

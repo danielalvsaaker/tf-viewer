@@ -27,6 +27,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .data(data.clone())
+            .wrap(actix_web::middleware::Compress::default())
             .wrap(IdentityService::new(
                 CookieIdentityPolicy::new(&cookie_key)
                     .name("tf-viewer")

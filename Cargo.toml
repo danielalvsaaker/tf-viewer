@@ -3,34 +3,53 @@ name = "tf-viewer"
 version = "0.1.0"
 authors = ["danielalvsaaker <daniel@nopemail.net>", "vidarandrebo"]
 edition = "2018"
-include = ["src/**/*", "LICENSE", "README.md", "templates", "static"]
+include = ["src/**/*", "LICENSE", "README.md"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
 default = ["embedded_static"]
 jemalloc = ["jemallocator"]
-embedded_static = []
+embedded_static = ["lazy_static"]
 
 [dependencies]
-jemallocator = { version = "0.3.2", optional = true }
-fitparser = "0.3"
-sled = "0.34"
-bincode = "1.3"
-serde = { version = "1.0", features = ["derive"] }
-chrono = { version = "0.4", default-features = false }
+# web server etc.
 actix-web = "3.3"
 actix-identity = "0.3"
 actix-files = "0.5"
 actix-multipart = "0.3"
 url = { version = "2.2", default-features = false }
-rust-argon2 = { version = "0.8", default-features = false }
-getrandom = "0.2"
-thiserror = "1.0"
-futures = { version = "0.3", default-features = false }
+
+# dynamic content generation
 askama = { version = "0.10", default-features = false }
 askama_actix = "0.11"
-regex = { version = "1.4", default-features = false }
 plotly = "0.6"
 staticmap = "0.2"
+
+# database, ser/deserializing
+sled = "0.34"
+bincode = "1.3"
+serde = { version = "1.0", features = ["derive"] }
+
+fitparser = "0.3"
+
+# password hashing, salt
+rust-argon2 = { version = "0.8", default-features = false }
+getrandom = "0.2"
+
+# config
 toml = "0.5"
+
+# error handling
+thiserror = "1.0"
+
+# other
+chrono = { version = "0.4", default-features = false }
+futures = { version = "0.3", default-features = false }
+regex = { version = "1.4", default-features = false }
+
+# Dependency for embedded static content
+lazy_static = { version = "*", optional = true }
+
+# Optional allocator, highly recommended on musl systems
+jemallocator = { version = "0.3.2", optional = true }

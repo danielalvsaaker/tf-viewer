@@ -2382,6 +2382,7 @@ dependencies = [
  "futures",
  "getrandom 0.2.1",
  "jemallocator",
+ "lazy_static",
  "plotly",
  "regex",
  "rust-argon2",

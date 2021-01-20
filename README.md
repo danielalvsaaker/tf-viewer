@@ -25,7 +25,8 @@ Easy to setup, with minimal interaction.
 - If your $PATH was set by the Rust installer, you should be able to run your binary as `tf-viewer` in your shell
 
 #### Screenshot
-- Example screenshot showing an activity
+- Example screenshot showing an activity  
+
 ![Screenshot](screenshot.png)
 
 #### Built on

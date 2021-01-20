@@ -16,6 +16,7 @@ Easy to setup, with minimal interaction.
 - `docker pull danielalvsaaker/tf-viewer:latest`
 - `docker run -d -e TZ=<your timezone> -v <persisting data folder>:/data -p 8080:8080 danielalvsaaker/tf-viewer`
 - Go to http://localhost:8080 in your browser
+- Check out  the file `example-config.toml` in this repo, change and move the file to `<persisting data folder>/config.toml` if necessary
 
 #### Setup from source
 - Make sure Rust is installed (see https://rustup.rs/)

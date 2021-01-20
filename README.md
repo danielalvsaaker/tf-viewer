@@ -24,6 +24,9 @@ Easy to setup, with minimal interaction.
 - `cargo install --release`
 - If your $PATH was set by the Rust installer, you should be able to run your binary as `tf-viewer` in your shell
 
+#### Screenshot
+![Screenshot](screenshot.png)
+
 #### Built on
 - [sled](https://github.com/spacejam/sled): High-performance embedded key-value database
 - [actix-web](https://actix.rs): Fast async web framework

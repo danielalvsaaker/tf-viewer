@@ -205,11 +205,9 @@ async fn activity_index_post(
     data: web::Data<crate::Database>,
 ) -> impl Responder {
     let iter = data.activities.username_iter_session(&username).unwrap();
-    let id = data.activities.username_iter_id(&username).unwrap();
 
     let mut sessions: Vec<ActivityData> = iter
-        .zip(id)
-        .map(|(x, y)| -> ActivityData {
+        .map(|x| -> ActivityData {
             ActivityData {
                 date: x.start_time.0,
                 activity_type: format!("{}", x.activity_type),
@@ -223,7 +221,7 @@ async fn activity_index_post(
                 speed_max: x.speed_max,
                 ascent: x.ascent,
                 descent: x.descent,
-                id: y,
+                id: x.start_time.0.format("%Y%m%d%H%M").to_string(),
             }
         })
         .collect();

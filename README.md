@@ -34,5 +34,5 @@ Easy to setup, with minimal interaction.
 - [actix-web](https://actix.rs): Fast async web framework
 
 #### Note
-The database may require migration after changes to data structures or to the underlying [on-disk-format](https://github.com/spacejam/sled#known-issues-warnings).
+The database will require migration after changes to the underlying [on-disk-format](https://github.com/spacejam/sled#known-issues-warnings). This especially applies before sled 1.0 is released.
 Migration scripts will in such case be provided.

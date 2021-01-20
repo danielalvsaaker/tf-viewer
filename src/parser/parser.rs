@@ -87,6 +87,18 @@ fn parse_session(fields: Vec<FitDataField>, session: &mut Session) -> Result<()>
                     _ => None,
                 }
             }
+            "avg_power" => {
+                session.power_avg = match field.value() {
+                    UInt16(x) => Some(*x),
+                    _ => None,
+                }
+            }
+            "max_power" => {
+                session.power_max = match field.value() {
+                    UInt16(x) => Some(*x),
+                    _ => None,
+                }
+            }
             "nec_lat" => {
                 session.nec_lat = match field.value() {
                     SInt32(x) => Some(f64::from(*x) * multiplier),
@@ -190,6 +202,10 @@ fn parse_record(fields: Vec<FitDataField>, record: &mut Record) -> Result<()> {
                 Float64(x) => Some((*x * 3.6f64 * 100f64).round() / 100f64),
                 _ => None,
             }),
+            "power" => record.power.push(match field.value() {
+                UInt16(x) => Some(*x),
+                _ => None,
+            }),
             "heart_rate" => record.heartrate.push(match field.value() {
                 UInt8(x) => Some(*x),
                 _ => None,
@@ -263,6 +279,18 @@ fn parse_lap(fields: Vec<FitDataField>, lap: &mut Lap) -> Result<()> {
             "enhanced_max_speed" => {
                 lap.speed_max = match field.value() {
                     Float64(x) => Some((*x * 3.6f64 * 100f64).round() / 100f64),
+                    _ => None,
+                }
+            }
+            "avg_power" => {
+                lap.power_avg = match field.value() {
+                    UInt16(x) => Some(*x),
+                    _ => None,
+                }
+            }
+            "max_power" => {
+                lap.power_max = match field.value() {
+                    UInt16(x) => Some(*x),
                     _ => None,
                 }
             }

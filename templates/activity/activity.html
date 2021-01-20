@@ -128,6 +128,16 @@
 		<li><strong>Avg. heart rate: </strong> {{ value }} bpm</li>
 	      {% when None -%}
 	    {% endmatch -%}
+	    {% match session.power_max -%}
+	      {% when Some with (value) -%}
+		<li><strong>Max. power: </strong> {{ value }} W</li>
+	      {% when None -%}
+	    {% endmatch -%}
+	    {% match session.power_avg -%}
+	      {% when Some with (value) -%}
+		<li><strong>Avg. power: </strong> {{ value }} W</li>
+	      {% when None -%}
+	    {% endmatch -%}
 	    {% match session.cadence_avg -%}
 	      {% when Some with (value) -%}
 		<li><strong>Avg. cadence: </strong> {{ value }} rpm</li>
@@ -191,6 +201,8 @@
 	    <th>Max. speed</th>
 	    <th>Avg. heart rate</th>
 	    <th>Max. heart rate</th>
+	    <th>Avg. power</th>
+	    <th>Max. power</th>
 	    <th>Avg. cadence</th>
 	    <th>Total ascent</th>
 	    <th>Total descent</th>
@@ -237,6 +249,20 @@
 	        {% match lap.heartrate_max -%}
 	          {% when Some with (value) -%}
 		    {{ value }} bpm
+	          {% when None -%}
+	        {% endmatch -%}
+	      </td>
+	      <td>
+	        {% match lap.power_avg -%}
+	          {% when Some with (value) -%}
+		    {{ value }} W
+	          {% when None -%}
+	        {% endmatch -%}
+	      </td>
+	      <td>
+	        {% match lap.power_max -%}
+	          {% when Some with (value) -%}
+		    {{ value }} W
 	          {% when None -%}
 	        {% endmatch -%}
 	      </td>

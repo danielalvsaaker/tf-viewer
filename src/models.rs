@@ -16,7 +16,7 @@ pub struct Activity {
     pub lap: Vec<Lap>,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone, Copy)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct Session {
     pub cadence_avg: Option<u8>,
     pub cadence_max: Option<u8>,
@@ -41,7 +41,7 @@ pub struct Session {
     pub start_time: TimeStamp,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct Record {
     pub cadence: Vec<Option<u8>>,
     pub distance: Vec<Option<f64>>,
@@ -77,11 +77,11 @@ pub struct Lap {
     pub duration_active: Duration,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize)]
 pub enum ActivityType {
     Running,
     Cycling,
-    Unknown,
+    Other(String),
 }
 
 impl ActivityType {
@@ -96,7 +96,7 @@ impl ActivityType {
 
 impl Default for ActivityType {
     fn default() -> Self {
-        Self::Unknown
+        Self::Other("Unknown".to_string())
     }
 }
 
@@ -107,7 +107,7 @@ impl FromStr for ActivityType {
         Ok(match s {
             "running" => Self::Running,
             "cycling" => Self::Cycling,
-            _ => Self::Unknown,
+            _ => Self::Other(s.to_string()),
         })
     }
 }
@@ -117,13 +117,13 @@ impl std::fmt::Display for ActivityType {
         let activity_type = match self {
             Self::Running => "Running",
             Self::Cycling => "Cycling",
-            Self::Unknown => "Unknown activity type",
+            Self::Other(x) => x,
         };
         write!(f, "{}", activity_type)
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize)]
 pub enum GearType {
     RoadBike,
     HybridBike,
@@ -177,7 +177,7 @@ pub struct UserTotals {
 }
 
 /// Wrapper for chrono::DateTime
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TimeStamp(pub DateTime<Local>);
 
 impl Default for TimeStamp {

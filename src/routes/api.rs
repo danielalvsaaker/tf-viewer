@@ -24,7 +24,7 @@ pub struct DataResponse<T: Serialize> {
 pub struct ActivityData {
     #[serde(with = "date_format")]
     pub date: DateTime<Local>,
-    pub activity_type: crate::models::ActivityType,
+    pub activity_type: String,
     pub duration: String,
     pub distance: Option<f64>,
     pub calories: u16,

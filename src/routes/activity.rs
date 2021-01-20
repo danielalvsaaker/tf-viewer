@@ -212,7 +212,7 @@ async fn activity_index_post(
         .map(|(x, y)| -> ActivityData {
             ActivityData {
                 date: x.start_time.0,
-                activity_type: x.activity_type,
+                activity_type: format!("{}", x.activity_type),
                 duration: x.duration_active.to_string(),
                 distance: x.distance,
                 calories: x.calories,

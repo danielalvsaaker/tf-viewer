@@ -28,9 +28,9 @@ pub enum Error {
         source: sled::Error,
     },
     #[error("Serialization error.")]
-    BincodeError {
+    RmpsError {
         #[from]
-        source: bincode::Error,
+        source: rmp_serde::encode::Error,
     },
     #[error("{0}.")]
     BadServerResponse(&'static str),

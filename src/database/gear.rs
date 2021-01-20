@@ -1,5 +1,6 @@
 use crate::error::{Error, ErrorKind, Result};
 use crate::models::Gear;
+use rmp_serde as rmps;
 
 #[derive(Clone)]
 pub struct GearTree {
@@ -20,7 +21,7 @@ impl GearTree {
         key.push(0xff);
         key.extend_from_slice(gear.name.as_bytes());
 
-        let serialized = bincode::serialize(&gear)?;
+        let serialized = rmps::to_vec(&gear)?;
         self.usernameid_gear.insert(key, serialized)?;
 
         Ok(())
@@ -36,7 +37,7 @@ impl GearTree {
             .values()
             .rev()
             .flatten()
-            .flat_map(|x| bincode::deserialize::<Gear>(&x)))
+            .flat_map(|x| rmps::from_read_ref(&x)))
     }
 
     pub fn get(&self, username: &str, gear_id: &str) -> Result<Gear> {
@@ -46,7 +47,7 @@ impl GearTree {
 
         self.usernameid_gear
             .get(&key)?
-            .map(|x| bincode::deserialize::<Gear>(&x).ok())
+            .map(|x| rmps::from_read_ref(&x).ok())
             .flatten()
             .ok_or(Error::BadRequest(ErrorKind::NotFound, "Gear not found"))
     }

@@ -3,6 +3,7 @@ use crate::{
     models::{Activity, Duration, Lap, Record, Session, UserTotals},
 };
 use chrono::{self, Datelike, Local};
+use rmp_serde as rmps;
 
 #[derive(Clone)]
 pub struct ActivityTree {
@@ -35,18 +36,18 @@ impl ActivityTree {
         key.push(0xff);
         key.extend_from_slice(&activity.id.as_bytes());
 
-        let session = bincode::serialize(&activity.session)?;
+        let session = rmps::to_vec(&activity.session)?;
         self.usernameid_session.insert(&key, session)?;
 
-        let record = bincode::serialize(&activity.record)?;
+        let record = rmps::to_vec(&activity.record)?;
         self.usernameid_record.insert(&key, record)?;
 
-        let lap = bincode::serialize(&activity.lap)?;
+        let lap = rmps::to_vec(&activity.lap)?;
         self.usernameid_lap.insert(&key, lap)?;
 
         self.usernameid_id.insert(&key, activity.id.as_bytes())?;
 
-        let gear_id = bincode::serialize(&activity.gear_id)?;
+        let gear_id = rmps::to_vec(&activity.gear_id)?;
         self.usernameid_gearid.insert(&key, gear_id)?;
 
         self.usernameid_username.insert(&key, username.as_bytes())?;
@@ -156,7 +157,7 @@ impl ActivityTree {
             .values()
             .rev()
             .flatten()
-            .flat_map(|x| bincode::deserialize::<Option<String>>(&x)))
+            .flat_map(|x| rmps::from_read_ref(&x)))
     }
 
     pub fn username_iter_session(&self, username: &str) -> Result<impl Iterator<Item = Session>> {
@@ -169,7 +170,7 @@ impl ActivityTree {
             .values()
             .rev()
             .flatten()
-            .flat_map(|x| bincode::deserialize::<Session>(&x)))
+            .flat_map(|x| rmps::from_read_ref(&x)))
     }
 
     pub fn username_iter_id(&self, username: &str) -> Result<impl Iterator<Item = String>> {
@@ -212,7 +213,7 @@ impl ActivityTree {
 
         self.usernameid_session
             .get(&key)?
-            .map(|x| bincode::deserialize::<Session>(&x).ok())
+            .map(|x| rmps::from_read_ref(&x).ok())
             .flatten()
             .ok_or(Error::BadRequest(ErrorKind::NotFound, "Session not found"))
     }
@@ -224,7 +225,7 @@ impl ActivityTree {
 
         self.usernameid_record
             .get(&key)?
-            .map(|x| bincode::deserialize::<Record>(&x).ok())
+            .map(|x| rmps::from_read_ref(&x).ok())
             .flatten()
             .ok_or(Error::BadRequest(ErrorKind::NotFound, "Record not found"))
     }
@@ -236,7 +237,7 @@ impl ActivityTree {
 
         self.usernameid_lap
             .get(&key)?
-            .map(|x| bincode::deserialize::<Vec<Lap>>(&x).ok())
+            .map(|x| rmps::from_read_ref(&x).ok())
             .flatten()
             .ok_or(Error::BadRequest(ErrorKind::NotFound, "Laps not found"))
     }
@@ -248,7 +249,7 @@ impl ActivityTree {
 
         self.usernameid_gearid
             .get(&key)?
-            .map(|x| bincode::deserialize::<Option<String>>(&x).ok())
+            .map(|x| rmps::from_read_ref(&x).ok())
             .flatten()
             .ok_or(Error::BadRequest(ErrorKind::NotFound, "Gear not found"))
     }

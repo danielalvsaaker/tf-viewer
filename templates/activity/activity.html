@@ -45,45 +45,44 @@
   </div>
   <div class="grid-container">
     <div class="map" id="map">
-      {% match session.nec_lat -%}
-	{% when Some with (value) -%}
-	  <link rel="stylesheet" href="{{ url._static }}/css/leaflet.css" />
-	  <script src="{{ url._static }}/js/leaflet.js"></script>
-	  <script>
-	    var map = L.map('map').fitBounds([
+      {% if !coords.is_empty() -%}
+	<link rel="stylesheet" href="{{ url._static }}/css/leaflet.css" />
+	<script src="{{ url._static }}/js/leaflet.js"></script>
+	<script>
+	  var map = L.map('map').fitBounds([
+	    [{{ session.nec_lat.unwrap() }}, {{ session.nec_lon.unwrap() }}],
+	    [{{ session.swc_lat.unwrap()}}, {{ session.swc_lon.unwrap()}}]
+	  ]);
+
+	  var tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+	    'maxNativeZoom': 18,
+	    'maxZoom': 18,
+	    'minZoom': 0,
+	    'subdomains': 'abc'
+	  }).addTo(map);
+
+	  var line = L.polyline([
+	    {% for coord in coords  -%}
+	      [{{ coord.1 }}, {{ coord.0 }}],
+	    {% endfor -%}
+	  ],
+	  {'bubblingMouseEvents': true, 'color': '#FF0000', 'dashArray': null, 'dashOffset': null, 'fill': false, 'fillColor': '#FF0000', 'fillOpacity': 0.2, 'fillRule': 'evenodd', 'lineCap': 'round', 'lineJoin': 'round', 'noClip': false, 'opacity': 1.0, 'smoothFactor': 1.0, 'stroke': true, 'weight': 2}
+	  ).addTo(map);
+
+	  const mapDiv = document.getElementById('map');
+	  const resizeObserver = new ResizeObserver(() => {
+  	    map.invalidateSize();  
+	    map.fitBounds([
 	      [{{ session.nec_lat.unwrap() }}, {{ session.nec_lon.unwrap() }}],
 	      [{{ session.swc_lat.unwrap()}}, {{ session.swc_lon.unwrap()}}]
 	    ]);
+	  });
 
-	    var tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-	      'maxNativeZoom': 18,
-	      'maxZoom': 18,
-	      'minZoom': 0,
-	      'subdomains': 'abc'
-	    }).addTo(map);
-
-	    var line = L.polyline([
-	      {% for coord in coords  -%}
-		[{{ coord.1 }}, {{ coord.0 }}],
-	      {% endfor -%}
-	    ],
-	    {'bubblingMouseEvents': true, 'color': '#FF0000', 'dashArray': null, 'dashOffset': null, 'fill': false, 'fillColor': '#FF0000', 'fillOpacity': 0.2, 'fillRule': 'evenodd', 'lineCap': 'round', 'lineJoin': 'round', 'noClip': false, 'opacity': 1.0, 'smoothFactor': 1.0, 'stroke': true, 'weight': 2}
-	    ).addTo(map);
-
-	    const mapDiv = document.getElementById('map');
-	    const resizeObserver = new ResizeObserver(() => {
-  	      map.invalidateSize();  
-	      map.fitBounds([
-		[{{ session.nec_lat.unwrap() }}, {{ session.nec_lon.unwrap() }}],
-		[{{ session.swc_lat.unwrap()}}, {{ session.swc_lon.unwrap()}}]
-	      ]);
-	    });
-
-	    resizeObserver.observe(mapDiv);
-	    </script>
-	{% when None -%}
-	  <p style="margin-top:10%; text-align:center;">Activity does not contain any geographic data</p>
-      {% endmatch %}
+	  resizeObserver.observe(mapDiv);
+	</script>
+      {% else %}
+	<p style="margin-top:10%; text-align:center;">Activity does not contain any geographic data</p>
+      {% endif %}
     </div>
     <div class="stats">
       <div class="panel">

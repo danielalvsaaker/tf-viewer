@@ -36,6 +36,46 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
         }
     }
 
+    // Cargo fmt wanted it this way, but it's oddly vertical...
+    if session.nec_lat.is_none()
+        || session.nec_lon.is_none()
+        || session.swc_lat.is_none()
+        || session.swc_lon.is_none()
+    {
+        session.nec_lat = Some(
+            record
+                .lat
+                .clone()
+                .into_iter()
+                .flatten()
+                .fold(f64::NAN, f64::max),
+        );
+        session.nec_lon = Some(
+            record
+                .lon
+                .clone()
+                .into_iter()
+                .flatten()
+                .fold(f64::NAN, f64::max),
+        );
+        session.swc_lat = Some(
+            record
+                .lat
+                .clone()
+                .into_iter()
+                .flatten()
+                .fold(f64::NAN, f64::min),
+        );
+        session.swc_lon = Some(
+            record
+                .lon
+                .clone()
+                .into_iter()
+                .flatten()
+                .fold(f64::NAN, f64::min),
+        );
+    }
+
     Ok(Activity {
         id: session.start_time.0.format("%Y%m%d%H%M").to_string(),
         gear_id,

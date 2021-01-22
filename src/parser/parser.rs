@@ -45,34 +45,30 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
         session.nec_lat = Some(
             record
                 .lat
-                .clone()
-                .into_iter()
+                .iter()
                 .flatten()
-                .fold(f64::NAN, f64::max),
+                .fold(f64::NAN, |x, y| f64::max(x, *y)),
         );
         session.nec_lon = Some(
             record
                 .lon
-                .clone()
-                .into_iter()
+                .iter()
                 .flatten()
-                .fold(f64::NAN, f64::max),
+                .fold(f64::NAN, |x, y| f64::max(x, *y)),
         );
         session.swc_lat = Some(
             record
                 .lat
-                .clone()
-                .into_iter()
+                .iter()
                 .flatten()
-                .fold(f64::NAN, f64::min),
+                .fold(f64::NAN, |x, y| f64::min(x, *y)),
         );
         session.swc_lon = Some(
             record
                 .lon
-                .clone()
-                .into_iter()
+                .iter()
                 .flatten()
-                .fold(f64::NAN, f64::min),
+                .fold(f64::NAN, |x, y| f64::min(x, *y)),
         );
     }
 

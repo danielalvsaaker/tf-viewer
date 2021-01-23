@@ -1,6 +1,6 @@
 # tf-viewer
 Selfhosted web dashboard for activity tracking and analyzing. Visualize your activities and view your statistics.  
-Easy to setup, the binary is 100% static.
+Easy to setup, with a 100% static binary.
 
 
 #### Features

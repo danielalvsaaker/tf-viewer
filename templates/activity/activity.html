@@ -152,6 +152,11 @@
 		<li><strong>Total descent: </strong> {{ value }} m</li>
 	      {% when None -%}
 	    {% endmatch -%}
+	    {% match session.calories -%}
+	      {% when Some with (value) -%}
+		<li><strong>Total calories: </strong> {{ value }} kcal</li>
+	      {% when None -%}
+	    {% endmatch -%}
 	  </ul>
 	</div>
       </div>

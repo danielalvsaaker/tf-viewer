@@ -27,7 +27,7 @@ pub struct ActivityData {
     pub activity_type: String,
     pub duration: String,
     pub distance: Option<f64>,
-    pub calories: u16,
+    pub calories: Option<u16>,
     pub cadence_avg: Option<u8>,
     pub heartrate_avg: Option<u8>,
     pub heartrate_max: Option<u8>,

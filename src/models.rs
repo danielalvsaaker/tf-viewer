@@ -34,7 +34,7 @@ pub struct Session {
     pub activity_type: ActivityType,
     pub ascent: Option<u16>,
     pub descent: Option<u16>,
-    pub calories: u16,
+    pub calories: Option<u16>,
     pub distance: Option<f64>,
     pub duration: Duration,
     pub duration_active: Duration,

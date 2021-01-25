@@ -54,7 +54,7 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
         }
     }
 
-    // Some fit-files does not contain corner coordinates,
+    // Some fit-files do not contain corner coordinates,
     // so find them manually if missing
     if session.nec_lat.is_none()
         || session.nec_lon.is_none()

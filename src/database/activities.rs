@@ -7,8 +7,6 @@ use rmp_serde as rmps;
 
 #[derive(Clone)]
 pub struct ActivityTree {
-    pub(super) usernameid_id: sled::Tree,
-    pub(super) usernameid_username: sled::Tree,
     pub(super) usernameid_gearid: sled::Tree,
     pub(super) usernameid_session: sled::Tree,
     pub(super) usernameid_record: sled::Tree,
@@ -20,7 +18,7 @@ impl ActivityTree {
         let mut key = username.as_bytes().to_vec();
         key.push(0xff);
         key.extend_from_slice(id.as_bytes());
-        Ok(self.usernameid_id.contains_key(&key)?)
+        Ok(self.usernameid_session.contains_key(&key)?)
     }
 
     pub fn insert(&self, activity: Activity, username: &str) -> Result<()> {
@@ -45,12 +43,8 @@ impl ActivityTree {
         let lap = rmps::to_vec(&activity.lap)?;
         self.usernameid_lap.insert(&key, lap)?;
 
-        self.usernameid_id.insert(&key, activity.id.as_bytes())?;
-
         let gear_id = rmps::to_vec(&activity.gear_id)?;
         self.usernameid_gearid.insert(&key, gear_id)?;
-
-        self.usernameid_username.insert(&key, username.as_bytes())?;
 
         Ok(())
     }
@@ -175,22 +169,24 @@ impl ActivityTree {
 
     pub fn iter_username(&self) -> Result<impl Iterator<Item = String>> {
         Ok(self
-            .usernameid_username
+            .usernameid_session
             .iter()
-            .values()
+            .keys()
             .rev()
             .flatten()
+            .map(|x| x.split(|y| y == &0xff).next().unwrap().to_vec())
             .flat_map(|x| String::from_utf8(x.to_vec())))
     }
 
     pub fn iter_id(&self) -> Result<impl Iterator<Item = String>> {
         Ok(self
-            .usernameid_id
+            .usernameid_session
             .iter()
-            .values()
+            .keys()
             .rev()
             .flatten()
-            .flat_map(|x| String::from_utf8(x.to_vec())))
+            .map(|x| x.split(|y| y == &0xff).last().unwrap().to_vec())
+            .flat_map(|x| String::from_utf8(x)))
     }
 
     pub fn get_session(&self, username: &str, id: &str) -> Result<Session> {

@@ -47,8 +47,7 @@ impl GearTree {
 
         self.usernameid_gear
             .get(&key)?
-            .map(|x| rmps::from_read_ref(&x).ok())
-            .flatten()
+            .and_then(|x| rmps::from_read_ref(&x).ok())
             .ok_or(Error::BadRequest(ErrorKind::NotFound, "Gear not found"))
     }
 }

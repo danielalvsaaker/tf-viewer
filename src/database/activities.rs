@@ -196,8 +196,7 @@ impl ActivityTree {
 
         self.usernameid_session
             .get(&key)?
-            .map(|x| rmps::from_read_ref(&x).ok())
-            .flatten()
+            .and_then(|x| rmps::from_read_ref(&x).ok())
             .ok_or(Error::BadRequest(ErrorKind::NotFound, "Session not found"))
     }
 
@@ -208,8 +207,7 @@ impl ActivityTree {
 
         self.usernameid_record
             .get(&key)?
-            .map(|x| rmps::from_read_ref(&x).ok())
-            .flatten()
+            .and_then(|x| rmps::from_read_ref(&x).ok())
             .ok_or(Error::BadRequest(ErrorKind::NotFound, "Record not found"))
     }
 
@@ -220,8 +218,7 @@ impl ActivityTree {
 
         self.usernameid_lap
             .get(&key)?
-            .map(|x| rmps::from_read_ref(&x).ok())
-            .flatten()
+            .and_then(|x| rmps::from_read_ref(&x).ok())
             .ok_or(Error::BadRequest(ErrorKind::NotFound, "Laps not found"))
     }
 
@@ -232,8 +229,7 @@ impl ActivityTree {
 
         self.usernameid_gearid
             .get(&key)?
-            .map(|x| rmps::from_read_ref(&x).ok())
-            .flatten()
+            .and_then(|x| rmps::from_read_ref(&x).ok())
             .ok_or(Error::BadRequest(ErrorKind::NotFound, "Gear not found"))
     }
 

@@ -1,7 +1,7 @@
 use fitparser::profile::field_types::MesgNum;
 use fitparser::FitDataField;
 use fitparser::Value::*;
-use std::{iter::FromIterator, str::FromStr, string::String, collections::HashMap};
+use std::{str::FromStr, string::String, collections::HashMap};
 
 use crate::{
     error::{Error, ErrorKind, Result},
@@ -25,6 +25,8 @@ map_value!(map_sint32, i32, SInt32(x) => *x);
 map_value!(map_float64, f64, Float64(x) => *x);
 map_value!(map_string, String, String(x) => x.to_string());
 map_value!(map_timestamp, TimeStamp, Timestamp(x) => TimeStamp(*x));
+
+const MULTIPLIER: f64 = 180_f64 / (2_i64 << 30) as f64;
 
 pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
     let mut session: Session = Session::default();
@@ -102,11 +104,8 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
 }
 
 fn parse_session(fields: &[FitDataField], session: &mut Session) -> Result<()> {
-    // Semicircle to degree
-    let multiplier = 180f64 / 2f64.powi(31);
-
     let field_map: HashMap<&str, &fitparser::Value> =
-        HashMap::from_iter(fields.iter().map(|x| (x.name(), x.value())));
+        fields.iter().map(|x| (x.name(), x.value())).collect();
 
     session.cadence_avg = field_map
         .get("avg_cadence")
@@ -145,22 +144,22 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) -> Result<()> {
     session.nec_lat = field_map
         .get("nec_lat")
         .and_then(map_sint32)
-        .map(|x| f64::from(x) * multiplier);
+        .map(|x| f64::from(x) * MULTIPLIER);
 
     session.nec_lon = field_map
         .get("nec_long")
         .and_then(map_sint32)
-        .map(|x| f64::from(x) * multiplier);
+        .map(|x| f64::from(x) * MULTIPLIER);
 
     session.swc_lat = field_map
         .get("swc_lat")
         .and_then(map_sint32)
-        .map(|x| f64::from(x) * multiplier);
+        .map(|x| f64::from(x) * MULTIPLIER);
 
     session.swc_lon = field_map
         .get("swc_long")
         .and_then(map_sint32)
-        .map(|x| f64::from(x) * multiplier);
+        .map(|x| f64::from(x) * MULTIPLIER);
 
     session.laps = field_map
         .get("num_laps")
@@ -212,11 +211,8 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) -> Result<()> {
 }
 
 fn parse_record(fields: &[FitDataField], record: &mut Record) -> Result<()> {
-    // Semicircle to degree
-    let multiplier = 180f64 / 2f64.powi(31);
-
     let field_map: HashMap<&str, &fitparser::Value> =
-        HashMap::from_iter(fields.iter().map(|x| (x.name(), x.value())));
+        fields.iter().map(|x| (x.name(), x.value())).collect();
 
     record.cadence.push(
         field_map
@@ -260,14 +256,14 @@ fn parse_record(fields: &[FitDataField], record: &mut Record) -> Result<()> {
         field_map
             .get("position_lat")
             .and_then(map_sint32)
-            .map(|x| f64::from(x) * multiplier),
+            .map(|x| f64::from(x) * MULTIPLIER),
     );
 
     record.lon.push(
         field_map
             .get("position_long")
             .and_then(map_sint32)
-            .map(|x| f64::from(x) * multiplier),
+            .map(|x| f64::from(x) * MULTIPLIER),
     );
 
     let timestamp = field_map
@@ -287,11 +283,8 @@ fn parse_record(fields: &[FitDataField], record: &mut Record) -> Result<()> {
 }
 
 fn parse_lap(fields: &[FitDataField], lap: &mut Lap) -> Result<()> {
-    // Semicircle to degree
-    let multiplier = 180f64 / 2f64.powi(31);
-
     let field_map: HashMap<&str, &fitparser::Value> =
-        HashMap::from_iter(fields.iter().map(|x| (x.name(), x.value())));
+        fields.iter().map(|x| (x.name(), x.value())).collect();
 
     lap.cadence_avg = field_map
         .get("avg_cadence")
@@ -330,22 +323,22 @@ fn parse_lap(fields: &[FitDataField], lap: &mut Lap) -> Result<()> {
     lap.lat_start = field_map
         .get("start_position_lat")
         .and_then(map_sint32)
-        .map(|x| f64::from(x) * multiplier);
+        .map(|x| f64::from(x) * MULTIPLIER);
 
     lap.lon_start = field_map
         .get("start_position_long")
         .and_then(map_sint32)
-        .map(|x| f64::from(x) * multiplier);
+        .map(|x| f64::from(x) * MULTIPLIER);
 
     lap.lat_end = field_map
         .get("end_position_lat")
         .and_then(map_sint32)
-        .map(|x| f64::from(x) * multiplier);
+        .map(|x| f64::from(x) * MULTIPLIER);
 
     lap.lon_end = field_map
         .get("end_position_long")
         .and_then(map_sint32)
-        .map(|x| f64::from(x) * multiplier);
+        .map(|x| f64::from(x) * MULTIPLIER);
 
     lap.ascent = field_map
         .get("total_ascent")

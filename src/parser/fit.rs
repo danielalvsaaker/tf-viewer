@@ -168,11 +168,10 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) -> Result<()> {
 
     session.activity_type = ActivityType::from_str(
         &field_map
-        .get("sport")
-        .and_then(map_string)
-        .unwrap_or_default()
-    )
-        .map_err(|_| Error::BadServerResponse("Failed to parse activity type"))?;
+            .get("sport")
+            .and_then(map_string)
+            .unwrap_or_default()
+    ).unwrap_or_default();
 
     session.ascent = field_map
         .get("total_ascent")

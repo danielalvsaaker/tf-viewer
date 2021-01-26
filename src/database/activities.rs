@@ -175,7 +175,7 @@ impl ActivityTree {
             .rev()
             .flatten()
             .map(|x| x.split(|y| y == &0xff).next().unwrap().to_vec())
-            .flat_map(|x| String::from_utf8(x.to_vec())))
+            .flat_map(String::from_utf8))
     }
 
     pub fn iter_id(&self) -> Result<impl Iterator<Item = String>> {
@@ -186,7 +186,7 @@ impl ActivityTree {
             .rev()
             .flatten()
             .map(|x| x.split(|y| y == &0xff).last().unwrap().to_vec())
-            .flat_map(|x| String::from_utf8(x)))
+            .flat_map(String::from_utf8))
     }
 
     pub fn get_session(&self, username: &str, id: &str) -> Result<Session> {

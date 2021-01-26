@@ -9,10 +9,10 @@ use crate::{
 };
 
 macro_rules! map_value {
-    ($name:ident, $type:ident, $( $pattern:pat )|+ $( if $guard: expr )? $(,)? => $mapping:expr) => {
+    ($name:ident, $type:ident, $( $pattern:pat )|+ => $mapping:expr) => {
         fn $name(v: &&fitparser::Value) -> Option<$type> {
             match v {
-                $( $pattern )|+ $( if $guard )? => ::std::option::Option::Some($mapping),
+                $( $pattern )|+ => ::std::option::Option::Some($mapping),
                 _ => ::std::option::Option::None,
             }
         }

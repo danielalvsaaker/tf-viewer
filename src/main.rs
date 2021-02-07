@@ -12,7 +12,10 @@ mod static_files;
 static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 use actix_identity::{CookieIdentityPolicy, IdentityService};
-use actix_web::{web, App, HttpServer, ResponseError};
+use actix_web::{
+    middleware::{Compress, Condition},
+    web, App, HttpServer, ResponseError,
+};
 use database::Database;
 
 #[actix_web::main]
@@ -20,14 +23,22 @@ async fn main() -> std::io::Result<()> {
     let data = Database::load_or_create().expect("Failed to load");
 
     let config = config::config();
-    let (cookie_key, secure_cookies) = (config.get_cookie_key(), config.secure_cookies);
+    let (cookie_key, secure_cookies, disable_registration) = (
+        config.get_cookie_key(),
+        config.secure_cookies,
+        config.disable_registration,
+    );
 
     println!("Running at {}:{}", config.address, config.port);
 
     HttpServer::new(move || {
         App::new()
             .data(data.clone())
-            .wrap(actix_web::middleware::Compress::default())
+            .wrap(Compress::default())
+            .wrap(Condition::new(
+                disable_registration,
+                middleware::DisableRegistration::default(),
+            ))
             .wrap(IdentityService::new(
                 CookieIdentityPolicy::new(&cookie_key)
                     .name("tf-viewer")

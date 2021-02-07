@@ -7,6 +7,8 @@ pub struct Config {
     cookie_key: String,
     #[serde(default)]
     pub secure_cookies: bool,
+    #[serde(default)]
+    pub disable_registration: bool,
     #[serde(default = "default_address")]
     pub address: Ipv4Addr,
     #[serde(default = "default_port")]
@@ -16,8 +18,9 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Config {
         Config {
-            cookie_key: String::new(),
+            cookie_key: Default::default(),
             secure_cookies: false,
+            disable_registration: false,
             address: default_address(),
             port: default_port(),
         }

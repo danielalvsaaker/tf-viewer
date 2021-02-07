@@ -50,6 +50,9 @@ impl ActivityTree {
         if let Some(x) = activity.notes {
             self.usernameid_notes.insert(&key, x.as_bytes())?;
         }
+        else {
+            self.usernameid_notes.remove(&key)?;
+        }
 
         Ok(())
     }

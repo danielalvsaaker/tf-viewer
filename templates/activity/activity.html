@@ -32,8 +32,15 @@
 
 <div class="container">
   <div class="columns">
-    <div class="col-11">
+    <div class="col-4">
       <h2>{{ title }}</h2>
+    </div>
+    <div class="col-7">
+      {% match notes %}
+	{% when Some with (value) -%}
+	  <p class="text-tiny note">{{ value }}</p>
+	{% when None -%}
+      {% endmatch %}
     </div>
     <div class="col-1 text-right">
       {% if is_owner -%}

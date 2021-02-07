@@ -100,6 +100,7 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
         session,
         record,
         lap: lap_vec,
+        notes: None,
     })
 }
 

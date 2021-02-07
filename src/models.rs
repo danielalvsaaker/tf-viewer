@@ -7,13 +7,13 @@ use std::{
     str::FromStr,
 };
 
-#[derive(Serialize, Deserialize)]
 pub struct Activity {
     pub id: String,
     pub gear_id: Option<String>,
     pub session: Session,
     pub record: Record,
     pub lap: Vec<Lap>,
+    pub notes: Option<String>,
 }
 
 #[derive(Default, Serialize, Deserialize)]

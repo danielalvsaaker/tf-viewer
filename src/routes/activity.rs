@@ -40,11 +40,12 @@ struct ActivityTemplate<'a> {
     id: Identity,
     activity_url: &'a str,
     username: &'a str,
-    gear: Option<String>,
+    gear: Option<&'a str>,
     session: &'a Session,
-    laps: &'a Vec<Lap>,
-    coords: &'a Vec<(f64, f64)>,
-    zones: &'a Option<Vec<Duration>>,
+    laps: &'a [Lap],
+    coords: &'a [(f64, f64)],
+    zones: Option<&'a [Duration]>,
+    notes: Option<&'a str>,
     plot: &'a str,
     title: &'a str,
 }
@@ -69,7 +70,7 @@ async fn activity(
         id,
         activity_url: &req.path(),
         username: &username,
-        gear: activity.gear_id,
+        gear: activity.gear_id.as_deref(),
         session: &activity.session,
         laps: &activity.lap,
         coords: &activity
@@ -78,9 +79,10 @@ async fn activity(
             .into_iter()
             .flatten()
             .zip(activity.record.lat.into_iter().flatten())
-            .collect(),
-        zones: &zones,
+            .collect::<Vec<(f64, f64)>>(),
+        zones: zones.as_deref(),
         plot: &plot,
+        notes: activity.notes.as_deref(),
         title: &format!("Activity {}", &activity.session.start_time),
     }
     .into_response()
@@ -92,7 +94,8 @@ struct ActivitySettingsTemplate<'a> {
     url: UrlFor,
     id: Identity,
     activity_type: &'a ActivityType,
-    gears: &'a Vec<String>,
+    gears: &'a [String],
+    notes: Option<&'a str>,
     title: &'a str,
     message: Option<&'a str>,
 }
@@ -113,6 +116,7 @@ async fn activity_settings(
         id,
         activity_type: &activity.session.activity_type,
         gears: &gears,
+        notes: activity.notes.as_deref(),
         title: "Settings",
         message: None,
     }
@@ -123,6 +127,7 @@ async fn activity_settings(
 struct ActivitySettingsForm {
     pub activity_type: String,
     pub gear_id: Option<String>,
+    pub notes: String,
 }
 
 async fn activity_settings_post(
@@ -151,6 +156,11 @@ async fn activity_settings_post(
         activity.session.activity_type =
             ActivityType::from_str(&form.activity_type).unwrap_or_default();
         activity.gear_id = form.gear_id;
+        activity.notes = match form.notes.is_empty() {
+            true => None,
+            false => Some(form.notes),
+        };
+        println!("{:#?}", activity.gear_id);
 
         data.activities.insert_or_overwrite(activity, &username)?;
 
@@ -167,6 +177,7 @@ async fn activity_settings_post(
         id,
         activity_type: &activity.session.activity_type,
         gears: &gears,
+        notes: activity.notes.as_deref(),
         title: "Settings",
         message: result,
     }

@@ -140,7 +140,7 @@ async fn activity_settings_post(
     gears.sort_by_key(|k| Some(k) != form.gear_id.as_ref());
 
     let result = {
-        if !gears.iter().any(|y| Some(y) == form.gear_id.as_ref()) {
+        if !gears.iter().any(|y| Some(y) == form.gear_id.as_ref()) && !gears.is_empty() {
             Some("The specified gear does not exist.")
         } else {
             None

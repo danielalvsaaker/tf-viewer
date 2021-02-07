@@ -52,7 +52,7 @@ async fn user(
 struct UserIndexTemplate<'a> {
     url: UrlFor,
     id: Identity,
-    users: Vec<String>,
+    users: &'a [String],
     title: &'a str,
 }
 
@@ -67,7 +67,7 @@ async fn user_index(
         url: UrlFor::new(&id, &req)?,
         id,
         title: "Users",
-        users,
+        users: &users,
     }
     .into_response()
 }

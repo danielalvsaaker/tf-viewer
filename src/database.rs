@@ -29,6 +29,7 @@ impl Database {
                 usernameid_session: db.open_tree("usernameid_session")?,
                 usernameid_record: db.open_tree("usernameid_record")?,
                 usernameid_lap: db.open_tree("usernameid_lap")?,
+                usernameid_notes: db.open_tree("usernameid_notes")?,
             },
 
             gear: gear::GearTree {

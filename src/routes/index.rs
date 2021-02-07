@@ -13,7 +13,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
 struct IndexTemplate<'a> {
     url: UrlFor,
     id: Identity,
-    template_data: &'a Vec<TemplateData>,
+    template_data: &'a [TemplateData],
     title: &'a str,
 }
 

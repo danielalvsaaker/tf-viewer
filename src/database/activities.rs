@@ -11,6 +11,7 @@ pub struct ActivityTree {
     pub(super) usernameid_session: sled::Tree,
     pub(super) usernameid_record: sled::Tree,
     pub(super) usernameid_lap: sled::Tree,
+    pub(super) usernameid_notes: sled::Tree,
 }
 
 impl ActivityTree {
@@ -45,6 +46,13 @@ impl ActivityTree {
 
         let gear_id = rmps::to_vec(&activity.gear_id)?;
         self.usernameid_gearid.insert(&key, gear_id)?;
+
+        if let Some(x) = activity.notes {
+            self.usernameid_notes.insert(&key, x.as_bytes())?;
+        }
+        else {
+            self.usernameid_notes.remove(&key)?;
+        }
 
         Ok(())
     }
@@ -233,6 +241,18 @@ impl ActivityTree {
             .ok_or(Error::BadRequest(ErrorKind::NotFound, "Gear not found"))
     }
 
+    pub fn get_notes(&self, username: &str, id: &str) -> Result<Option<String>> {
+        let mut key = username.as_bytes().to_vec();
+        key.push(0xff);
+        key.extend_from_slice(id.as_bytes());
+
+        Ok(self.usernameid_notes
+            .get(&key)?
+            .map(|x| x.to_vec())
+            .and_then(|x| String::from_utf8(x).ok())
+        )
+    }
+
     pub fn get_activity(&self, username: &str, id: &str) -> Result<Activity> {
         Ok(Activity {
             id: id.to_owned(),
@@ -240,6 +260,7 @@ impl ActivityTree {
             session: self.get_session(username, id)?,
             record: self.get_record(username, id)?,
             lap: self.get_lap(username, id)?,
+            notes: self.get_notes(username, id)?,
         })
     }
 }

@@ -122,8 +122,8 @@ async fn gear_settings_post(
 struct GearIndexTemplate<'a> {
     url: UrlFor,
     id: Identity,
-    gears: Vec<((f64, Duration), Gear)>,
-    standard_gear: Option<String>,
+    gears: &'a [((f64, Duration), Gear)],
+    standard_gear: Option<&'a str>,
     username: &'a str,
     title: &'a str,
 }
@@ -153,8 +153,8 @@ async fn gear_index(
     GearIndexTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
-        gears,
-        standard_gear,
+        gears: &gears,
+        standard_gear: standard_gear.as_deref(),
         username: &username,
         title: "Gear",
     }

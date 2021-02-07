@@ -158,7 +158,7 @@ async fn activity_settings_post(
         activity.gear_id = form.gear_id;
         activity.notes = match form.notes.is_empty() {
             true => None,
-            false => Some(form.notes.truncate(300)),
+            false => Some(form.notes),
         };
 
         data.activities.insert_or_overwrite(activity, &username)?;

@@ -47,10 +47,10 @@ impl ActivityTree {
         let gear_id = rmps::to_vec(&activity.gear_id)?;
         self.usernameid_gearid.insert(&key, gear_id)?;
 
-        if let Some(x) = activity.notes {
+        if let Some(mut x) = activity.notes {
+            x.truncate(300);
             self.usernameid_notes.insert(&key, x.as_bytes())?;
-        }
-        else {
+        } else {
             self.usernameid_notes.remove(&key)?;
         }
 
@@ -246,11 +246,11 @@ impl ActivityTree {
         key.push(0xff);
         key.extend_from_slice(id.as_bytes());
 
-        Ok(self.usernameid_notes
+        Ok(self
+            .usernameid_notes
             .get(&key)?
             .map(|x| x.to_vec())
-            .and_then(|x| String::from_utf8(x).ok())
-        )
+            .and_then(|x| String::from_utf8(x).ok()))
     }
 
     pub fn get_activity(&self, username: &str, id: &str) -> Result<Activity> {

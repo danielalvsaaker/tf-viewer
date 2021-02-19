@@ -1,6 +1,6 @@
 [package]
 name = "tf-viewer"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["danielalvsaaker <daniel@nopemail.net>", "vidarandrebo"]
 edition = "2018"
 include = ["src/**/*", "LICENSE", "README.md"]

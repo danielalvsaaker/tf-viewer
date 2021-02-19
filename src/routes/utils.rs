@@ -10,7 +10,8 @@ use plotly::{
     Plot, Scatter,
 };
 use staticmap::{Color, Line, StaticMap};
-use uom::si::length::{kilometer, mile};
+use uom::si::length::{foot, kilometer, meter, mile};
+use uom::si::velocity::{kilometer_per_hour, mile_per_hour};
 
 pub fn validate_form(form: &super::PasswordEnum, data: &web::Data<crate::Database>) -> Result<()> {
     let verify_hash = |username, password| data.users.verify_hash(username, password);
@@ -77,6 +78,7 @@ pub fn validate_form(form: &super::PasswordEnum, data: &web::Data<crate::Databas
 }
 
 pub fn plot(record: &Record, unit: &Unit) -> Result<String> {
+    // x-axis
     let distance = record.distance
         .iter()
         .flatten()
@@ -85,15 +87,38 @@ pub fn plot(record: &Record, unit: &Unit) -> Result<String> {
             Unit::Imperial => x.get::<mile>(),
         }));
 
+    // Heart rate
     let heartrate = Scatter::new(distance.clone(), record.heartrate.clone())
         .mode(Mode::Lines)
         .name("Heart rate");
-    let speed = Scatter::new(distance.clone(), record.speed.clone())
+
+    // Speed
+    let speed_map = record.speed
+        .iter()
+        .flatten()
+        .map(|x| format!("{:.2}", match unit {
+            Unit::Metric => x.get::<kilometer_per_hour>(),
+            Unit::Imperial => x.get::<mile_per_hour>(),
+        }));
+
+    let speed = Scatter::new(distance.clone(), speed_map)
         .mode(Mode::Lines)
         .name("Speed");
-    let altitude = Scatter::new(distance, record.altitude.clone())
+
+
+    // Altitude
+    let altitude_map = record.altitude
+        .iter()
+        .flatten()
+        .map(|x| format!("{:.2}", match unit {
+            Unit::Metric => x.get::<meter>(),
+            Unit::Imperial => x.get::<foot>(),
+        }));
+
+    let altitude = Scatter::new(distance, altitude_map)
         .mode(Mode::Lines)
         .name("Altitude");
+
 
     let mut plot = Plot::new();
 

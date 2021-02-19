@@ -1,13 +1,14 @@
 use super::UrlFor;
 use crate::models::{DisplayUnit, Duration, Gear, GearType, Unit};
 use actix_identity::Identity;
-use actix_web::http;
-use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use actix_web::{http, web, HttpRequest, HttpResponse, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
 use serde::Deserialize;
 use std::str::FromStr;
-use uom::si::f64::Length;
-use uom::si::length::{kilometer, mile};
+use uom::si::{
+    f64::Length,
+    length::{kilometer, mile},
+};
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(

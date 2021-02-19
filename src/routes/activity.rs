@@ -218,7 +218,11 @@ async fn activity_index_post(
     data: web::Data<crate::Database>,
     unit: web::Data<Unit>,
 ) -> impl Responder {
-    let mut sessions: Vec<Session> = data.activities.username_iter_session(&username).unwrap().collect();
+    let mut sessions: Vec<Session> = data
+        .activities
+        .username_iter_session(&username)
+        .unwrap()
+        .collect();
 
     let amount = sessions.len();
 

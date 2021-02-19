@@ -79,12 +79,10 @@ pub fn validate_form(form: &super::PasswordEnum, data: &web::Data<crate::Databas
 
 pub fn plot(record: &Record, unit: &Unit) -> Result<String> {
     // x-axis
-    let distance = record.distance
-        .iter()
-        .map(|x| match unit {
-            Unit::Metric => x.map(|y| format!("{:.2}", y.get::<kilometer>())),
-            Unit::Imperial => x.map(|y| format!("{:.2}", y.get::<mile>())),
-        });
+    let distance = record.distance.iter().map(|x| match unit {
+        Unit::Metric => x.map(|y| format!("{:.2}", y.get::<kilometer>())),
+        Unit::Imperial => x.map(|y| format!("{:.2}", y.get::<mile>())),
+    });
 
     // Heart rate
     let heartrate = Scatter::new(distance.clone(), record.heartrate.clone())
@@ -92,37 +90,31 @@ pub fn plot(record: &Record, unit: &Unit) -> Result<String> {
         .name("Heart rate");
 
     // Speed
-    let speed_map = record.speed
-        .iter()
-        .map(|x| match unit {
-            Unit::Metric => x.map(|y| format!("{:.2}", y.get::<kilometer_per_hour>())),
-            Unit::Imperial => x.map(|y| format!("{:.2}", y.get::<mile_per_hour>())),
-        });
+    let speed_map = record.speed.iter().map(|x| match unit {
+        Unit::Metric => x.map(|y| format!("{:.2}", y.get::<kilometer_per_hour>())),
+        Unit::Imperial => x.map(|y| format!("{:.2}", y.get::<mile_per_hour>())),
+    });
 
     let speed = Scatter::new(distance.clone(), speed_map)
         .mode(Mode::Lines)
         .name("Speed");
 
-
     // Altitude
-    let altitude_map = record.altitude
-        .iter()
-        .map(|x| match unit {
-            Unit::Metric => x.map(|y| format!("{:.2}", y.get::<meter>())),
-            Unit::Imperial => x.map(|y| format!("{:.2}", y.get::<foot>())),
-        });
+    let altitude_map = record.altitude.iter().map(|x| match unit {
+        Unit::Metric => x.map(|y| format!("{:.2}", y.get::<meter>())),
+        Unit::Imperial => x.map(|y| format!("{:.2}", y.get::<foot>())),
+    });
 
     let altitude = Scatter::new(distance, altitude_map)
         .mode(Mode::Lines)
         .name("Altitude");
-
 
     let mut plot = Plot::new();
 
     let tick_suffix = match unit {
         Unit::Metric => " km",
         Unit::Imperial => " mi",
-    }; 
+    };
 
     let axis = Axis::new().tick_suffix(tick_suffix);
     let layout = Layout::new().x_axis(axis);

@@ -1,15 +1,16 @@
-use fitparser::profile::field_types::MesgNum;
-use fitparser::FitDataField;
-use fitparser::Value::*;
-use std::{collections::HashMap, str::FromStr, string::String};
-use uom::si::f64::{Length as Length_f64, Velocity};
-use uom::si::length::meter;
-use uom::si::u16::Length as Length_u16;
-use uom::si::velocity::meter_per_second;
+use fitparser::{profile::field_types::MesgNum, FitDataField, Value};
+use std::{collections::HashMap, str::FromStr};
 
 use crate::{
     error::{Error, ErrorKind, Result},
     models::{Activity, ActivityType, Duration, Lap, Record, Session, TimeStamp},
+};
+
+use uom::si::{
+    f64::{Length as Length_f64, Velocity},
+    length::meter,
+    u16::Length as Length_u16,
+    velocity::meter_per_second,
 };
 
 macro_rules! map_value {
@@ -23,14 +24,14 @@ macro_rules! map_value {
     }
 }
 
-map_value!(map_uint8, u8, UInt8(x) => *x);
-map_value!(map_uint16, u16, UInt16(x) => *x);
-map_value!(map_sint32, i32, SInt32(x) => *x);
-map_value!(map_float64, f64, Float64(x) => *x);
-map_value!(map_string, String, String(x) => x.to_string());
-map_value!(map_timestamp, TimeStamp, Timestamp(x) => TimeStamp(*x));
+map_value!(map_uint8, u8, Value::UInt8(x) => *x);
+map_value!(map_uint16, u16, Value::UInt16(x) => *x);
+map_value!(map_sint32, i32, Value::SInt32(x) => *x);
+map_value!(map_float64, f64, Value::Float64(x) => *x);
+map_value!(map_string, String, Value::String(x) => x.to_string());
+map_value!(map_timestamp, TimeStamp, Value::Timestamp(x) => TimeStamp(*x));
 
-const MULTIPLIER: f64 = 180_f64 / (2_i64 << 30) as f64;
+const MULTIPLIER: f64 = 180_f64 / (2_u32 << 30) as f64;
 
 pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
     let mut session: Session = Session::default();
@@ -72,28 +73,32 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
                 .lat
                 .iter()
                 .flatten()
-                .fold(f64::NAN, |x, y| f64::max(x, *y)),
+                .copied()
+                .fold(f64::NAN, f64::max),
         );
         session.nec_lon = Some(
             record
                 .lon
                 .iter()
                 .flatten()
-                .fold(f64::NAN, |x, y| f64::max(x, *y)),
+                .copied()
+                .fold(f64::NAN, f64::max),
         );
         session.swc_lat = Some(
             record
                 .lat
                 .iter()
                 .flatten()
-                .fold(f64::NAN, |x, y| f64::min(x, *y)),
+                .copied()
+                .fold(f64::NAN, f64::min),
         );
         session.swc_lon = Some(
             record
                 .lon
                 .iter()
                 .flatten()
-                .fold(f64::NAN, |x, y| f64::min(x, *y)),
+                .copied()
+                .fold(f64::NAN, f64::min),
         );
     }
 
@@ -222,7 +227,7 @@ fn parse_record(fields: &[FitDataField], record: &mut Record) {
         field_map
             .get("cadence")
             .and_then(map_uint8)
-        );
+    );
 
     record.distance.push(
         field_map
@@ -248,7 +253,7 @@ fn parse_record(fields: &[FitDataField], record: &mut Record) {
     record.power.push(
         field_map
             .get("power")
-            .and_then(map_uint16),
+            .and_then(map_uint16)
     );
 
     record.heartrate.push(

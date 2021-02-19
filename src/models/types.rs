@@ -1,11 +1,12 @@
 use chrono::{offset::Local, DateTime};
 use serde::{Deserialize, Serialize};
-use uom::si::f64::{Length as Length_f64, Velocity};
-use uom::si::length::{foot, kilometer, meter, mile};
-use uom::si::u16::Length as Length_u16;
-use uom::si::velocity::{foot_per_second, kilometer_per_hour, meter_per_second, mile_per_hour};
-
 use std::ops::{Add, AddAssign, Sub};
+use uom::si::{
+    f64::{Length as Length_f64, Velocity},
+    length::{foot, kilometer, meter, mile},
+    u16::Length as Length_u16,
+    velocity::{foot_per_second, kilometer_per_hour, meter_per_second, mile_per_hour},
+};
 
 #[derive(Clone)]
 pub enum Unit {

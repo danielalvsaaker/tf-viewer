@@ -4,9 +4,7 @@ use crate::{
 };
 use chrono::{self, Datelike, Local};
 use rmp_serde as rmps;
-
-use uom::si::f64::Length;
-use uom::si::length::meter;
+use uom::si::{f64::Length, length::meter};
 
 #[derive(Clone)]
 pub struct ActivityTree {

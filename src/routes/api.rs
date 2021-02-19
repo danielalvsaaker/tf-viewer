@@ -1,7 +1,5 @@
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
-use uom::si::f64::{Length as Length_f64, Velocity};
-use uom::si::u16::Length as Length_u16;
 
 #[derive(Deserialize)]
 pub struct DataRequest {
@@ -28,15 +26,15 @@ pub struct ActivityData {
     pub date: DateTime<Local>,
     pub activity_type: String,
     pub duration: String,
-    pub distance: Option<Length_f64>,
+    pub distance: Option<String>,
     pub calories: Option<u16>,
     pub cadence_avg: Option<u8>,
     pub heartrate_avg: Option<u8>,
     pub heartrate_max: Option<u8>,
-    pub speed_avg: Option<Velocity>,
-    pub speed_max: Option<Velocity>,
-    pub ascent: Option<Length_u16>,
-    pub descent: Option<Length_u16>,
+    pub speed_avg: Option<String>,
+    pub speed_max: Option<String>,
+    pub ascent: Option<String>,
+    pub descent: Option<String>,
     pub id: String,
 }
 

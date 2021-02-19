@@ -216,33 +216,14 @@ async fn activity_index_post(
     request: web::Json<DataRequest>,
     username: web::Path<String>,
     data: web::Data<crate::Database>,
+    unit: web::Data<Unit>,
 ) -> impl Responder {
-    let iter = data.activities.username_iter_session(&username).unwrap();
-
-    let mut sessions: Vec<ActivityData> = iter
-        .map(|x| -> ActivityData {
-            ActivityData {
-                date: x.start_time.0,
-                activity_type: format!("{}", x.activity_type),
-                duration: x.duration_active.to_string(),
-                distance: x.distance,
-                calories: x.calories,
-                cadence_avg: x.cadence_avg,
-                heartrate_avg: x.heartrate_avg,
-                heartrate_max: x.heartrate_max,
-                speed_avg: x.speed_avg,
-                speed_max: x.speed_max,
-                ascent: x.ascent,
-                descent: x.descent,
-                id: x.start_time.0.format("%Y%m%d%H%M").to_string(),
-            }
-        })
-        .collect();
+    let mut sessions: Vec<Session> = data.activities.username_iter_session(&username).unwrap().collect();
 
     let amount = sessions.len();
 
     match request.column {
-        0 => sessions.sort_by_key(|k| std::cmp::Reverse(k.date)),
+        0 => sessions.sort_by_key(|k| std::cmp::Reverse(k.start_time.0)),
         2 => sessions.sort_by(|a, b| a.duration.partial_cmp(&b.duration).unwrap()),
         3 => sessions.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap()),
         4 => sessions.sort_by_key(|k| k.calories),
@@ -261,9 +242,24 @@ async fn activity_index_post(
     }
 
     let results: Vec<ActivityData> = sessions
-        .into_iter()
+        .iter()
         .skip(request.start)
         .take(request.length)
+        .map(|x| ActivityData {
+            date: x.start_time.0,
+            activity_type: x.activity_type.to_string(),
+            duration: x.duration_active.to_string(),
+            distance: x.distance.map(|x| x.display_km_mi(&unit)),
+            calories: x.calories,
+            cadence_avg: x.cadence_avg,
+            heartrate_avg: x.heartrate_avg,
+            heartrate_max: x.heartrate_max,
+            speed_avg: x.speed_avg.map(|x| x.display_km_mi(&unit)),
+            speed_max: x.speed_max.map(|x| x.display_km_mi(&unit)),
+            ascent: x.ascent.map(|x| x.display_m_ft(&unit)),
+            descent: x.descent.map(|x| x.display_m_ft(&unit)),
+            id: x.start_time.0.format("%Y%m%d%H%M").to_string(),
+        })
         .collect();
 
     web::Json(DataResponse {

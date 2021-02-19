@@ -32,6 +32,10 @@ impl ActivityTree {
                 id: existing.id,
                 gear_id: existing.gear_id,
                 notes: existing.notes,
+                session: Session {
+                    activity_type: existing.session.activity_type,
+                    ..activity.session
+                },
                 ..activity
             };
 

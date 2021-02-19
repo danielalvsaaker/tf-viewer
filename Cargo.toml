@@ -31,8 +31,9 @@ sled = "0.34"
 rmp-serde = "0.15"
 serde = { version = "1.0", features = ["derive"] }
 
+# activity related functions and types
 fitparser = "0.3"
-uom = { version = "*", default-features = false, features = ["si", "use_serde", "u16", "f64"] }
+uom = { version = "0.31", default-features = false, features = ["si", "use_serde", "u16", "f64"] }
 
 # password hashing, salt
 rust-argon2 = { version = "0.8", default-features = false }
@@ -50,7 +51,7 @@ futures = { version = "0.3", default-features = false }
 regex = { version = "1.4", default-features = false }
 
 # Dependency for embedded static content
-lazy_static = { version = "*", optional = true }
+lazy_static = { version = "1.4", optional = true }
 
 # Optional allocator, highly recommended on musl systems
 jemallocator = { version = "0.3.2", optional = true }

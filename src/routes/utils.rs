@@ -81,11 +81,10 @@ pub fn plot(record: &Record, unit: &Unit) -> Result<String> {
     // x-axis
     let distance = record.distance
         .iter()
-        .flatten()
-        .map(|x| format!("{:.2}", match unit {
-            Unit::Metric => x.get::<kilometer>(),
-            Unit::Imperial => x.get::<mile>(),
-        }));
+        .map(|x| match unit {
+            Unit::Metric => x.map(|y| format!("{:.2}", y.get::<kilometer>())),
+            Unit::Imperial => x.map(|y| format!("{:.2}", y.get::<mile>())),
+        });
 
     // Heart rate
     let heartrate = Scatter::new(distance.clone(), record.heartrate.clone())
@@ -95,11 +94,10 @@ pub fn plot(record: &Record, unit: &Unit) -> Result<String> {
     // Speed
     let speed_map = record.speed
         .iter()
-        .flatten()
-        .map(|x| format!("{:.2}", match unit {
-            Unit::Metric => x.get::<kilometer_per_hour>(),
-            Unit::Imperial => x.get::<mile_per_hour>(),
-        }));
+        .map(|x| match unit {
+            Unit::Metric => x.map(|y| format!("{:.2}", y.get::<kilometer_per_hour>())),
+            Unit::Imperial => x.map(|y| format!("{:.2}", y.get::<mile_per_hour>())),
+        });
 
     let speed = Scatter::new(distance.clone(), speed_map)
         .mode(Mode::Lines)
@@ -109,11 +107,10 @@ pub fn plot(record: &Record, unit: &Unit) -> Result<String> {
     // Altitude
     let altitude_map = record.altitude
         .iter()
-        .flatten()
-        .map(|x| format!("{:.2}", match unit {
-            Unit::Metric => x.get::<meter>(),
-            Unit::Imperial => x.get::<foot>(),
-        }));
+        .map(|x| match unit {
+            Unit::Metric => x.map(|y| format!("{:.2}", y.get::<meter>())),
+            Unit::Imperial => x.map(|y| format!("{:.2}", y.get::<foot>())),
+        });
 
     let altitude = Scatter::new(distance, altitude_map)
         .mode(Mode::Lines)

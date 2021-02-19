@@ -13,7 +13,7 @@
       <input type="hidden" id="name" name="name" value="{{ gear.name }}">
       <div class="form-group">
 	<label class="form-label" for="fixed_distance">Fixed distance (km)</label>
-	<input class="form-input" type="number" step="0.1" min="0" name="fixed_distance" id="fixed_distance" value="{{ gear.fixed_distance }}">
+	<input class="form-input" type="number" step="0.1" min="0" name="fixed_distance" id="fixed_distance" value="{{ gear.fixed_distance.display_km_mi(crate::models::Unit::Metric) }}">
       </div>
       <div class="form-group">
 	<label class="form-label" for="gear_type">Gear type</label>

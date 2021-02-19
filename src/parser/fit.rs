@@ -1,7 +1,11 @@
 use fitparser::profile::field_types::MesgNum;
 use fitparser::FitDataField;
 use fitparser::Value::*;
-use std::{str::FromStr, string::String, collections::HashMap};
+use std::{collections::HashMap, str::FromStr, string::String};
+use uom::si::f64::{Length as Length_f64, Velocity};
+use uom::si::length::meter;
+use uom::si::u16::Length as Length_u16;
+use uom::si::velocity::meter_per_second;
 
 use crate::{
     error::{Error, ErrorKind, Result},
@@ -45,11 +49,11 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
 
     for data in file {
         match data.kind() {
-            MesgNum::Session => parse_session(data.fields(), &mut session)?,
-            MesgNum::Record => parse_record(data.fields(), &mut record)?,
+            MesgNum::Session => parse_session(data.fields(), &mut session),
+            MesgNum::Record => parse_record(data.fields(), &mut record),
             MesgNum::Lap => {
                 let mut lap = Lap::default();
-                parse_lap(data.fields(), &mut lap)?;
+                parse_lap(data.fields(), &mut lap);
                 lap_vec.push(lap);
             }
             _ => (),
@@ -93,7 +97,6 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
         );
     }
 
-
     Ok(Activity {
         id: session.start_time.0.format("%Y%m%d%H%M").to_string(),
         gear_id,
@@ -104,7 +107,7 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
     })
 }
 
-fn parse_session(fields: &[FitDataField], session: &mut Session) -> Result<()> {
+fn parse_session(fields: &[FitDataField], session: &mut Session) {
     let field_map: HashMap<&str, &fitparser::Value> =
         fields.iter().map(|x| (x.name(), x.value())).collect();
 
@@ -127,12 +130,12 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) -> Result<()> {
     session.speed_avg = field_map
         .get("enhanced_avg_speed")
         .and_then(map_float64)
-        .map(|x| (x * 3.6f64 * 100f64).round() / 100f64);
+        .map(Velocity::new::<meter_per_second>);
 
     session.speed_max = field_map
         .get("enhanced_max_speed")
         .and_then(map_float64)
-        .map(|x| (x * 3.6f64 * 100f64).round() / 100f64);
+        .map(Velocity::new::<meter_per_second>);
 
     session.power_avg = field_map
         .get("avg_power")
@@ -170,16 +173,19 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) -> Result<()> {
         &field_map
             .get("sport")
             .and_then(map_string)
-            .unwrap_or_default()
-    ).unwrap_or_default();
+            .unwrap_or_default(),
+    )
+    .unwrap_or_default();
 
     session.ascent = field_map
         .get("total_ascent")
-        .and_then(map_uint16);
+        .and_then(map_uint16)
+        .map(Length_u16::new::<meter>);
 
     session.descent = field_map
         .get("total_descent")
-        .and_then(map_uint16);
+        .and_then(map_uint16)
+        .map(Length_u16::new::<meter>);
 
     session.calories = field_map
         .get("total_calories")
@@ -188,7 +194,7 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) -> Result<()> {
     session.distance = field_map
         .get("total_distance")
         .and_then(map_float64)
-        .map(|x| (x / 10f64).round() / 100f64);
+        .map(Length_f64::new::<meter>);
 
     session.duration = field_map
         .get("total_elapsed_time")
@@ -206,12 +212,9 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) -> Result<()> {
         .get("start_time")
         .and_then(map_timestamp)
         .unwrap_or_default();
-
-
-    Ok(())
 }
 
-fn parse_record(fields: &[FitDataField], record: &mut Record) -> Result<()> {
+fn parse_record(fields: &[FitDataField], record: &mut Record) {
     let field_map: HashMap<&str, &fitparser::Value> =
         fields.iter().map(|x| (x.name(), x.value())).collect();
 
@@ -219,32 +222,33 @@ fn parse_record(fields: &[FitDataField], record: &mut Record) -> Result<()> {
         field_map
             .get("cadence")
             .and_then(map_uint8)
-    );
+        );
 
     record.distance.push(
         field_map
             .get("distance")
             .and_then(map_float64)
-            .map(|x| (x / 10f64).round() / 100f64),
+            .map(Length_f64::new::<meter>),
     );
 
     record.altitude.push(
         field_map
-        .get("enhanced_altitude")
-        .and_then(map_float64)
+            .get("enhanced_altitude")
+            .and_then(map_float64)
+            .map(Length_f64::new::<meter>),
     );
 
     record.speed.push(
         field_map
             .get("enhanced_speed")
             .and_then(map_float64)
-            .map(|x| (x * 3.6f64 * 100f64).round() / 100f64),
+            .map(Velocity::new::<meter_per_second>),
     );
 
     record.power.push(
         field_map
             .get("power")
-            .and_then(map_uint16)
+            .and_then(map_uint16),
     );
 
     record.heartrate.push(
@@ -279,11 +283,9 @@ fn parse_record(fields: &[FitDataField], record: &mut Record) -> Result<()> {
 
     record.duration.push(duration);
     record.timestamp.push(timestamp);
-
-    Ok(())
 }
 
-fn parse_lap(fields: &[FitDataField], lap: &mut Lap) -> Result<()> {
+fn parse_lap(fields: &[FitDataField], lap: &mut Lap) {
     let field_map: HashMap<&str, &fitparser::Value> =
         fields.iter().map(|x| (x.name(), x.value())).collect();
 
@@ -306,12 +308,12 @@ fn parse_lap(fields: &[FitDataField], lap: &mut Lap) -> Result<()> {
     lap.speed_avg = field_map
         .get("enhanced_avg_speed")
         .and_then(map_float64)
-        .map(|x| (x * 3.6f64 * 100f64).round() / 100f64);
+        .map(Velocity::new::<meter_per_second>);
 
     lap.speed_max = field_map
         .get("enhanced_max_speed")
         .and_then(map_float64)
-        .map(|x| (x * 3.6f64 * 100f64).round() / 100f64);
+        .map(Velocity::new::<meter_per_second>);
 
     lap.power_avg = field_map
         .get("avg_power")
@@ -343,11 +345,13 @@ fn parse_lap(fields: &[FitDataField], lap: &mut Lap) -> Result<()> {
 
     lap.ascent = field_map
         .get("total_ascent")
-        .and_then(map_uint16);
+        .and_then(map_uint16)
+        .map(Length_u16::new::<meter>);
 
     lap.descent = field_map
         .get("total_descent")
-        .and_then(map_uint16);
+        .and_then(map_uint16)
+        .map(Length_u16::new::<meter>);
 
     lap.calories = field_map
         .get("total_calories")
@@ -356,7 +360,7 @@ fn parse_lap(fields: &[FitDataField], lap: &mut Lap) -> Result<()> {
     lap.distance = field_map
         .get("total_distance")
         .and_then(map_float64)
-        .map(|x| (x / 10f64).round() / 100f64);
+        .map(Length_f64::new::<meter>);
 
     lap.duration = field_map
         .get("total_elapsed_time")
@@ -369,6 +373,4 @@ fn parse_lap(fields: &[FitDataField], lap: &mut Lap) -> Result<()> {
         .and_then(map_float64)
         .map(Duration::from_secs_f64)
         .unwrap_or_default();
-
-    Ok(())
 }

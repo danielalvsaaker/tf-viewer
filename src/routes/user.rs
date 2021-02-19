@@ -1,5 +1,5 @@
 use super::{utils, PasswordEnum, UrlFor};
-use crate::models::UserTotals;
+use crate::models::{DisplayUnit, Unit, UserTotals};
 use actix_identity::Identity;
 use actix_web::{http, web, Either, HttpRequest, HttpResponse, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
@@ -22,6 +22,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
 struct UserTemplate<'a> {
     url: UrlFor,
     id: Identity,
+    unit: &'a Unit,
     user_totals: &'a UserTotals,
     username: &'a str,
     title: &'a str,
@@ -32,6 +33,7 @@ async fn user(
     id: Identity,
     data: web::Data<crate::Database>,
     username: web::Path<String>,
+    unit: web::Data<Unit>,
 ) -> impl Responder {
     data.users.exists(&username)?;
 
@@ -40,6 +42,7 @@ async fn user(
     UserTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
+        unit: &unit,
         user_totals: &user_totals,
         username: &username,
         title: &username,

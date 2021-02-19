@@ -43,13 +43,13 @@
     <tbody>
       {% for gear in gears -%}
 	<tr>
-	  <td>{{ gear.1.name }}</td>
-	  <td>{{ gear.1.gear_type }}</td>
-	  <td>{{ "{:.2}"|format(gear.0.0 + gear.1.fixed_distance) }} km</td>
-	  <td>{{ "{:.2}"|format(gear.0.1) }}</td>
+	  <td>{{ gear.2.name }}</td>
+	  <td>{{ gear.2.gear_type }}</td>
+	  <td>{{ (gear.0 + gear.2.fixed_distance).display_km_mi(unit) }}</td>
+	  <td>{{ gear.1 }}</td>
 	  {% match standard_gear -%}
 	    {% when Some with (value) -%}
-	      {% if value.as_ref() == gear.1.name -%}
+	      {% if value.as_ref() == gear.2.name -%}
 		<td>✓</td>
 	      {% else %}
 		<td></td>
@@ -59,7 +59,7 @@
 	  {% endmatch -%}
 	  {% if is_owner -%}
 	    <td>
-	      <a href="{{ url.gear_index }}/{{ gear.1.name }}">
+	      <a href="{{ url.gear_index }}/{{ gear.2.name }}">
 		<button class="btn btn-primary">Settings</button>
 	      </a>
 	    </td>

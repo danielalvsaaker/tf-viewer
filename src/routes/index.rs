@@ -1,5 +1,5 @@
 use super::{UrlActivity, UrlFor};
-use crate::models::Session;
+use crate::models::{DisplayUnit, Session, Unit};
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
@@ -13,6 +13,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
 struct IndexTemplate<'a> {
     url: UrlFor,
     id: Identity,
+    unit: &'a Unit,
     template_data: &'a [TemplateData],
     title: &'a str,
 }
@@ -24,7 +25,12 @@ struct TemplateData {
     id: String,
 }
 
-async fn index(id: Identity, req: HttpRequest, data: web::Data<crate::Database>) -> impl Responder {
+async fn index(
+    id: Identity,
+    req: HttpRequest,
+    data: web::Data<crate::Database>,
+    unit: web::Data<Unit>,
+) -> impl Responder {
     let (username_iter, id_iter) = (data.activities.iter_username()?, data.activities.iter_id()?);
 
     let mut username_id: Vec<(String, String)> = username_iter.zip(id_iter).collect();
@@ -64,6 +70,7 @@ async fn index(id: Identity, req: HttpRequest, data: web::Data<crate::Database>)
     IndexTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
+        unit: &unit,
         template_data: &template_data,
         title: "Recent activities",
     }

@@ -1,7 +1,7 @@
 use super::PasswordEnum;
 use crate::{
     error::{Error, ErrorKind, Result},
-    models::{Duration, Record},
+    models::{Duration, Record, Unit},
 };
 use actix_web::web;
 use plotly::{
@@ -10,6 +10,7 @@ use plotly::{
     Plot, Scatter,
 };
 use staticmap::{Color, Line, StaticMap};
+use uom::si::length::{kilometer, mile};
 
 pub fn validate_form(form: &super::PasswordEnum, data: &web::Data<crate::Database>) -> Result<()> {
     let verify_hash = |username, password| data.users.verify_hash(username, password);
@@ -75,20 +76,33 @@ pub fn validate_form(form: &super::PasswordEnum, data: &web::Data<crate::Databas
     Ok(())
 }
 
-pub fn plot(record: &Record) -> Result<String> {
-    let heartrate = Scatter::new(record.distance.clone(), record.heartrate.clone())
+pub fn plot(record: &Record, unit: &Unit) -> Result<String> {
+    let distance = record.distance
+        .iter()
+        .flatten()
+        .map(|x| format!("{:.2}", match unit {
+            Unit::Metric => x.get::<kilometer>(),
+            Unit::Imperial => x.get::<mile>(),
+        }));
+
+    let heartrate = Scatter::new(distance.clone(), record.heartrate.clone())
         .mode(Mode::Lines)
         .name("Heart rate");
-    let speed = Scatter::new(record.distance.clone(), record.speed.clone())
+    let speed = Scatter::new(distance.clone(), record.speed.clone())
         .mode(Mode::Lines)
         .name("Speed");
-    let altitude = Scatter::new(record.distance.clone(), record.altitude.clone())
+    let altitude = Scatter::new(distance, record.altitude.clone())
         .mode(Mode::Lines)
         .name("Altitude");
 
     let mut plot = Plot::new();
 
-    let axis = Axis::new().tick_suffix(" km");
+    let tick_suffix = match unit {
+        Unit::Metric => " km",
+        Unit::Imperial => " mi",
+    }; 
+
+    let axis = Axis::new().tick_suffix(tick_suffix);
     let layout = Layout::new().x_axis(axis);
 
     plot.set_layout(layout);

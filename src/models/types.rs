@@ -13,6 +13,16 @@ pub enum Unit {
     Imperial,
 }
 
+impl std::fmt::Display for Unit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = match self {
+            Unit::Metric => "km",
+            Unit::Imperial => "mi",
+        };
+        write!(f, "{}", value)
+    }
+}
+
 pub trait DisplayUnit {
     fn display_km_mi(&self, unit: &Unit) -> String;
     fn display_m_ft(&self, unit: &Unit) -> String;

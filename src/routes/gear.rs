@@ -7,7 +7,7 @@ use askama_actix::{Template, TemplateIntoResponse};
 use serde::Deserialize;
 use std::str::FromStr;
 use uom::si::f64::Length;
-use uom::si::length::meter;
+use uom::si::length::{kilometer, mile};
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -36,6 +36,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
 struct GearSettingsTemplate<'a> {
     url: UrlFor,
     id: Identity,
+    unit: &'a Unit,
     gear: &'a Gear,
     title: &'a str,
     message: Option<&'a str>,
@@ -46,12 +47,14 @@ async fn gear_settings(
     id: Identity,
     data: web::Data<crate::Database>,
     web::Path((username, gear_name)): web::Path<(String, String)>,
+    unit: web::Data<Unit>,
 ) -> impl Responder {
     let gear = data.gear.get(&username, &gear_name)?;
 
     GearSettingsTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
+        unit: &unit,
         gear: &gear,
         title: &gear.name,
         message: None,
@@ -74,6 +77,7 @@ async fn gear_settings_post(
     data: web::Data<crate::Database>,
     web::Path((username, gear_name)): web::Path<(String, String)>,
     form: web::Form<GearForm>,
+    unit: web::Data<Unit>,
 ) -> impl Responder {
     let gear_form = form.into_inner();
     let gear_type = GearType::from_str(&gear_form.gear_type);
@@ -88,11 +92,16 @@ async fn gear_settings_post(
         }
     };
 
+    let fixed_distance = match unit.as_ref() {
+        Unit::Metric => Length::new::<kilometer>(gear_form.fixed_distance),
+        Unit::Imperial => Length::new::<mile>(gear_form.fixed_distance),
+    };
+
     if result.is_none() {
         let gear = Gear {
             name: gear_form.name.clone(),
             gear_type: gear_type.unwrap(),
-            fixed_distance: Length::new::<meter>(gear_form.fixed_distance),
+            fixed_distance,
         };
 
         if gear_form.standard {
@@ -112,6 +121,7 @@ async fn gear_settings_post(
     GearSettingsTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
+        unit: &unit,
         gear: &gear,
         title: &gear.name,
         message: result,
@@ -172,14 +182,16 @@ async fn gear_index(
 struct GearAddTemplate<'a> {
     url: UrlFor,
     id: Identity,
+    unit: &'a Unit,
     title: &'a str,
     message: Option<&'a str>,
 }
 
-async fn gear_add(req: HttpRequest, id: Identity) -> impl Responder {
+async fn gear_add(req: HttpRequest, id: Identity, unit: web::Data<Unit>) -> impl Responder {
     GearAddTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
+        unit: &unit,
         title: "Add new gear",
         message: None,
     }
@@ -192,6 +204,7 @@ async fn gear_add_post(
     username: web::Path<String>,
     data: web::Data<crate::Database>,
     form: web::Form<GearForm>,
+    unit: web::Data<Unit>,
 ) -> impl Responder {
     let username = username.into_inner();
     let gear_form = form.into_inner();
@@ -210,10 +223,15 @@ async fn gear_add_post(
     };
 
     if result.is_none() {
+        let fixed_distance = match unit.as_ref() {
+            Unit::Metric => Length::new::<kilometer>(gear_form.fixed_distance),
+            Unit::Imperial => Length::new::<mile>(gear_form.fixed_distance),
+        };
+
         let gear = Gear {
             name: gear_form.name.clone(),
             gear_type: gear_type?,
-            fixed_distance: Length::new::<meter>(gear_form.fixed_distance),
+            fixed_distance,
         };
 
         if gear_form.standard {
@@ -232,6 +250,7 @@ async fn gear_add_post(
     GearAddTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
+        unit: &unit,
         title: "Add new gear",
         message: result,
     }

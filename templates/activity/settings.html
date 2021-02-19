@@ -2,7 +2,7 @@
 {% block content %}
 
 <div class="container">
-  <h2 class="text-center">{{ title }}</h2>
+  <h2>{{ title }}</h2>
   {% match message -%}
     {% when Some with (value) -%}
       <div class="toast toast-error">

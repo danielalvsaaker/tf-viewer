@@ -11,6 +11,9 @@ cookie_key = "key"
 # Set secure cookies to true when running with HTTPS
 secure_cookies = false
 
+# Either metric or imperial
+units = "metric"
+
 disable_registration = false
 address = "127.0.0.1"
 port = 8080

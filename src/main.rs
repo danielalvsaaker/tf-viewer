@@ -23,10 +23,11 @@ async fn main() -> std::io::Result<()> {
     let data = Database::load_or_create().expect("Failed to load");
 
     let config = config::config();
-    let (cookie_key, secure_cookies, disable_registration) = (
+    let (cookie_key, secure_cookies, disable_registration, units) = (
         config.get_cookie_key(),
         config.secure_cookies,
         config.disable_registration,
+        config.get_units(),
     );
 
     println!("Running at {}:{}", config.address, config.port);
@@ -34,6 +35,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .data(data.clone())
+            .data(units.clone())
             .wrap(Compress::default())
             .wrap(Condition::new(
                 disable_registration,

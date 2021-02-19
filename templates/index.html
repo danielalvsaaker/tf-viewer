@@ -28,7 +28,7 @@
 		<span>{{ activity.session.duration_active }}</span>
 		{% match activity.session.distance %}
 		  {% when Some with (value) -%}
-		    <span>{{ value }} km</span>
+		    <span>{{ value.display_km_mi(unit) }}</span>
 		  {% when None -%}
 		{% endmatch -%}
 		<span>{{ activity.session.activity_type }}</span>

@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     middleware::Restricted,
-    models::{ActivityType, Duration, Lap, Session},
+    models::{ActivityType, DisplayUnit, Duration, Lap, Session, Unit},
 };
 use actix_identity::Identity;
 use actix_web::{http, web, HttpRequest, HttpResponse, Responder};
@@ -38,6 +38,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
 struct ActivityTemplate<'a> {
     url: UrlFor,
     id: Identity,
+    unit: &'a Unit,
     activity_url: &'a str,
     username: &'a str,
     gear: Option<&'a str>,
@@ -55,10 +56,11 @@ async fn activity(
     data: web::Data<crate::Database>,
     id: Identity,
     web::Path((username, activity_id)): web::Path<(String, String)>,
+    unit: web::Data<Unit>,
 ) -> impl Responder {
     let activity = data.activities.get_activity(&username, &activity_id)?;
 
-    let plot = super::utils::plot(&activity.record)?;
+    let plot = super::utils::plot(&activity.record, &unit)?;
 
     let zones = {
         let user = data.users.get_heartrate(&username)?;
@@ -68,6 +70,7 @@ async fn activity(
     ActivityTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
+        unit: &unit,
         activity_url: &req.path(),
         username: &username,
         gear: activity.gear_id.as_deref(),

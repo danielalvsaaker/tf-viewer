@@ -1,11 +1,13 @@
 use super::UrlFor;
-use crate::models::{Duration, Gear, GearType};
+use crate::models::{DisplayUnit, Duration, Gear, GearType, Unit};
 use actix_identity::Identity;
 use actix_web::http;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
 use serde::Deserialize;
 use std::str::FromStr;
+use uom::si::f64::Length;
+use uom::si::length::meter;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -90,7 +92,7 @@ async fn gear_settings_post(
         let gear = Gear {
             name: gear_form.name.clone(),
             gear_type: gear_type.unwrap(),
-            fixed_distance: gear_form.fixed_distance,
+            fixed_distance: Length::new::<meter>(gear_form.fixed_distance),
         };
 
         if gear_form.standard {
@@ -105,7 +107,7 @@ async fn gear_settings_post(
             .into_body());
     }
 
-    let gear = data.gear.get(&username, &gear_name).unwrap();
+    let gear = data.gear.get(&username, &gear_name)?;
 
     GearSettingsTemplate {
         url: UrlFor::new(&id, &req)?,
@@ -122,7 +124,8 @@ async fn gear_settings_post(
 struct GearIndexTemplate<'a> {
     url: UrlFor,
     id: Identity,
-    gears: &'a [((f64, Duration), Gear)],
+    unit: &'a Unit,
+    gears: &'a [(Length, Duration, Gear)],
     standard_gear: Option<&'a str>,
     username: &'a str,
     title: &'a str,
@@ -133,13 +136,14 @@ async fn gear_index(
     id: Identity,
     username: web::Path<String>,
     data: web::Data<crate::Database>,
+    unit: web::Data<Unit>,
 ) -> impl Responder {
     data.users.exists(&username)?;
 
     let gear_iter = data.gear.iter(&username)?;
     let standard_gear = data.users.get_standard_gear(&username)?;
 
-    let gears: Vec<((f64, Duration), Gear)> = gear_iter
+    let gears: Vec<(Length, Duration, Gear)> = gear_iter
         .map(|x| {
             (
                 data.activities
@@ -148,11 +152,13 @@ async fn gear_index(
                 x,
             )
         })
+        .map(|((x, y), z)| (x, y, z))
         .collect();
 
     GearIndexTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
+        unit: &unit,
         gears: &gears,
         standard_gear: standard_gear.as_deref(),
         username: &username,
@@ -207,7 +213,7 @@ async fn gear_add_post(
         let gear = Gear {
             name: gear_form.name.clone(),
             gear_type: gear_type?,
-            fixed_distance: gear_form.fixed_distance,
+            fixed_distance: Length::new::<meter>(gear_form.fixed_distance),
         };
 
         if gear_form.standard {

@@ -1,3 +1,4 @@
+use crate::models::Unit;
 use serde::Deserialize;
 use std::{fs::read, net::Ipv4Addr};
 
@@ -13,6 +14,8 @@ pub struct Config {
     pub address: Ipv4Addr,
     #[serde(default = "default_port")]
     pub port: u16,
+    #[serde(default = "default_units")]
+    pub units: String,
 }
 
 impl Default for Config {
@@ -23,11 +26,23 @@ impl Default for Config {
             disable_registration: false,
             address: default_address(),
             port: default_port(),
+            units: default_units(),
         }
     }
 }
 
 impl Config {
+    pub fn get_units(&self) -> Unit {
+        match self.units.as_str() {
+            "metric" => Unit::Metric,
+            "imperial" => Unit::Imperial,
+            _ => {
+                println!("Failed to read unit: using metric. Valid keywords are metric/imperial.");
+                Unit::Metric
+            }
+        }
+    }
+
     pub fn get_cookie_key(&self) -> Vec<u8> {
         let parsed_key = self.cookie_key.as_bytes().to_vec();
         if parsed_key.len() < 32 {
@@ -44,6 +59,10 @@ impl Config {
 
 fn default_address() -> Ipv4Addr {
     Ipv4Addr::new(127, 0, 0, 1)
+}
+
+fn default_units() -> String {
+    "metric".into()
 }
 
 fn default_port() -> u16 {

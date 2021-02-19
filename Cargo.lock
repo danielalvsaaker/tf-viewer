@@ -1314,9 +1314,9 @@ dependencies = [
 
 [[package]]
 name = "image"
-version = "0.23.12"
+version = "0.23.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ce04077ead78e39ae8610ad26216aed811996b043d47beed5090db674f9e9b5"
+checksum = "293f07a1875fa7e9c5897b51aa68b2d8ed8271b87e1a44cb64b9c3d98aabbc0d"
 dependencies = [
  "bytemuck",
  "byteorder",
@@ -2402,6 +2402,7 @@ dependencies = [
  "staticmap",
  "thiserror",
  "toml",
+ "uom",
  "url",
 ]
 
@@ -2702,6 +2703,18 @@ name = "untrusted"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
+
+[[package]]
+name = "uom"
+version = "0.31.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e7d9fde563bf23b9d205b775385945aa722569c4e2eae66bc2c2e11fa1cba78"
+dependencies = [
+ "num-rational",
+ "num-traits",
+ "serde",
+ "typenum",
+]
 
 [[package]]
 name = "url"

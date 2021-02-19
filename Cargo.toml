@@ -32,6 +32,7 @@ rmp-serde = "0.15"
 serde = { version = "1.0", features = ["derive"] }
 
 fitparser = "0.3"
+uom = { version = "*", default-features = false, features = ["si", "use_serde", "u16", "f64"] }
 
 # password hashing, salt
 rust-argon2 = { version = "0.8", default-features = false }

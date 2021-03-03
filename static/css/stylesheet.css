@@ -76,6 +76,10 @@
   height:auto;
 }
 
+#tablecontainer {
+    overflow: auto;
+}
+
 #previews {
   text-align: center;
 }

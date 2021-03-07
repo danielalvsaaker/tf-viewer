@@ -9,7 +9,7 @@ use plotly::{
     layout::{Axis, Layout},
     Plot, Scatter,
 };
-use staticmap::{Color, Line, StaticMap};
+use staticmap::{StaticMapBuilder, tools::{Color, LineBuilder}};
 use uom::si::length::{foot, kilometer, meter, mile};
 use uom::si::velocity::{kilometer_per_hour, mile_per_hour};
 
@@ -132,52 +132,34 @@ pub fn generate_thumb(record: Record, path: &std::path::PathBuf) -> Result<()> {
         return Ok(());
     }
 
-    let mut map = StaticMap {
-        width: 200,
-        height: 200,
-        padding: (0, 0), // (x, y)
-        x_center: 0.,
-        y_center: 0.,
-        //url_template: "https://a.tile.openstreetmap.org/%z/%x/%y.png".to_string(),
-        url_template: "http://a.tile.komoot.de/komoot-2/%z/%x/%y.png".to_string(),
-        tile_size: 256,
-        lines: Vec::new(),
-        zoom: 0,
-    };
+    let mut map = StaticMapBuilder::default()
+        .width(200)
+        .height(200)
+        .url_template("https://a.tile.openstreetmap.org/{z}/{x}/{y}.png")
+        .build()
+        .unwrap();
 
-    let coordinates: Vec<(f64, f64)> = record
-        .lon
-        .into_iter()
-        .flatten()
-        .zip(record.lat.into_iter().flatten())
-        .collect();
-
-    let line = Line {
-        coordinates,
-        color: Color {
-            r: 255u8,
-            g: 0u8,
-            b: 0u8,
-            a: 255u8,
-        },
-        width: 6.,
-        simplify: true,
-    };
+    let line = LineBuilder::default()
+        .width(3.)
+        .simplify(true)
+        .lon_coordinates(record.lon.into_iter().flatten().collect::<Vec<f64>>())
+        .lat_coordinates(record.lat.into_iter().flatten().collect::<Vec<f64>>())
+        .color(Color::new(true, 255, 0, 0, 255))
+        .tolerance(2)
+        .build()
+        .unwrap();
 
     map.add_line(line);
-
-    let image = map
-        .render()
-        .map_err(|_| Error::BadServerResponse("Failed to render activity thumbnail"))?;
 
     if !path.exists() {
         std::fs::create_dir_all(path.parent().unwrap())
             .map_err(|_| Error::BadServerResponse("Failed to create thumbnail directory"))?;
     }
 
-    image
-        .save(path)
+    map
+        .save_png(path)
         .map_err(|_| Error::BadServerResponse("Failed to save rendered activity thumbnail"))?;
+
     Ok(())
 }
 

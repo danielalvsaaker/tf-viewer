@@ -24,7 +24,7 @@ url = { version = "2.2", default-features = false }
 askama = { version = "0.10", default-features = false }
 askama_actix = "0.11"
 plotly = "0.6"
-staticmap = "0.2"
+staticmap = "0.3"
 
 # database, serializing/deserializing
 sled = "0.34"

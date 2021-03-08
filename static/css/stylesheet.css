@@ -77,7 +77,8 @@
 }
 
 #tablecontainer {
-    overflow: auto;
+    overflow-x: auto;
+    height: auto;
 }
 
 #previews {

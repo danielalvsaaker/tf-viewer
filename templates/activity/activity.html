@@ -35,14 +35,30 @@
     <div class="col-4">
       <h2>{{ title }}</h2>
     </div>
-    <div class="col-7">
+    <div class="col-5">
       {% match notes %}
 	{% when Some with (value) -%}
 	  <p class="text-tiny note">{{ value }}</p>
 	{% when None -%}
       {% endmatch %}
     </div>
-    <div class="col-1 text-right">
+    <div class="col-3 text-right">
+      {% match prev %}
+	{% when Some with (value) %}
+	  <a href="{{ value.url }}">
+	    <button class="btn btn-primary">Previous</button>
+	  </a>
+	{% when None %}
+	  <button class="btn btn-primary" disabled>Previous</button>
+      {% endmatch %}
+      {% match next %}
+	{% when Some with (value) %}
+	  <a href="{{ value.url }}">
+	    <button class="btn btn-primary">Next</button>
+	  </a>
+	{% when None %}
+	  <button class="btn btn-primary" disabled>Next</button>
+      {% endmatch %}
       {% if is_owner -%}
 	<a href="{{ activity_url }}/settings">
 	  <button class="btn">Settings</button>

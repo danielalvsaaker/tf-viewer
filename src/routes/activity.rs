@@ -40,6 +40,8 @@ struct ActivityTemplate<'a> {
     id: Identity,
     unit: &'a Unit,
     activity_url: &'a str,
+    prev: Option<UrlActivity>,
+    next: Option<UrlActivity>,
     username: &'a str,
     gear: Option<&'a str>,
     session: &'a Session,
@@ -67,11 +69,29 @@ async fn activity(
         super::utils::zone_duration(&activity.record, &user)?
     };
 
+    let set: std::collections::BTreeSet<String> = data.activities
+        .username_iter_id(&username)?
+        .collect();
+
+    let prev = set
+        .range(..activity_id.clone())
+        .next_back()
+        .map(|x| UrlActivity::new(&username, x, &req).ok())
+        .flatten();
+
+    let next = set
+        .range((std::ops::Bound::Excluded(activity_id), std::ops::Bound::Unbounded))
+        .next()
+        .map(|x| UrlActivity::new(&username, x, &req).ok())
+        .flatten();
+
     ActivityTemplate {
         url: UrlFor::new(&id, &req)?,
         id,
         unit: &unit,
         activity_url: &req.path(),
+        prev,
+        next,
         username: &username,
         gear: activity.gear_id.as_deref(),
         session: &activity.session,

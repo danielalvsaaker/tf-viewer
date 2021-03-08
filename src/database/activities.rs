@@ -165,6 +165,20 @@ impl ActivityTree {
             .flat_map(|x| rmps::from_read_ref(&x)))
     }
 
+    pub fn username_iter_id(&self, username: &str) -> Result<impl Iterator<Item = String>> {
+        let mut prefix = username.as_bytes().to_vec();
+        prefix.push(0xff);
+
+        Ok(self
+           .usernameid_session
+           .scan_prefix(&prefix)
+           .keys()
+           .rev()
+           .flatten()
+           .map(|x| x.split(|y| y == &0xff).last().unwrap().to_vec())
+           .flat_map(String::from_utf8))
+    }
+
     pub fn iter_username(&self) -> Result<impl Iterator<Item = String>> {
         Ok(self
             .usernameid_session

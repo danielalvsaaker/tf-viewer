@@ -171,7 +171,7 @@ impl ActivityTree {
 
         Ok(self
            .usernameid_session
-           .iter()
+           .scan_prefix(&prefix)
            .keys()
            .rev()
            .flatten()

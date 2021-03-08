@@ -218,26 +218,27 @@ async fn activity_index_post(
     data: web::Data<crate::Database>,
     unit: web::Data<Unit>,
 ) -> impl Responder {
-    let mut sessions: Vec<Session> = data
+    let mut sessions: Vec<(Session, Option<String>)> = data
         .activities
         .username_iter_session(&username)
         .unwrap()
+        .zip(data.activities.username_iter_gear(&username).unwrap())
         .collect();
 
     let amount = sessions.len();
 
     match request.column {
-        0 => sessions.sort_by_key(|k| std::cmp::Reverse(k.start_time.0)),
-        2 => sessions.sort_by(|a, b| a.duration.partial_cmp(&b.duration).unwrap()),
-        3 => sessions.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap()),
-        4 => sessions.sort_by_key(|k| k.calories),
-        5 => sessions.sort_by_key(|k| k.cadence_avg),
-        6 => sessions.sort_by_key(|k| k.heartrate_avg),
-        7 => sessions.sort_by_key(|k| k.heartrate_max),
-        8 => sessions.sort_by(|a, b| a.speed_avg.partial_cmp(&b.speed_avg).unwrap()),
-        9 => sessions.sort_by(|a, b| a.speed_max.partial_cmp(&b.speed_max).unwrap()),
-        10 => sessions.sort_by_key(|k| k.ascent),
-        11 => sessions.sort_by_key(|k| k.descent),
+        0 => sessions.sort_by_key(|(k, _)| std::cmp::Reverse(k.start_time.0)),
+        2 => sessions.sort_by(|(a, _), (b, _)| a.duration.partial_cmp(&b.duration).unwrap()),
+        3 => sessions.sort_by(|(a, _), (b, _)| a.distance.partial_cmp(&b.distance).unwrap()),
+        4 => sessions.sort_by_key(|(k, _)| k.calories),
+        5 => sessions.sort_by_key(|(k, _)| k.cadence_avg),
+        6 => sessions.sort_by_key(|(k, _)| k.heartrate_avg),
+        7 => sessions.sort_by_key(|(k, _)| k.heartrate_max),
+        8 => sessions.sort_by(|(a, _), (b, _)| a.speed_avg.partial_cmp(&b.speed_avg).unwrap()),
+        9 => sessions.sort_by(|(a, _), (b, _)| a.speed_max.partial_cmp(&b.speed_max).unwrap()),
+        10 => sessions.sort_by_key(|(k, _)| k.ascent),
+        11 => sessions.sort_by_key(|(k, _)| k.descent),
         _ => (),
     };
 
@@ -249,7 +250,7 @@ async fn activity_index_post(
         .iter()
         .skip(request.start)
         .take(request.length)
-        .map(|x| ActivityData {
+        .map(|(x, gear)| ActivityData {
             date: x.start_time.0,
             activity_type: x.activity_type.to_string(),
             duration: x.duration_active.to_string(),
@@ -262,6 +263,7 @@ async fn activity_index_post(
             speed_max: x.speed_max.map(|x| x.display_km_mi(&unit)),
             ascent: x.ascent.map(|x| x.display_m_ft(&unit)),
             descent: x.descent.map(|x| x.display_m_ft(&unit)),
+            gear: gear.to_owned(),
             id: x.start_time.0.format("%Y%m%d%H%M").to_string(),
         })
         .collect();

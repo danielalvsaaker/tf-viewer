@@ -8,8 +8,7 @@ td {
 tr:hover {
   cursor: pointer;
 } 
-</style>
-
+</style> 
 <link rel="stylesheet" href="{{ url._static }}/css/datatables.min.css">
 <script src="{{ url._static }}/js/datatables.min.js"></script>
 <script>
@@ -48,10 +47,11 @@ tr:hover {
 	{'data': 'speed_max'},
 	{'data': 'ascent'},
 	{'data': 'descent'},
+	{'data': 'gear'},
 	{'data': 'id'}
       ],
       'columnDefs': [
-	{'visible': false, 'targets': 12}
+	{'visible': false, 'targets': 13}
       ]
     });
 
@@ -80,6 +80,7 @@ tr:hover {
 	<th>Max. speed</th>
 	<th>Ascent</th>
 	<th>Descent</th>
+	<th>Gear</th>
 	<th>Id</th>
       </tr>
     </thead>

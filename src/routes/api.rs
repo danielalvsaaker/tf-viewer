@@ -35,6 +35,7 @@ pub struct ActivityData {
     pub speed_max: Option<String>,
     pub ascent: Option<String>,
     pub descent: Option<String>,
+    pub gear: Option<String>,
     pub id: String,
 }
 

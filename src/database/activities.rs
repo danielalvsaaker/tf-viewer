@@ -170,13 +170,13 @@ impl ActivityTree {
         prefix.push(0xff);
 
         Ok(self
-           .usernameid_session
-           .scan_prefix(&prefix)
-           .keys()
-           .rev()
-           .flatten()
-           .map(|x| x.split(|y| y == &0xff).last().unwrap().to_vec())
-           .flat_map(String::from_utf8))
+            .usernameid_session
+            .scan_prefix(&prefix)
+            .keys()
+            .rev()
+            .flatten()
+            .map(|x| x.split(|y| y == &0xff).last().unwrap().to_vec())
+            .flat_map(String::from_utf8))
     }
 
     pub fn iter_username(&self) -> Result<impl Iterator<Item = String>> {

@@ -9,7 +9,10 @@ use plotly::{
     layout::{Axis, Layout},
     Plot, Scatter,
 };
-use staticmap::{StaticMapBuilder, tools::{Color, LineBuilder}};
+use staticmap::{
+    tools::{Color, LineBuilder},
+    StaticMapBuilder,
+};
 use uom::si::length::{foot, kilometer, meter, mile};
 use uom::si::velocity::{kilometer_per_hour, mile_per_hour};
 
@@ -156,8 +159,7 @@ pub fn generate_thumb(record: Record, path: &std::path::PathBuf) -> Result<()> {
             .map_err(|_| Error::BadServerResponse("Failed to create thumbnail directory"))?;
     }
 
-    map
-        .save_png(path)
+    map.save_png(path)
         .map_err(|_| Error::BadServerResponse("Failed to save rendered activity thumbnail"))?;
 
     Ok(())

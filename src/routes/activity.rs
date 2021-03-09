@@ -69,9 +69,8 @@ async fn activity(
         super::utils::zone_duration(&activity.record, &user)?
     };
 
-    let set: std::collections::BTreeSet<String> = data.activities
-        .username_iter_id(&username)?
-        .collect();
+    let set: std::collections::BTreeSet<String> =
+        data.activities.username_iter_id(&username)?.collect();
 
     let prev = set
         .range(..activity_id.clone())
@@ -80,7 +79,10 @@ async fn activity(
         .flatten();
 
     let next = set
-        .range((std::ops::Bound::Excluded(activity_id), std::ops::Bound::Unbounded))
+        .range((
+            std::ops::Bound::Excluded(activity_id),
+            std::ops::Bound::Unbounded,
+        ))
         .next()
         .map(|x| UrlActivity::new(&username, x, &req).ok())
         .flatten();
@@ -250,7 +252,8 @@ async fn activity_index_post(
     match request.column {
         0 => sessions.sort_by_key(|(k, _)| std::cmp::Reverse(k.start_time.0)),
         1 => sessions.sort_by_key(|(k, _)| k.activity_type.to_owned()),
-        2 => sessions.sort_by(|(a, _), (b, _)| a.duration_active.partial_cmp(&b.duration_active).unwrap()),
+        2 => sessions
+            .sort_by(|(a, _), (b, _)| a.duration_active.partial_cmp(&b.duration_active).unwrap()),
         3 => sessions.sort_by(|(a, _), (b, _)| a.distance.partial_cmp(&b.distance).unwrap()),
         4 => sessions.sort_by_key(|(k, _)| k.calories),
         5 => sessions.sort_by_key(|(k, _)| k.cadence_avg),

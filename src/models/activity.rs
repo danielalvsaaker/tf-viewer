@@ -10,8 +10,7 @@ pub struct Activity {
     pub id: String,
     pub gear_id: Option<String>,
     pub session: Session,
-    pub record: Record,
-    pub lap: Vec<Lap>,
+    pub record: Record, pub lap: Vec<Lap>,
     pub notes: Option<String>,
 }
 
@@ -141,7 +140,7 @@ impl FromStr for GearType {
         match s {
             "road_bike" => Ok(Self::RoadBike),
             "hybrid_bike" => Ok(Self::HybridBike),
-            "tt_bike" => Ok(Self::HybridBike),
+            "tt_bike" => Ok(Self::TTBike),
             "offroad_bike" => Ok(Self::OffroadBike),
             "running_shoes" => Ok(Self::RunningShoes),
             _ => Err(Error::BadServerResponse("Failed to parse gear type")),

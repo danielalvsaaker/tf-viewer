@@ -115,10 +115,18 @@ impl FromStr for ActivityType {
 
 impl std::fmt::Display for ActivityType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let uppercase = |x: &str| {
+            let mut c = x.chars();
+            match c.next() {
+                None => String::new(),
+                Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+            }
+        };
+
         let activity_type = match self {
-            Self::Running => "Running",
-            Self::Cycling => "Cycling",
-            Self::Other(x) => x,
+            Self::Running => "Running".to_string(),
+            Self::Cycling => "Cycling".to_string(),
+            Self::Other(x) => uppercase(&x),
         };
         write!(f, "{}", activity_type)
     }

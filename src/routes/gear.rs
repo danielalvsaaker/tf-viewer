@@ -1,5 +1,5 @@
 use super::UrlFor;
-use crate::models::{DisplayUnit, Duration, Gear, GearType, Unit};
+use crate::models::{DisplayUnit, Duration, Gear, GearType, GetWithUnit, Unit};
 use actix_identity::Identity;
 use actix_web::{http, web, HttpRequest, HttpResponse, Responder};
 use askama_actix::{Template, TemplateIntoResponse};
@@ -67,6 +67,7 @@ async fn gear_settings(
 struct GearForm {
     pub name: String,
     pub gear_type: String,
+    #[serde(default)]
     pub fixed_distance: f64,
     #[serde(default)]
     pub standard: bool,

@@ -29,6 +29,19 @@ pub trait DisplayUnit {
     fn display_m_ft(&self, unit: &Unit) -> String;
 }
 
+pub trait GetWithUnit {
+    fn get_with_unit(&self, unit: &Unit) -> f64;
+}
+
+impl GetWithUnit for Length_f64 {
+    fn get_with_unit(&self, unit: &Unit) -> f64 {
+        match unit {
+            Unit::Metric => self.get::<kilometer>(),
+            Unit::Imperial => self.get::<mile>(),
+        }
+    }
+}
+
 impl DisplayUnit for Velocity {
     fn display_km_mi(&self, unit: &Unit) -> String {
         if let Unit::Metric = unit {

@@ -78,7 +78,7 @@ pub struct Lap {
     pub duration_active: Duration,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, PartialOrd, Ord, PartialEq, Eq)]
 pub enum ActivityType {
     Running,
     Cycling,

@@ -249,6 +249,7 @@ async fn activity_index_post(
 
     match request.column {
         0 => sessions.sort_by_key(|(k, _)| std::cmp::Reverse(k.start_time.0)),
+        1 => sessions.sort_by_key(|(k, _)| k.activity_type.to_owned()),
         2 => sessions.sort_by(|(a, _), (b, _)| a.duration_active.partial_cmp(&b.duration_active).unwrap()),
         3 => sessions.sort_by(|(a, _), (b, _)| a.distance.partial_cmp(&b.distance).unwrap()),
         4 => sessions.sort_by_key(|(k, _)| k.calories),

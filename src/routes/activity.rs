@@ -119,7 +119,7 @@ struct ActivitySettingsTemplate<'a> {
     url: UrlFor,
     id: Identity,
     activity_type: &'a ActivityType,
-    gears: &'a [String],
+    gears: &'a [Option<String>],
     notes: Option<&'a str>,
     title: &'a str,
     message: Option<&'a str>,
@@ -133,8 +133,9 @@ async fn activity_settings(
 ) -> impl Responder {
     let activity = data.activities.get_activity(&username, &activity_id)?;
 
-    let mut gears: Vec<String> = data.gear.iter(&username)?.map(|x| x.name).collect();
-    gears.sort_by_key(|k| Some(k) != activity.gear_id.as_ref());
+    let mut gears: Vec<Option<String>> = data.gear.iter(&username)?.map(|x| Some(x.name)).collect();
+    gears.push(None);
+    gears.sort_by_key(|k| k.as_ref() != activity.gear_id.as_ref());
 
     ActivitySettingsTemplate {
         url: UrlFor::new(&id, &req)?,
@@ -165,12 +166,14 @@ async fn activity_settings_post(
     let form = form.into_inner();
 
     let mut activity = data.activities.get_activity(&username, &activity_id)?;
+    let gear_id = form.gear_id.filter(|x| !x.is_empty());
 
-    let mut gears: Vec<String> = data.gear.iter(&username)?.map(|x| x.name).collect();
-    gears.sort_by_key(|k| Some(k) != form.gear_id.as_ref());
+    let mut gears: Vec<Option<String>> = data.gear.iter(&username)?.map(|x| Some(x.name)).collect();
+    gears.push(None);
+    gears.sort_by_key(|k| k.as_ref() != gear_id.as_ref());
 
     let result = {
-        if !gears.iter().any(|y| Some(y) == form.gear_id.as_ref()) && !gears.is_empty() {
+        if !gears.iter().any(|y| y.as_ref() == gear_id.as_ref()) && !gears.is_empty() {
             Some("The specified gear does not exist.")
         } else {
             None
@@ -180,7 +183,7 @@ async fn activity_settings_post(
     if result.is_none() {
         activity.session.activity_type =
             ActivityType::from_str(&form.activity_type).unwrap_or_default();
-        activity.gear_id = form.gear_id;
+        activity.gear_id = gear_id;
         activity.notes = match form.notes.is_empty() {
             true => None,
             false => Some(form.notes),

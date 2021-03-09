@@ -34,8 +34,13 @@
       <div class="form-group">
 	<label class="form-label" for="gear_id">Gear</label>
 	<select class="form-select" name="gear_id" id="gear_id">
-	  {% for gear in gears %}	
-	    <option value="{{ gear }}">{{ gear }}</option>
+	  {% for gear in gears %}
+	    {% match gear %}
+	      {% when Some with (value) %}
+		<option value="{{ value }}">{{ value }}</option>
+	      {% when None %}
+		<option></option>
+	    {% endmatch %}
 	  {% endfor %}
 	</select>
       </div>

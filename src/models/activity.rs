@@ -10,7 +10,8 @@ pub struct Activity {
     pub id: String,
     pub gear_id: Option<String>,
     pub session: Session,
-    pub record: Record, pub lap: Vec<Lap>,
+    pub record: Record,
+    pub lap: Vec<Lap>,
     pub notes: Option<String>,
 }
 
@@ -119,7 +120,7 @@ impl std::fmt::Display for ActivityType {
             let c = x.split("_").take(2).collect::<Vec<&str>>().join(" ");
             match c.chars().next() {
                 None => String::new(),
-                Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+                Some(f) => f.to_uppercase().collect::<String>() + &c[1..],
             }
         };
 

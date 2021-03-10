@@ -190,18 +190,19 @@
     </div>
   </div>
   <div class="my-3">
-    {% match zones -%}
-      {% when Some with (value) -%}
-	<h4>Heart rate zone duration</h4>
-	<table class="table">
-	  <thead>
-	    <tr>
-	      <th>Zone 0 (&lt;55%)</th>
-	      <th>Zone 1 (55%-72%)</th>
-	      <th>Zone 2 (72%-82%)</th>
-	      <th>Zone 3 (82%-87%)</th>
-	      <th>Zone 4 (87%-92%)</th>
-	      <th>Zone 5 (&gt;92%)</th>
+    {% if session.heartrate_avg.is_some() || session.heartrate_max.is_some() %}
+      {% match zones -%}
+	{% when Some with (value) -%}
+	  <h4>Heart rate zone duration</h4>
+	  <table class="table">
+	    <thead>
+	      <tr>
+		<th>Zone 0 (&lt;55%)</th>
+		<th>Zone 1 (55%-72%)</th>
+		<th>Zone 2 (72%-82%)</th>
+		<th>Zone 3 (82%-87%)</th>
+		<th>Zone 4 (87%-92%)</th>
+		<th>Zone 5 (&gt;92%)</th>
 	      </tr>
 	    </thead>
 	    <tbody>
@@ -213,7 +214,8 @@
 	    </tbody>
 	  </table>
 	{% when None -%}
-    {% endmatch -%}
+      {% endmatch -%}
+    {% endif %}
   </div>
   <div class="my-3">
     {% if laps.len() > 1 -%}

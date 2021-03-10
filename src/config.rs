@@ -58,7 +58,7 @@ impl Config {
 }
 
 fn default_address() -> Ipv4Addr {
-    Ipv4Addr::new(127, 0, 0, 1)
+    Ipv4Addr::new(0, 0, 0, 0)
 }
 
 fn default_units() -> String {

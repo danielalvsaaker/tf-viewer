@@ -25,7 +25,6 @@ RUN chmod 755 /root/ && \
     rustup target add $(awk -v target_arch=${TARGETPLATFORM} '$1==target_arch {print $2}' arch)
 
 RUN TARGET=$(awk -v target_arch=${TARGETPLATFORM} '$1==target_arch {print $2}' arch) && \
-    TARGET_CC=$(awk -v target_arch=${TARGETPLATFORM} '$1==target_arch {print $4}' arch) && \
     TARGET_LINKER=$(awk -v target_arch=${TARGETPLATFORM} '$1==target_arch {print $3}' arch) && \
 	echo -e "[build]\ntarget = \"$TARGET\"\n\n[target.$TARGET]\nlinker = \"$TARGET_LINKER\"\n" > /root/.cargo/config
 

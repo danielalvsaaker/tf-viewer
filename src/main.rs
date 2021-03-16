@@ -7,7 +7,7 @@ mod parser;
 mod routes;
 mod static_files;
 
-#[cfg(feature = "jemalloc")]
+#[cfg(all(target_env = "musl", target_pointer_width = "64"))]
 #[global_allocator]
 static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
 

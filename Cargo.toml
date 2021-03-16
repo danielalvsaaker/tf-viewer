@@ -9,7 +9,6 @@ include = ["src/**/*", "LICENSE", "README.md"]
 
 [features]
 default = ["embedded_static"]
-jemalloc = ["jemallocator"]
 embedded_static = ["lazy_static"]
 
 [dependencies]
@@ -53,5 +52,5 @@ regex = { version = "1.4", default-features = false }
 # Dependency for embedded static content
 lazy_static = { version = "1.4", optional = true }
 
-# Optional allocator, highly recommended on musl systems
-jemallocator = { version = "0.3.2", optional = true }
+[target.'cfg(all(target_env = "musl", target_pointer_width = "64"))'.dependencies.jemallocator]
+version = "0.3.0"

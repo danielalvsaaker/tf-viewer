@@ -1,0 +1,4 @@
+linux/amd64 x86_64-unknown-linux-musl gcc
+linux/arm/v6 arm-unknown-linux-musleabihf /usr/local/musl/bin/armv6-linux-musleabihf-gcc armv6-linux-musleabihf  --with-arch=arm6
+linux/arm/v7 armv7-unknown-linux-musleabihf /usr/local/musl/bin/armv7-linux-musleabihf-gcc armv7-linux-musleabihf --with-arch=armv7-a
+linux/arm64 aarch64-unknown-linux-musl /usr/local/musl/bin/aarch64-linux-musl-gcc aarch64-linux-musl

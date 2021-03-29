@@ -165,12 +165,9 @@ pub fn generate_thumb(record: Record, path: &std::path::PathBuf) -> Result<()> {
     Ok(())
 }
 
-pub fn zone_duration(
-    record: &Record,
-    heartrate: &Option<(u8, u8)>,
-) -> Result<Option<Vec<Duration>>> {
+pub fn zone_duration(record: &Record, heartrate: &Option<(u8, u8)>) -> Option<[Duration; 6]> {
     let mut zones: Vec<u8> = Vec::with_capacity(7);
-    let mut zones_duration: Vec<Duration> = vec![
+    let zones_duration: [Duration; 6] = [
         Duration::default(),
         Duration::default(),
         Duration::default(),
@@ -189,27 +186,30 @@ pub fn zone_duration(
         // Safety measure, considering that measured heartrate can spike
         zones.push((x.1 as f32 * 3.00).round() as u8);
     } else {
-        return Ok(None);
+        return None;
     }
 
-    let duration_iter = record.duration.iter();
-    let heartrate_iter = record.heartrate.iter();
-
-    // This can probably be done in a prettier way
-    for ((i, duration), heartrate) in duration_iter.enumerate().zip(heartrate_iter) {
-        if i > 0 {
-            let time_diff = *duration - record.duration[i - 1];
-            if let Some(x) = heartrate {
-                if time_diff < Duration::from_secs_f64(30.0) {
-                    for j in 0..=5 {
-                        if x <= &zones[j + 1] && x >= &zones[j] {
-                            zones_duration[j] += time_diff;
+    let zones_duration = record
+        .duration
+        .as_slice()
+        .windows(2)
+        .zip(record.heartrate.iter())
+        .fold(
+            zones_duration,
+            |mut acc: [Duration; 6], (d, h): (&[Duration], &Option<u8>)| {
+                if let Some(h) = h {
+                    let time_diff = d[1] - d[0];
+                    if time_diff < Duration::from_secs_f64(30.0) {
+                        for (i, z) in zones.windows(2).enumerate() {
+                            if (z[0]..z[1]).contains(h) {
+                                acc[i] += time_diff;
+                            }
                         }
                     }
                 }
-            }
-        }
-    }
+                acc
+            },
+        );
 
-    Ok(Some(zones_duration))
+    Some(zones_duration)
 }

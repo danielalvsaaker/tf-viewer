@@ -47,7 +47,7 @@ struct ActivityTemplate<'a> {
     session: &'a Session,
     laps: &'a [Lap],
     coords: &'a [(f64, f64)],
-    zones: Option<&'a [Duration]>,
+    zones: Option<[Duration; 6]>,
     notes: Option<&'a str>,
     plot: &'a str,
     title: &'a str,
@@ -66,7 +66,7 @@ async fn activity(
 
     let zones = {
         let user = data.users.get_heartrate(&username)?;
-        super::utils::zone_duration(&activity.record, &user)?
+        super::utils::zone_duration(&activity.record, &user)
     };
 
     let set: std::collections::BTreeSet<String> =
@@ -105,7 +105,7 @@ async fn activity(
             .flatten()
             .zip(activity.record.lat.into_iter().flatten())
             .collect::<Vec<(f64, f64)>>(),
-        zones: zones.as_deref(),
+        zones,
         plot: &plot,
         notes: activity.notes.as_deref(),
         title: &format!("Activity {}", &activity.session.start_time),

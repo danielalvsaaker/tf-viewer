@@ -167,14 +167,7 @@ pub fn generate_thumb(record: Record, path: &std::path::PathBuf) -> Result<()> {
 
 pub fn zone_duration(record: &Record, heartrate: &Option<(u8, u8)>) -> Option<[Duration; 6]> {
     let mut zones: Vec<u8> = Vec::with_capacity(7);
-    let zones_duration: [Duration; 6] = [
-        Duration::default(),
-        Duration::default(),
-        Duration::default(),
-        Duration::default(),
-        Duration::default(),
-        Duration::default(),
-    ];
+    let zones_duration: [Duration; 6] = [Duration::default(); 6];
 
     if let Some(x) = heartrate {
         zones.push(x.0);

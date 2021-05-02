@@ -3,7 +3,6 @@ services:
   tf-viewer:
     container_name: tf-viewer
     image: danielalvsaaker/tf-viewer:latest
-    build: .
     environment:
       - TZ=UTC
     volumes: 

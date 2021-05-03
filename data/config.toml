@@ -1,0 +1,18 @@
+# Every field in this config, and the file itself, is optional.
+# If you don't want to run the server with defaults, move this file to example.toml,
+# and change the fields as necessary.
+#
+# The server will run based on defaults if a field or the file is missing at runtime.
+
+# Cookie key should be cryptographically random. A key will be randomly generated at runtime
+# if this field is missing or if the key is less than 32 bytes.
+
+# Set secure cookies to true when running with HTTPS
+secure_cookies = false
+
+# Either metric or imperial
+units = "metric"
+
+disable_registration = false
+address = "0.0.0.0"
+port = 8080

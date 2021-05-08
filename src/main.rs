@@ -13,6 +13,7 @@ static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{
+    cookie::SameSite,
     middleware::{Compress, Condition},
     web, App, HttpServer, ResponseError,
 };
@@ -45,7 +46,8 @@ async fn main() -> std::io::Result<()> {
                 CookieIdentityPolicy::new(&cookie_key)
                     .name("tf-viewer")
                     .http_only(true)
-                    .secure(secure_cookies),
+                    .secure(secure_cookies)
+                    .same_site(SameSite::Strict),
             ))
             .default_service(web::route().to(|| {
                 error::Error::BadRequest(error::ErrorKind::NotFound, "Page not found")

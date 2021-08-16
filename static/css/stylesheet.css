@@ -163,6 +163,20 @@ textarea {
     margin-bottom: 10px;
 }
 
+.file {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    padding-bottom: 0px;
+    padding-top: 0px;
+}
+
+.file i {
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
 
 @media only screen and (max-width: 1500px){
     .new, .post {

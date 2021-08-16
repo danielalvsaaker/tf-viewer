@@ -1,36 +1,62 @@
 const Upload = {
-    props: ["user"],
+    props: ["user", "site"],
     template: `
             <div class="new">
-                <form id="newpost" method="POST" enctype=mulitpart/form-data v-on:submit="publishPost">
+                <form id="newpost" method="POST" enctype=mulitpart/form-data v-on:change="uploadFiles">
                     <h4>Upload</h4>
-                    <label for="fileupload">Upload </label>
                     <p v-if="error">{{ error }}</p>
                     <input type="file" ref="uploadedFiles" name="fileupload" multiple>
-                    <input type="submit" value="Upload">
                 </form>
+                <div class="file" v-for="file in files" >
+                    <p>{{ file.name }}</p>
+                    <i v-if="uploadStatus[file.name] == null" class="fa fa-hourglass-half"></i>
+                    <i v-else-if="uploadStatus[file.name]" class="fa fa-check"></i>
+                    <i v-else-if="!uploadStatus[file.name]" class="fa fa-exclamation-circle"></i>
+                </div>
             </div>
     `,
     data: function(){
         return {
             files: [],
-            error: null
+            uploadStatus: {},
+            error: null,
+            startTime: new Date()
         }
     },
     methods:{
-        publishPost: async function() {
+        uploadFiles: async function() {
             event.preventDefault();
+            this.startTime = new Date()
+            this.files = [];
+            this.uploadStatus = {};
             this.error = null;
             this.files = this.$refs.uploadedFiles.files;
-            let formData = new FormData();
-            formData.append("activity",this.files[0], this.files[0].name);
-            let response = await fetch("/user/asd/activity", {
-                body: formData,
-                method: "POST",
-            });
-            let result = await response;
-            console.log(response);
-            this.$refs.uploadedFiles.value = null;
+            const promises = [];
+            for (let i = 0; i < this.files.length; i++) {
+                const file = this.files[i];
+                promises.push(upload(this.uploadStatus, file));
+            }
+            const test = await Promise.all(promises);
+            let endTime = new Date();
+            console.log(endTime.getTime() - this.startTime.getTime());
+            //this.$refs.uploadedFiles.value = null;
         }
     }
+}
+
+async function upload(statusObject, file) {
+    let response = await fetch("/user/asd/activity", {
+        body: file,
+        method: "POST",
+    });
+    let result = await response;
+    if (result.status == 201) {
+        statusObject[file.name] = true;
+    } else {
+        statusObject[file.name] = false;
+    }
+    console.log(response.headers.get("Location"));
+    return new Promise(resolve => {
+        resolve("test");
+    });
 }

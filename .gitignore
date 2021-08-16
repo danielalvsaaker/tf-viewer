@@ -9,3 +9,6 @@ target/
 
 /static/img/activity/*.png
 config.toml
+#these files should be fetched by wget, as they don't really need to be distributed by the repo
+static/js/router.js
+static/js/vue.js

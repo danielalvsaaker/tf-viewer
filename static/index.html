@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TF-Viewer</title>
+    <script src="/static/js/vue.js" type="text/javascript"></script>
+    <script src="/static/js/router.js" type="text/javascript"></script>
+    <script src="/static/js/menu.js" type="text/javascript"></script>
+    <script src="/static/js/mainsite.js" type="text/javascript"></script>
+    <script src="/static/js/login.js" type="text/javascript"></script>
+    <script src="/static/js/register.js" type="text/javascript"></script>
+    <script src="/static/js/equipment.js" type="text/javascript"></script>
+    <script src="/static/js/upload.js" type="text/javascript"></script>
+    <script src="/static/js/activitytable.js" type="text/javascript"></script>
+    <script src="/static/js/script.js" type="text/javascript" defer></script>
+    <link rel="stylesheet" href="/static/css/stylesheet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="shortcut icon" href="/favicon.ico">
+</head>
+<body>
+    <div id="app" class="app">
+        <header>
+            <menubar v-bind:user="user"></menubar>
+        </header>
+        <main>
+            <!--Changes depending on which component is active-->
+            <router-view v-bind:user="user"></router-view>
+        </main>
+        <div class="space"></div>
+        <footer>
+            <a href="https://github.com/danielalvsaaker/tf-viewer">https://github.com/danielalvsaaker/tf-viewer</a>
+        </footer>
+    </div>
+</body>
+</html>

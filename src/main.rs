@@ -20,6 +20,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(Compress::default())
             .app_data(web::Data::new(database.clone()))
+            .route("/", web::route().to(index))
             .service(actix_files::Files::new("/static", "./static"))
             .service(
                 web::resource("/user")

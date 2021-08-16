@@ -5,8 +5,12 @@ mod routes;
 #[global_allocator]
 static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
-use actix_web::{middleware::Compress, web, App, HttpServer};
+use actix_web::{middleware::Compress, web, App, HttpServer, Responder};
 use tf_database::Database;
+
+async fn index() -> impl Responder {
+    include_str!("../static/index.html")
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -16,6 +20,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(Compress::default())
             .app_data(web::Data::new(database.clone()))
+            .service(actix_files::Files::new("/static", "./static"))
             .service(
                 web::resource("/user")
                     .name("user_index")

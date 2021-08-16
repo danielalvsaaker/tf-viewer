@@ -1,26 +1,26 @@
 use fitparser::{profile::field_types::MesgNum, FitDataField, Value};
+use std::time::Duration;
 use std::{collections::HashMap, str::FromStr};
 
-use actix_web::http::StatusCode;
+use crate::error::{Error, Result};
 
-use crate::{
-    error::{Error, Result},
-};
-    
-use tf_models::{Activity, ActivityType, backend::{Lap, Record, Session}};
 use chrono::{offset::Local, DateTime};
+use tf_models::{
+    backend::{Lap, Record, Session},
+    Activity, ActivityType,
+};
 
 use uom::si::{
     f64::{Length as Length_f64, Velocity},
     length::meter,
-    u16::{Length as Length_u16, Power},
-    u32::{Length as Length_u32},
-    velocity::meter_per_second,
     power::watt,
+    u16::Power,
+    u32::Length as Length_u32,
+    velocity::meter_per_second,
 };
 
 macro_rules! map_value {
-    ($name:ident, $type:ident, $( $pattern:pat )|+ => $mapping:expr) => {
+    ($name:ident, $type:path, $( $pattern:pat )|+ => $mapping:expr) => {
         fn $name(v: &&fitparser::Value) -> Option<$type> {
             match v {
                 $( $pattern )|+ => ::std::option::Option::Some($mapping),
@@ -30,8 +30,12 @@ macro_rules! map_value {
     }
 }
 
-fn between(lhs: DateTime<Local>, rhs: DateTime<Local>) -> Duration {
-    chrono::Duration::to_std(&lhs.signed_duration_since(rhs))
+fn between(lhs: &Option<DateTime<Local>>, rhs: Option<DateTime<Local>>) -> Option<Duration> {
+    if let Some((x, y)) = lhs.zip(rhs) {
+        chrono::Duration::to_std(&x.signed_duration_since(y)).ok()
+    } else {
+        None
+    }
 }
 
 map_value!(map_uint8, u8, Value::UInt8(x) => *x);
@@ -39,7 +43,7 @@ map_value!(map_uint16, u16, Value::UInt16(x) => *x);
 map_value!(map_sint32, i32, Value::SInt32(x) => *x);
 map_value!(map_float64, f64, Value::Float64(x) => *x);
 map_value!(map_string, String, Value::String(x) => x.to_string());
-map_value!(map_timestamp, TimeStamp, Value::Timestamp(x) => x.into());
+map_value!(map_timestamp, DateTime<Local>, Value::Timestamp(x) => *x);
 
 const MULTIPLIER: f64 = 180_f64 / (2_u32 << 30) as f64;
 
@@ -48,14 +52,10 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
     let mut record: Record = Record::default();
     let mut lap_vec: Vec<Lap> = Vec::new();
 
-    let file = fitparser::from_bytes(fit_data)
-        .map_err(|_| Error::BadRequest(StatusCode::UNSUPPORTED_MEDIA_TYPE, "File is not a valid .fit-file"))?;
+    let file = fitparser::from_bytes(fit_data)?;
 
     if !file.iter().any(|x| x.kind() == MesgNum::Session) {
-        return Err(Error::BadRequest(
-            StatusCode::UNPROCESSABLE_ENTITY,
-            "File does not contain session data",
-        ));
+        return Err(Error::MissingData);
     }
 
     for data in file {
@@ -113,12 +113,15 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
     }
 
     Ok(Activity {
-        id: session.start_time.format("%Y%m%d%H%M").to_string(),
+        id: session
+            .start_time
+            .ok_or(Error::MissingData)?
+            .format("%Y%m%d%H%M")
+            .to_string(),
         gear_id,
         session,
         record,
         lap: lap_vec,
-        notes: None,
     })
 }
 
@@ -126,21 +129,13 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) {
     let field_map: HashMap<&str, &fitparser::Value> =
         fields.iter().map(|x| (x.name(), x.value())).collect();
 
-    session.cadence_avg = field_map
-        .get("avg_cadence")
-        .and_then(map_uint8);
+    session.cadence_avg = field_map.get("avg_cadence").and_then(map_uint8);
 
-    session.cadence_max = field_map
-        .get("max_cadence")
-        .and_then(map_uint8);
+    session.cadence_max = field_map.get("max_cadence").and_then(map_uint8);
 
-    session.heartrate_avg = field_map
-        .get("avg_heart_rate")
-        .and_then(map_uint8);
+    session.heartrate_avg = field_map.get("avg_heart_rate").and_then(map_uint8);
 
-    session.heartrate_max = field_map
-        .get("max_heart_rate")
-        .and_then(map_uint8);
+    session.heartrate_max = field_map.get("max_heart_rate").and_then(map_uint8);
 
     session.speed_avg = field_map
         .get("enhanced_avg_speed")
@@ -182,9 +177,7 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) {
         .and_then(map_sint32)
         .map(|x| f64::from(x) * MULTIPLIER);
 
-    session.laps = field_map
-        .get("num_laps")
-        .and_then(map_uint16);
+    session.laps = field_map.get("num_laps").and_then(map_uint16);
 
     session.activity_type = ActivityType::from_str(
         &field_map
@@ -206,9 +199,7 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) {
         .map(u32::from)
         .map(Length_u32::new::<meter>);
 
-    session.calories = field_map
-        .get("total_calories")
-        .and_then(map_uint16);
+    session.calories = field_map.get("total_calories").and_then(map_uint16);
 
     session.distance = field_map
         .get("total_distance")
@@ -227,21 +218,16 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) {
         .map(Duration::from_secs_f64)
         .unwrap_or_default();
 
-    session.start_time = field_map
-        .get("start_time")
-        .and_then(map_timestamp)
-        .unwrap_or_default();
+    session.start_time = field_map.get("start_time").and_then(map_timestamp);
 }
 
 fn parse_record(fields: &[FitDataField], record: &mut Record) {
     let field_map: HashMap<&str, &fitparser::Value> =
         fields.iter().map(|x| (x.name(), x.value())).collect();
 
-    record.cadence.push(
-        field_map
-            .get("cadence")
-            .and_then(map_uint8)
-    );
+    record
+        .cadence
+        .push(field_map.get("cadence").and_then(map_uint8));
 
     record.distance.push(
         field_map
@@ -268,14 +254,12 @@ fn parse_record(fields: &[FitDataField], record: &mut Record) {
         field_map
             .get("power")
             .and_then(map_uint16)
-            .map(Power::new::<watt>)
+            .map(Power::new::<watt>),
     );
 
-    record.heartrate.push(
-        field_map
-            .get("heart_rate")
-            .and_then(map_uint8)
-    );
+    record
+        .heartrate
+        .push(field_map.get("heart_rate").and_then(map_uint8));
 
     record.lat.push(
         field_map
@@ -291,15 +275,13 @@ fn parse_record(fields: &[FitDataField], record: &mut Record) {
             .map(|x| f64::from(x) * MULTIPLIER),
     );
 
-    let timestamp = field_map
-        .get("timestamp")
-        .and_then(map_timestamp)
-        .unwrap_or_default();
+    let timestamp = field_map.get("timestamp").and_then(map_timestamp);
 
-    let duration = match record.timestamp.first() {
-        Some(x) => Duration::between(&timestamp, x),
-        None => Duration::default(),
-    };
+    let duration = record
+        .timestamp
+        .first()
+        .and_then(|x| between(&timestamp, *x))
+        .unwrap_or_default();
 
     record.duration.push(duration);
     record.timestamp.push(timestamp);
@@ -309,21 +291,13 @@ fn parse_lap(fields: &[FitDataField], lap: &mut Lap) {
     let field_map: HashMap<&str, &fitparser::Value> =
         fields.iter().map(|x| (x.name(), x.value())).collect();
 
-    lap.cadence_avg = field_map
-        .get("avg_cadence")
-        .and_then(map_uint8);
+    lap.cadence_avg = field_map.get("avg_cadence").and_then(map_uint8);
 
-    lap.cadence_max = field_map
-        .get("max_cadence")
-        .and_then(map_uint8);
+    lap.cadence_max = field_map.get("max_cadence").and_then(map_uint8);
 
-    lap.heartrate_avg = field_map
-        .get("avg_heart_rate")
-        .and_then(map_uint8);
+    lap.heartrate_avg = field_map.get("avg_heart_rate").and_then(map_uint8);
 
-    lap.heartrate_max = field_map
-        .get("max_heart_rate")
-        .and_then(map_uint8);
+    lap.heartrate_max = field_map.get("max_heart_rate").and_then(map_uint8);
 
     lap.speed_avg = field_map
         .get("enhanced_avg_speed")
@@ -377,9 +351,7 @@ fn parse_lap(fields: &[FitDataField], lap: &mut Lap) {
         .map(u32::from)
         .map(Length_u32::new::<meter>);
 
-    lap.calories = field_map
-        .get("total_calories")
-        .and_then(map_uint16);
+    lap.calories = field_map.get("total_calories").and_then(map_uint16);
 
     lap.distance = field_map
         .get("total_distance")

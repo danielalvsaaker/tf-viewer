@@ -1,304 +1,239 @@
-use super::{
-    api::{ActivityData, DataRequest, DataResponse},
-    UrlActivity, UrlFor,
-};
-use crate::{
-    middleware::Restricted,
-    models::{ActivityType, DisplayUnit, Duration, Lap, Session, Unit},
-};
-use actix_identity::Identity;
+use crate::error::{Error, Result};
 use actix_web::{http, web, HttpRequest, HttpResponse, Responder};
-use askama_actix::{Template, TemplateIntoResponse};
 use serde::Deserialize;
-use std::str::FromStr;
+use std::ops::Deref;
+use tf_database::{
+    query::{ActivityQuery, UserQuery},
+    Database,
+};
+use tf_models::{
+    frontend::{Activity, Lap, Record, Session},
+    Unit,
+};
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::resource("/{username}/activity")
-            .name("activity_index")
-            .route(web::get().to(activity_index))
-            .route(web::post().to(activity_index_post)),
-    )
-    .service(
-        web::resource("/{username}/activity/{activity}")
+        web::resource("/{user_id}/activity/{id}")
             .name("activity")
-            .to(activity),
+            .route(web::get().to(get_activity))
+            .route(web::delete().to(delete_activity)),
     )
     .service(
-        web::resource("/{username}/activity/{activity}/settings")
-            .name("activity_settings")
-            .wrap(Restricted)
-            .route(web::get().to(activity_settings))
-            .route(web::post().to(activity_settings_post)),
+        web::resource("/{user_id}/activity/{id}/session")
+            .name("activity_session")
+            .route(web::get().to(activity_session)),
+    )
+    .service(
+        web::resource("/{user_id}/activity/{id}/record")
+            .name("activity_record")
+            .route(web::get().to(activity_record)),
+    )
+    .service(
+        web::resource("/{user_id}/activity/{id}/lap")
+            .name("activity_lap")
+            .route(web::get().to(activity_lap)),
+    )
+    .service(
+        web::resource("/{user_id}/activity/{id}/gear")
+            .name("activity_gear")
+            .route(web::get().to(get_activity_gear))
+            .route(web::put().to(put_activity_gear)),
+    )
+    .service(
+        web::resource("/{user_id}/activity/{id}/zones")
+            .name("activity_zones")
+            .route(web::get().to(get_activity_zones)),
+    )
+    .service(
+        web::resource("/{user_id}/activity/{id}/prev")
+            .name("activity_prev")
+            .route(web::get().to(get_activity_prev)),
+    )
+    .service(
+        web::resource("/{user_id}/activity/{id}/next")
+            .name("activity_next")
+            .route(web::get().to(get_activity_next)),
+    )
+    .service(
+        web::resource("/{user_id}/activity")
+            .name("activity_index")
+            .route(web::get().to(get_activity_index))
+            .route(web::post().to(post_activity_index)),
     );
 }
 
-#[derive(Template)]
-#[template(path = "activity/activity.html")]
-struct ActivityTemplate<'a> {
-    url: UrlFor,
-    id: Identity,
-    unit: &'a Unit,
-    activity_url: &'a str,
-    prev: Option<UrlActivity>,
-    next: Option<UrlActivity>,
-    username: &'a str,
-    gear: Option<&'a str>,
-    session: &'a Session,
-    laps: &'a [Lap],
-    coords: &'a [(f64, f64)],
-    zones: Option<[Duration; 6]>,
-    notes: Option<&'a str>,
-    plot: &'a str,
-    title: &'a str,
+async fn activity_session(
+    db: web::Data<Database>,
+    query: web::Path<ActivityQuery<'_>>,
+    unit: Option<web::Query<Unit>>,
+) -> Result<impl Responder> {
+    let session = db.activity.get_session(&query)?.ok_or(Error::NotFound)?;
+
+    Ok(web::Json(Session::from_backend(
+        session,
+        unit.as_deref().unwrap_or_default(),
+    )))
 }
 
-async fn activity(
-    req: HttpRequest,
-    data: web::Data<crate::Database>,
-    id: Identity,
-    web::Path((username, activity_id)): web::Path<(String, String)>,
-    unit: web::Data<Unit>,
-) -> impl Responder {
-    let activity = data.activities.get_activity(&username, &activity_id)?;
+async fn activity_record(
+    db: web::Data<Database>,
+    query: web::Path<ActivityQuery<'_>>,
+    unit: Option<web::Query<Unit>>,
+) -> Result<impl Responder> {
+    let record = db.activity.get_record(&query)?.ok_or(Error::NotFound)?;
 
-    let plot = super::utils::plot(&activity.record, &unit)?;
+    Ok(web::Json(Record::from_backend(
+        record,
+        unit.as_deref().unwrap_or_default(),
+    )))
+}
 
-    let zones = {
-        let user = data.users.get_heartrate(&username)?;
-        super::utils::zone_duration(&activity.record, &user)
-    };
+async fn activity_lap(
+    db: web::Data<Database>,
+    query: web::Path<ActivityQuery<'_>>,
+    unit: Option<web::Query<Unit>>,
+) -> Result<impl Responder> {
+    let unit = unit.as_deref().unwrap_or_default();
 
-    let set: std::collections::BTreeSet<String> =
-        data.activities.username_iter_id(&username)?.collect();
+    let lap: Vec<Lap> = db
+        .activity
+        .get_lap(&query)?
+        .ok_or(Error::NotFound)?
+        .into_iter()
+        .map(|x| Lap::from_backend(x, unit))
+        .collect();
 
-    let prev = set
-        .range(..activity_id.clone())
-        .next_back()
-        .map(|x| UrlActivity::new(&username, x, &req).ok())
-        .flatten();
+    Ok(web::Json(lap))
+}
 
-    let next = set
-        .range((
-            std::ops::Bound::Excluded(activity_id),
-            std::ops::Bound::Unbounded,
-        ))
-        .next()
-        .map(|x| UrlActivity::new(&username, x, &req).ok())
-        .flatten();
+async fn get_activity_gear(
+    db: web::Data<Database>,
+    query: web::Path<ActivityQuery<'_>>,
+) -> Result<impl Responder> {
+    Ok(db.activity.get_gear(&query)?.ok_or(Error::NotFound)?)
+}
 
-    ActivityTemplate {
-        url: UrlFor::new(&id, &req)?,
-        id,
-        unit: &unit,
-        activity_url: &req.path(),
-        prev,
-        next,
-        username: &username,
-        gear: activity.gear_id.as_deref(),
-        session: &activity.session,
-        laps: &activity.lap,
-        coords: &activity
-            .record
-            .lon
-            .into_iter()
-            .flatten()
-            .zip(activity.record.lat.into_iter().flatten())
-            .collect::<Vec<(f64, f64)>>(),
-        zones,
-        plot: &plot,
-        notes: activity.notes.as_deref(),
-        title: &format!("Activity {}", &activity.session.start_time),
+async fn put_activity_gear(
+    db: web::Data<Database>,
+    query: web::Path<ActivityQuery<'_>>,
+    gear_id: web::Json<String>,
+) -> Result<impl Responder> {
+    Ok(match db.activity.insert_gear(&query, gear_id.deref())? {
+        Some(_) => HttpResponse::NoContent(),
+        None => HttpResponse::Created(),
     }
-    .into_response()
-}
-
-#[derive(Template)]
-#[template(path = "activity/settings.html")]
-struct ActivitySettingsTemplate<'a> {
-    url: UrlFor,
-    id: Identity,
-    activity_type: &'a ActivityType,
-    gears: &'a [Option<String>],
-    notes: Option<&'a str>,
-    title: &'a str,
-    message: Option<&'a str>,
-}
-
-async fn activity_settings(
-    req: HttpRequest,
-    id: Identity,
-    data: web::Data<crate::Database>,
-    web::Path((username, activity_id)): web::Path<(String, String)>,
-) -> impl Responder {
-    let activity = data.activities.get_activity(&username, &activity_id)?;
-
-    let mut gears: Vec<Option<String>> = data.gear.iter(&username)?.map(|x| Some(x.name)).collect();
-    gears.push(None);
-    gears.sort_by_key(|k| k.as_ref() != activity.gear_id.as_ref());
-
-    ActivitySettingsTemplate {
-        url: UrlFor::new(&id, &req)?,
-        id,
-        activity_type: &activity.session.activity_type,
-        gears: &gears,
-        notes: activity.notes.as_deref(),
-        title: "Settings",
-        message: None,
-    }
-    .into_response()
+    .finish())
 }
 
 #[derive(Deserialize)]
-struct ActivitySettingsForm {
-    pub activity_type: String,
-    pub gear_id: Option<String>,
-    pub notes: String,
+#[serde(default)]
+struct Filters {
+    skip: usize,
+    take: usize,
+    //sort_by: Sort,
 }
 
-async fn activity_settings_post(
-    req: HttpRequest,
-    id: Identity,
-    data: web::Data<crate::Database>,
-    web::Path((username, activity_id)): web::Path<(String, String)>,
-    form: web::Form<ActivitySettingsForm>,
-) -> impl Responder {
-    let form = form.into_inner();
-
-    let mut activity = data.activities.get_activity(&username, &activity_id)?;
-    let gear_id = form.gear_id.filter(|x| !x.is_empty());
-
-    let mut gears: Vec<Option<String>> = data.gear.iter(&username)?.map(|x| Some(x.name)).collect();
-    gears.push(None);
-    gears.sort_by_key(|k| k.as_ref() != gear_id.as_ref());
-
-    let result = {
-        if !gears.iter().any(|y| y.as_ref() == gear_id.as_ref()) && !gears.is_empty() {
-            Some("The specified gear does not exist.")
-        } else {
-            None
-        }
-    };
-
-    if result.is_none() {
-        activity.session.activity_type =
-            ActivityType::from_str(&form.activity_type).unwrap_or_default();
-        activity.gear_id = gear_id;
-        activity.notes = match form.notes.is_empty() {
-            true => None,
-            false => Some(form.notes),
-        };
-
-        data.activities.insert_or_overwrite(activity, &username)?;
-
-        let url: UrlActivity = UrlActivity::new(&username, &activity_id, &req)?;
-
-        return Ok(HttpResponse::Found()
-            .header(http::header::LOCATION, url.url.as_str())
-            .finish()
-            .into_body());
+impl Default for Filters {
+    fn default() -> Self {
+        Self { skip: 0, take: 25 }
     }
+}
 
-    ActivitySettingsTemplate {
-        url: UrlFor::new(&id, &req)?,
+async fn get_activity(
+    db: web::Data<Database>,
+    query: web::Path<ActivityQuery<'_>>,
+    unit: Option<web::Query<Unit>>,
+) -> Result<impl Responder> {
+    let id = query.id.to_string();
+
+    let gear_id = db.activity.get_gear(&query)?;
+
+    let session = db.activity.get_session(&query)?.ok_or(Error::NotFound)?;
+    let record = db.activity.get_record(&query)?.ok_or(Error::NotFound)?;
+    let lap = db.activity.get_lap(&query)?.ok_or(Error::NotFound)?;
+
+    let activity = Activity::from_backend(
         id,
-        activity_type: &activity.session.activity_type,
-        gears: &gears,
-        notes: activity.notes.as_deref(),
-        title: "Settings",
-        message: result,
-    }
-    .into_response()
+        gear_id,
+        session,
+        record,
+        lap,
+        unit.as_deref().unwrap_or_default(),
+    );
+
+    Ok(web::Json(activity))
 }
 
-#[derive(Template)]
-#[template(path = "activity/index.html")]
-struct ActivityIndexTemplate<'a> {
-    url: UrlFor,
-    id: Identity,
-    username: &'a str,
-    title: &'a str,
+async fn get_activity_zones(
+    db: web::Data<Database>,
+    query: web::Path<ActivityQuery<'_>>,
+) -> Result<impl Responder> {
+    let record = db.activity.get_record(&query)?.ok_or(Error::NotFound)?;
+
+    let zones = super::utils::zone_duration(&record, 50, 205);
+
+    Ok(web::Json(zones))
 }
 
-async fn activity_index(
+async fn get_activity_prev(
+    db: web::Data<Database>,
+    query: web::Path<ActivityQuery<'_>>,
+) -> Result<impl Responder> {
+    Ok(web::Json(db.activity.prev(&query)?))
+}
+
+async fn get_activity_next(
+    db: web::Data<Database>,
+    query: web::Path<ActivityQuery<'_>>,
+) -> Result<impl Responder> {
+    Ok(web::Json(db.activity.next(&query)?))
+}
+
+async fn delete_activity(
+    db: web::Data<Database>,
+    query: web::Path<ActivityQuery<'_>>,
+) -> Result<impl Responder> {
+    db.activity.remove_activity(&query)?;
+
+    Ok(HttpResponse::NoContent())
+}
+
+async fn get_activity_index(
+    db: web::Data<Database>,
+    query: web::Path<UserQuery<'_>>,
+    unit: Option<web::Query<Unit>>,
+    filters: web::Query<Filters>,
+) -> Result<impl Responder> {
+    let ids = db
+        .activity
+        .username_iter_session(&query)?
+        .skip(filters.skip)
+        .take(filters.take);
+
+    Ok(web::Json(
+        ids.map(|x| Session::from_backend(x, unit.as_deref().unwrap_or_default()))
+            .collect::<Vec<Session>>(),
+    ))
+}
+
+async fn post_activity_index(
+    db: web::Data<Database>,
+    query: web::Path<UserQuery<'_>>,
+    file: web::Bytes,
     req: HttpRequest,
-    id: Identity,
-    username: web::Path<String>,
-    data: web::Data<crate::Database>,
-) -> impl Responder {
-    data.users.exists(&username)?;
+) -> Result<impl Responder> {
+    let gear = db.user.get_standard_gear(&query)?;
 
-    ActivityIndexTemplate {
-        url: UrlFor::new(&id, &req)?,
-        id,
-        username: &username,
-        title: "Activities",
-    }
-    .into_response()
-}
+    let parsed = tf_parse::parse(&file, gear)?;
+    db.activity.insert_activity(&query, &parsed)?;
 
-async fn activity_index_post(
-    request: web::Json<DataRequest>,
-    username: web::Path<String>,
-    data: web::Data<crate::Database>,
-    unit: web::Data<Unit>,
-) -> impl Responder {
-    let mut sessions: Vec<(Session, Option<String>)> = data
-        .activities
-        .username_iter_session(&username)
-        .unwrap()
-        .zip(data.activities.username_iter_gear(&username).unwrap())
-        .collect();
+    let activity_query = ActivityQuery::from((query.deref(), parsed.id.as_str()));
 
-    let amount = sessions.len();
+    let url = req
+        .url_for("activity", &[&activity_query.user_id, &activity_query.id])
+        .unwrap();
 
-    match request.column {
-        0 => sessions.sort_by_key(|(k, _)| std::cmp::Reverse(k.start_time.0)),
-        1 => sessions.sort_by_key(|(k, _)| k.activity_type.to_owned()),
-        2 => sessions
-            .sort_by(|(a, _), (b, _)| a.duration_active.partial_cmp(&b.duration_active).unwrap()),
-        3 => sessions.sort_by(|(a, _), (b, _)| a.distance.partial_cmp(&b.distance).unwrap()),
-        4 => sessions.sort_by_key(|(k, _)| k.calories),
-        5 => sessions.sort_by_key(|(k, _)| k.cadence_avg),
-        6 => sessions.sort_by_key(|(k, _)| k.heartrate_avg),
-        7 => sessions.sort_by_key(|(k, _)| k.heartrate_max),
-        8 => sessions.sort_by(|(a, _), (b, _)| a.speed_avg.partial_cmp(&b.speed_avg).unwrap()),
-        9 => sessions.sort_by(|(a, _), (b, _)| a.speed_max.partial_cmp(&b.speed_max).unwrap()),
-        10 => sessions.sort_by_key(|(k, _)| k.ascent),
-        11 => sessions.sort_by_key(|(k, _)| k.descent),
-        _ => (),
-    };
-
-    if request.dir.as_str() == "asc" {
-        sessions.reverse();
-    }
-
-    let results: Vec<ActivityData> = sessions
-        .iter()
-        .skip(request.start)
-        .take(request.length)
-        .map(|(x, gear)| ActivityData {
-            date: x.start_time.0,
-            activity_type: x.activity_type.to_string(),
-            duration: x.duration_active.to_string(),
-            distance: x.distance.map(|x| x.display_km_mi(&unit)),
-            calories: x.calories,
-            cadence_avg: x.cadence_avg,
-            heartrate_avg: x.heartrate_avg,
-            heartrate_max: x.heartrate_max,
-            speed_avg: x.speed_avg.map(|x| x.display_km_mi(&unit)),
-            speed_max: x.speed_max.map(|x| x.display_km_mi(&unit)),
-            ascent: x.ascent.map(|x| x.display_m_ft(&unit)),
-            descent: x.descent.map(|x| x.display_m_ft(&unit)),
-            gear: gear.to_owned(),
-            id: x.start_time.0.format("%Y%m%d%H%M").to_string(),
-        })
-        .collect();
-
-    web::Json(DataResponse {
-        draw: request.draw,
-        records_total: amount,
-        records_filtered: amount,
-        data: results,
-    })
+    Ok(HttpResponse::Created()
+        .insert_header((http::header::LOCATION, url.to_string()))
+        .finish())
 }

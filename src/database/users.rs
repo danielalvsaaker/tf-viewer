@@ -1,7 +1,8 @@
-use crate::error::{Error, ErrorKind, Result};
-use argon2::{hash_encoded, verify_encoded, Config};
-use getrandom::getrandom;
+use crate::error::{Error, Result};
 use std::convert::TryInto;
+use crate::models::*;
+use argon2::{hash_encoded, verify_encoded, Config};
+use actix_web::http::StatusCode;
 
 #[derive(Clone)]
 pub struct UserTree {
@@ -12,33 +13,33 @@ pub struct UserTree {
 }
 
 impl UserTree {
-    pub fn exists(&self, id: &str) -> Result<bool> {
-        match self.username_password.contains_key(id)? {
-            true => Ok(true),
-            false => Err(Error::BadRequest(ErrorKind::NotFound, "User not found")),
+    pub fn exists(&self, user: &UserQuery) -> Result<()> {
+        match self.username_password.contains_key(user.to_key())? {
+            true => Ok(()),
+            false => Err(Error::BadRequest(StatusCode::NOT_FOUND, "User not found")),
         }
     }
 
-    pub fn insert(&self, username: &str, password: &str) -> Result<()> {
+    pub fn insert(&self, user: UserForm) -> Result<()> {
         let mut salt = [0u8; 32];
-        getrandom(&mut salt).unwrap();
+        getrandom::getrandom(&mut salt).unwrap();
 
-        let hash = hash_encoded(password.as_bytes(), &salt, &Config::default())
+        let hash = hash_encoded(user.password.as_bytes(), &salt, &Config::default())
             .map_err(|_| Error::BadServerResponse("Password hashing failed"))?;
 
-        self.username_password.insert(username, hash.as_bytes())?;
+        self.username_password.insert(&user.username, hash.as_bytes())?;
 
         Ok(())
     }
 
-    pub fn set_standard_gear(&self, username: &str, gear: &str) -> Result<()> {
-        self.username_standardgear.insert(username, gear)?;
+    pub fn set_standard_gear<Q: Query>(&self, query: &Q) -> Result<()> {
+        self.username_standardgear.insert(query.username(), query.id())?;
 
         Ok(())
     }
 
-    pub fn get_standard_gear(&self, username: &str) -> Result<Option<String>> {
-        let get = self.username_standardgear.get(username)?;
+    pub fn get_standard_gear<U: UserQuery>(&self, user: &U) -> Result<Option<String>> {
+        let get = self.username_standardgear.get(user.to_key())?;
 
         match get {
             Some(x) => Ok(String::from_utf8(x.to_vec()).ok()),
@@ -46,22 +47,22 @@ impl UserTree {
         }
     }
 
-    pub fn set_heartrate(
+    pub fn set_heartrate<U: UserQuery>(
         &self,
-        username: &str,
+        user: &U,
         (heartraterest, heartratemax): (u8, u8),
     ) -> Result<()> {
         self.username_heartraterest
-            .insert(username, &heartraterest.to_ne_bytes())?;
+            .insert(user.to_key(), &heartraterest.to_ne_bytes())?;
         self.username_heartratemax
-            .insert(username, &heartratemax.to_ne_bytes())?;
+            .insert(user.to_key(), &heartratemax.to_ne_bytes())?;
 
         Ok(())
     }
 
-    pub fn get_heartrate(&self, username: &str) -> Result<Option<(u8, u8)>> {
-        let heartraterest = self.username_heartraterest.get(username)?;
-        let heartratemax = self.username_heartratemax.get(username)?;
+    pub fn get_heartrate<U: UserQuery>(&self, user: &U) -> Result<Option<(u8, u8)>> {
+        let heartraterest = self.username_heartraterest.get(user.to_key())?;
+        let heartratemax = self.username_heartratemax.get(user.to_key())?;
 
         if let (Some(x), Some(y)) = (heartraterest, heartratemax) {
             Ok(Some((
@@ -81,21 +82,21 @@ impl UserTree {
         }
     }
 
-    pub fn verify_hash(&self, id: &str, password: &str) -> Result<bool> {
+    pub fn verify_hash(&self, user: &UserForm) -> Result<bool> {
         let hash = String::from_utf8(
             self.username_password
-                .get(&id)?
+                .get(&user.username)?
                 .ok_or(Error::BadRequest(
-                    ErrorKind::BadRequest,
+                    StatusCode::NOT_FOUND,
                     "Password not found in database",
                 ))?
                 .to_vec(),
         )
         .map_err(|_| Error::BadServerResponse("Password in database is invalid"))?;
 
-        match verify_encoded(&hash, password.as_bytes()) {
+        match verify_encoded(&hash, user.password.as_bytes()) {
             Ok(true) => Ok(true),
-            _ => Err(Error::BadRequest(ErrorKind::NotFound, "Incorrect password")),
+            _ => Err(Error::BadRequest(StatusCode::UNAUTHORIZED, "Incorrect password")),
         }
     }
 

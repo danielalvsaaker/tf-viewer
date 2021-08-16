@@ -1,10 +1,11 @@
 use crate::{
-    error::{Error, ErrorKind, Result},
-    models::{Activity, Duration, Lap, Record, Session, UserTotals},
+    error::{Error, Result},
+    models::*
 };
 use chrono::{self, Datelike, Local};
 use rmp_serde as rmps;
 use uom::si::{f64::Length, length::meter};
+use actix_web::http::StatusCode;
 
 #[derive(Clone)]
 pub struct ActivityTree {
@@ -16,16 +17,15 @@ pub struct ActivityTree {
 }
 
 impl ActivityTree {
-    pub fn exists(&self, username: &str, id: &str) -> Result<bool> {
-        let mut key = username.as_bytes().to_vec();
-        key.push(0xff);
-        key.extend_from_slice(id.as_bytes());
-        Ok(self.usernameid_session.contains_key(&key)?)
+    pub fn exists<Q: Query>(&self, query: &Q) -> Result<bool> {
+        Ok(self.usernameid_session.contains_key(&query.to_key())?)
     }
 
-    pub fn insert(&self, activity: Activity, username: &str) -> Result<()> {
-        if self.exists(username, &activity.id)? {
-            let existing = self.get_activity(username, &activity.id)?;
+    pub fn insert(&self, activity: Activity) -> Result<()> {
+        let query: QueryKeyRef = (&activity).into();
+
+        if self.exists(&query)? {
+            let existing = self.get_activity(&query)?;
             let activity = Activity {
                 id: existing.id,
                 gear_id: existing.gear_id,
@@ -37,16 +37,15 @@ impl ActivityTree {
                 ..activity
             };
 
-            self.insert_or_overwrite(activity, username)
+            self.insert_or_overwrite(activity)
         } else {
-            self.insert_or_overwrite(activity, username)
+            self.insert_or_overwrite(activity)
         }
     }
 
-    pub fn insert_or_overwrite(&self, activity: Activity, username: &str) -> Result<()> {
-        let mut key = username.as_bytes().to_vec();
-        key.push(0xff);
-        key.extend_from_slice(&activity.id.as_bytes());
+    pub fn insert_or_overwrite(&self, activity: Activity) -> Result<()> {
+        let query: QueryKeyRef = (&activity).into();
+        let key = query.to_key();
 
         let session = rmps::to_vec(&activity.session)?;
         self.usernameid_session.insert(&key, session)?;
@@ -70,10 +69,11 @@ impl ActivityTree {
         Ok(())
     }
 
-    pub fn user_totals(&self, username: &str) -> Result<UserTotals> {
+    pub fn user_totals(&self, user: &UserQuery) -> Result<UserTotals> {
         let iter = self
-            .username_iter_session(username)?
+            .username_iter_session(user)?
             .collect::<Vec<Session>>();
+
         let cycling_iter = iter.iter().filter(|x| x.activity_type.is_cycling());
 
         let running_iter = iter.iter().filter(|x| x.activity_type.is_running());
@@ -122,11 +122,13 @@ impl ActivityTree {
         })
     }
 
-    pub fn gear_totals(&self, username: &str, gear: &str) -> Result<(Length, Duration)> {
+    pub fn gear_totals<Q: Query>(&self, query: Q) -> Result<(Length, Duration)> {
+        let user: UserQueryKeyRef = (&query).into();
+
         Ok(self
-            .username_iter_session(username)?
-            .zip(self.username_iter_gear(username)?)
-            .filter(|(_, y)| y.as_deref() == Some(gear))
+            .username_iter_session(&user)?
+            .zip(self.username_iter_gear(&user)?)
+            .filter(|(_, y)| y.as_deref() == Some(query.id()))
             .map(|(x, _)| x)
             .fold((Length::new::<meter>(0.), Duration::default()), |acc, x| {
                 (
@@ -138,40 +140,31 @@ impl ActivityTree {
 
     pub fn username_iter_gear(
         &self,
-        username: &str,
+        user: &UserQuery,
     ) -> Result<impl Iterator<Item = Option<String>>> {
-        let mut prefix = username.as_bytes().to_vec();
-        prefix.push(0xff);
-
         Ok(self
             .usernameid_gearid
-            .scan_prefix(&prefix)
+            .scan_prefix(&user.to_prefix())
             .values()
             .rev()
             .flatten()
             .flat_map(|x| rmps::from_read_ref(&x)))
     }
 
-    pub fn username_iter_session(&self, username: &str) -> Result<impl Iterator<Item = Session>> {
-        let mut prefix = username.as_bytes().to_vec();
-        prefix.push(0xff);
-
+    pub fn username_iter_session(&self, user: &UserQuery) -> Result<impl Iterator<Item = Session>> {
         Ok(self
             .usernameid_session
-            .scan_prefix(&prefix)
+            .scan_prefix(&user.to_prefix())
             .values()
             .rev()
             .flatten()
             .flat_map(|x| rmps::from_read_ref(&x)))
     }
 
-    pub fn username_iter_id(&self, username: &str) -> Result<impl Iterator<Item = String>> {
-        let mut prefix = username.as_bytes().to_vec();
-        prefix.push(0xff);
-
+    pub fn username_iter_id(&self, user: &UserQuery) -> Result<impl Iterator<Item = String>> {
         Ok(self
             .usernameid_session
-            .scan_prefix(&prefix)
+            .scan_prefix(&user.to_prefix())
             .keys()
             .rev()
             .flatten()
@@ -201,70 +194,51 @@ impl ActivityTree {
             .flat_map(String::from_utf8))
     }
 
-    pub fn get_session(&self, username: &str, id: &str) -> Result<Session> {
-        let mut key = username.as_bytes().to_vec();
-        key.push(0xff);
-        key.extend_from_slice(id.as_bytes());
-
+    pub fn get_session<Q: Query>(&self, query: &Q) -> Result<Session> {
         self.usernameid_session
-            .get(&key)?
+            .get(&query.to_key())?
             .and_then(|x| rmps::from_read_ref(&x).ok())
-            .ok_or(Error::BadRequest(ErrorKind::NotFound, "Session not found"))
+            .ok_or(Error::BadRequest(StatusCode::NOT_FOUND, "Session not found"))
     }
 
-    pub fn get_record(&self, username: &str, id: &str) -> Result<Record> {
-        let mut key = username.as_bytes().to_vec();
-        key.push(0xff);
-        key.extend_from_slice(id.as_bytes());
-
+    pub fn get_record<Q: Query>(&self, query: &Q) -> Result<Record> {
         self.usernameid_record
-            .get(&key)?
+            .get(&query.to_key())?
             .and_then(|x| rmps::from_read_ref(&x).ok())
-            .ok_or(Error::BadRequest(ErrorKind::NotFound, "Record not found"))
+            .ok_or(Error::BadRequest(StatusCode::NOT_FOUND, "Record not found"))
     }
 
-    pub fn get_lap(&self, username: &str, id: &str) -> Result<Vec<Lap>> {
-        let mut key = username.as_bytes().to_vec();
-        key.push(0xff);
-        key.extend_from_slice(id.as_bytes());
-
+    pub fn get_lap<Q: Query>(&self, query: &Q) -> Result<Vec<Lap>> {
         self.usernameid_lap
-            .get(&key)?
+            .get(&query.to_key())?
             .and_then(|x| rmps::from_read_ref(&x).ok())
-            .ok_or(Error::BadRequest(ErrorKind::NotFound, "Laps not found"))
+            .ok_or(Error::BadRequest(StatusCode::NOT_FOUND, "Laps not found"))
     }
 
-    pub fn get_gear_id(&self, username: &str, id: &str) -> Result<Option<String>> {
-        let mut key = username.as_bytes().to_vec();
-        key.push(0xff);
-        key.extend_from_slice(id.as_bytes());
-
+    pub fn get_gear_id<Q: Query>(&self, query: &Q) -> Result<Option<String>> {
         self.usernameid_gearid
-            .get(&key)?
+            .get(&query.to_key())?
             .and_then(|x| rmps::from_read_ref(&x).ok())
-            .ok_or(Error::BadRequest(ErrorKind::NotFound, "Gear not found"))
+            .ok_or(Error::BadRequest(StatusCode::NOT_FOUND, "Gear not found"))
     }
 
-    pub fn get_notes(&self, username: &str, id: &str) -> Result<Option<String>> {
-        let mut key = username.as_bytes().to_vec();
-        key.push(0xff);
-        key.extend_from_slice(id.as_bytes());
-
+    pub fn get_notes<Q: Query>(&self, query: &Q) -> Result<Option<String>> {
         Ok(self
             .usernameid_notes
-            .get(&key)?
+            .get(&query.to_key())?
             .map(|x| x.to_vec())
             .and_then(|x| String::from_utf8(x).ok()))
     }
 
-    pub fn get_activity(&self, username: &str, id: &str) -> Result<Activity> {
+    pub fn get_activity<Q: Query>(&self, query: &Q) -> Result<Activity> {
         Ok(Activity {
-            id: id.to_owned(),
-            gear_id: self.get_gear_id(username, id)?,
-            session: self.get_session(username, id)?,
-            record: self.get_record(username, id)?,
-            lap: self.get_lap(username, id)?,
-            notes: self.get_notes(username, id)?,
+            username: query.username().to_string(),
+            id: query.id().to_string(),
+            gear_id: self.get_gear_id(query)?,
+            session: self.get_session(query)?,
+            record: self.get_record(query)?,
+            lap: self.get_lap(query)?,
+            notes: self.get_notes(query)?,
         })
     }
 }

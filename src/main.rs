@@ -14,6 +14,14 @@ async fn index() -> impl Responder {
         .body(include_str!("../static/index.html"))
 }
 
+async fn favicon() -> impl Responder {
+    const FAVICON: &'static [u8] = include_bytes!("../static/img/favicon.ico");
+
+    HttpResponse::Ok()
+        .content_type("image/x-icon")
+        .body(FAVICON)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let database = Database::load_or_create().unwrap();
@@ -23,7 +31,8 @@ async fn main() -> std::io::Result<()> {
             .wrap(Compress::default())
             .app_data(web::Data::new(database.clone()))
             .route("/", web::route().to(index))
-            .service(actix_files::Files::new("/static", "./static"))
+            .route("/favicon.ico", web::route().to(favicon))
+            .service(actix_files::Files::new("/static", "static"))
             .service(
                 web::resource("/user")
                     .name("user_index")

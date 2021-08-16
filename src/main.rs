@@ -10,7 +10,7 @@ use tf_database::Database;
 
 async fn index() -> impl Responder {
     HttpResponse::Ok()
-        .content_type("text/html")
+        .content_type("text/html;charset=utf8")
         .body(include_str!("../static/index.html"))
 }
 

@@ -5,11 +5,13 @@ mod routes;
 #[global_allocator]
 static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
-use actix_web::{middleware::Compress, web, App, HttpServer, Responder};
+use actix_web::{middleware::Compress, web, App, HttpServer, Responder, HttpResponse};
 use tf_database::Database;
 
 async fn index() -> impl Responder {
-    include_str!("../static/index.html")
+    HttpResponse::Ok()
+        .content_type("text/html")
+        .body(include_str!("../static/index.html"))
 }
 
 #[actix_web::main]

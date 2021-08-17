@@ -30,6 +30,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(Compress::default())
             .app_data(web::Data::new(database.clone()))
+            .app_data(web::PayloadConfig::new(1024 * 1024 * 15))
             .route("/", web::route().to(index))
             .route("/favicon.ico", web::route().to(favicon))
             .service(actix_files::Files::new("/static", "static"))

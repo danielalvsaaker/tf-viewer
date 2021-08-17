@@ -6,6 +6,7 @@ const Upload = {
                     <h4>Upload</h4>
                     <p v-if="error">{{ error }}</p>
                     <input type="file" ref="uploadedFiles" name="fileupload" multiple>
+                    <p v-if="files.length">{{ uploadCount }} / {{ files.length }}</p>
                 </form>
                 <div class="file" v-for="file in files" >
                     <p>{{ file.name }}</p>
@@ -19,6 +20,7 @@ const Upload = {
         return {
             files: [],
             uploadStatus: {},
+            uploadCount: 0,
             error: null,
             startTime: new Date()
         }
@@ -31,16 +33,22 @@ const Upload = {
             this.uploadStatus = {};
             this.error = null;
             this.files = this.$refs.uploadedFiles.files;
-            const promises = [];
+            let promises = [];
             for (let i = 0; i < this.files.length; i++) {
                 const file = this.files[i];
                 promises.push(upload(this.uploadStatus, file));
+                if ((i+1) % 100 == 0) {
+                    await Promise.all(promises);
+                    promises = [];
+                    this.uploadCount = i+1;
+                }
             }
-            const test = await Promise.all(promises);
+            await Promise.all(promises);
+            this.uploadCount = this.files.length;
             let endTime = new Date();
             console.log(endTime.getTime() - this.startTime.getTime());
             //this.$refs.uploadedFiles.value = null;
-        }
+        },
     }
 }
 
@@ -56,7 +64,5 @@ async function upload(statusObject, file) {
         statusObject[file.name] = false;
     }
     console.log(response.headers.get("Location"));
-    return new Promise(resolve => {
-        resolve("test");
-    });
+    return Promise.resolve();
 }

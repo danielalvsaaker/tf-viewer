@@ -31,6 +31,10 @@ async fn main() -> std::io::Result<()> {
             .wrap(Compress::default())
             .app_data(web::Data::new(database.clone()))
             .app_data(web::PayloadConfig::new(1024 * 1024 * 15))
+            .service(
+                web::scope("/oauth")
+                    .configure(tf_auth::config)
+            )
             .route("/", web::route().to(index))
             .route("/favicon.ico", web::route().to(favicon))
             .service(actix_files::Files::new("/static", "static"))

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in - Tf-viewer</title>
+  <link rel="stylesheet" href="static/css/spectre.min.css">
+</head>
+<body>
+  <div class="container">
+    <h2>Sign in</h2>
+    <form action="signin" method="POST" class="form-group">
+      <fieldset>
+	<div class="form-group">
+	  <label class="form-label" for="username">Username</label>
+	  <input type="text" class="form-input" name="username" id="username" autofocus required>
+	</div>
+	<div class="form-group">
+	  <label class="form-label" for="password">Password</label>
+	  <input type='password' class="form-input" name='password' id='password' required>
+	</div>
+	<button type="submit" class="btn btn-primary">Sign in</button>
+      </fieldset>
+    </form>
+    <p>Not registered? <a href="signup">Sign up</a></p>
+  </div>
+</body>
+</html>

@@ -110,7 +110,7 @@ async fn get_activity_gear(
     db: web::Data<Database>,
     query: web::Path<ActivityQuery<'_>>,
 ) -> Result<impl Responder> {
-    Ok(db.activity.get_gear(&query)?.ok_or(Error::NotFound)?)
+    Ok(web::Json(db.activity.get_gear(&query)?))
 }
 
 async fn put_activity_gear(
@@ -118,7 +118,7 @@ async fn put_activity_gear(
     query: web::Path<ActivityQuery<'_>>,
     gear_id: web::Json<String>,
 ) -> Result<impl Responder> {
-    Ok(match db.activity.insert_gear(&query, gear_id.deref())? {
+    Ok(match db.activity.insert_gear(&query, Some(gear_id.deref()))? {
         Some(_) => HttpResponse::NoContent(),
         None => HttpResponse::Created(),
     }

@@ -178,10 +178,10 @@ impl ActivityTree {
             .transpose()?)
     }
 
-    pub fn insert_gear(&self, query: &ActivityQuery, gear: &str) -> Result<Option<()>> {
+    pub fn insert_gear(&self, query: &ActivityQuery, gear: Option<&str>) -> Result<Option<()>> {
         Ok(self
             .usernameid_gearid
-            .insert(&query.to_key(), rmps::to_vec(gear)?)?
+            .insert(&query.to_key(), rmps::to_vec(&gear)?)?
             .as_deref()
             .map(|_| ()))
     }
@@ -191,8 +191,10 @@ impl ActivityTree {
             .usernameid_gearid
             .get(&query.to_key())?
             .as_deref()
-            .map(|x| rmps::from_read_ref(&x))
-            .transpose()?)
+            .map(|x| rmps::from_read_ref::<'_, _, Option<String>>(&x))
+            .transpose()?
+            .flatten()
+        )
     }
 
     pub fn username_iter_session(&self, user: &UserQuery) -> Result<impl Iterator<Item = Session>> {

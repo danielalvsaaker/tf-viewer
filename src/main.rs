@@ -1,10 +1,6 @@
 mod error;
 mod routes;
 
-#[cfg(all(target_env = "musl", target_pointer_width = "64"))]
-#[global_allocator]
-static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
-
 use actix_web::{middleware::Compress, web, App, HttpServer, Responder, HttpResponse};
 use tf_database::Database;
 

@@ -21,6 +21,3 @@ tf-database = { path = "tf-database" }
 #tf-auth = { path = "tf-auth" }
 tf-parse = { path = "tf-parse" }
 nanoid = "*"
-
-[target.'cfg(all(target_env = "musl", target_pointer_width = "64"))'.dependencies.jemallocator]
-version = "0.3"

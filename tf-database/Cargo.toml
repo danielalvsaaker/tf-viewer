@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "*"
-sled = { version = "*", features = ["compression"] }
+sled = { git = "https://github.com/spacejam/sled", features = ["compression"] }
 serde = { version = "1", features = ["derive"] }
 rmp-serde = "*"
 tf-models = { path = "../tf-models" }

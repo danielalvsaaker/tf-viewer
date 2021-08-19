@@ -1,10 +1,6 @@
 mod error;
 mod routes;
 
-#[cfg(all(target_env = "musl", target_pointer_width = "64"))]
-#[global_allocator]
-static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
-
 use actix_web::{middleware::Compress, web, App, HttpServer, Responder, HttpResponse};
 use tf_database::Database;
 
@@ -15,7 +11,7 @@ async fn index() -> impl Responder {
 }
 
 async fn favicon() -> impl Responder {
-    const FAVICON: &'static [u8] = include_bytes!("../static/img/favicon.ico");
+    const FAVICON: &[u8] = include_bytes!("../static/img/favicon.ico");
 
     HttpResponse::Ok()
         .content_type("image/x-icon")

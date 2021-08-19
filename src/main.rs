@@ -11,7 +11,7 @@ async fn index() -> impl Responder {
 }
 
 async fn favicon() -> impl Responder {
-    const FAVICON: &'static [u8] = include_bytes!("../static/img/favicon.ico");
+    const FAVICON: &[u8] = include_bytes!("../static/img/favicon.ico");
 
     HttpResponse::Ok()
         .content_type("image/x-icon")

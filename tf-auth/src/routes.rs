@@ -1,24 +1,71 @@
-use actix_identity::Identity;
-use actix_web::{HttpRequest, HttpResponse, Responder};
+use serde::Deserialize;
 
-/*
-pub async fn get_signin(req: HttpRequest, id: Identity) -> impl Responder {
-    const SIGNIN_TEMPLATE: &'static str = include_str!("../templates/signin.html");
-    SIGNIN_TEMPLATE
+use super::{middleware::Redirect, AuthServer, Extras};
+use actix::Addr;
+use actix_web::web;
+use oxide_auth_actix::{OAuthOperation, OAuthRequest, OAuthResponse, Resource, WebError};
+
+pub fn configure(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::resource("/index")
+            .wrap(Redirect::Private) .route(web::get().to(index::get_index)),
+    )
+    .service(
+        web::resource("/signin")
+            .name("signin")
+            .wrap(Redirect::Public)
+            .route(web::get().to(signin::get_signin))
+            .route(web::post().to(signin::post_signin)),
+    )
+    .service(
+        web::resource("/signup")
+            .wrap(Redirect::Public)
+            .route(web::get().to(signup::get_signup))
+            .route(web::post().to(signup::post_signup)),
+    )
+    .service(
+        web::resource("/signout")
+            .wrap(Redirect::Private)
+            .route(web::get().to(signout::get_signout)),
+    )
+    // OAuth2 related routes
+    .service(
+        web::resource("/authorize")
+            .route(web::get().to(authorize::get_authorize))
+            .route(web::post().to(authorize::post_authorize)),
+    )
+    .route("/refresh", web::post().to(refresh::post_refresh))
+    .route("/token", web::post().to(token::post_token));
 }
 
-pub async fn get_signup(req: HttpRequest, id: Identity) -> impl Responder {
-    const SIGNUP_TEMPLATE: &'static str = include_str!("../templates/signup.html");
-    SIGNUP_TEMPLATE
+mod authorize;
+mod index;
+mod refresh;
+mod signin;
+mod signout;
+mod signup;
+mod token;
+
+#[derive(Deserialize)]
+pub struct Callback {
+    pub callback: String,
 }
 
-pub async fn get_stylesheet() -> impl Responder {
-    const STYLESHEET: &'static [u8] = include_bytes!("../static/spectre.min.css");
-    "test"
+#[derive(Deserialize)]
+pub struct UserForm {
+    pub username: String,
+    pub password: String,
 }
-*/
 
-pub async fn get_signin(id: Identity) -> impl Responder {
-    id.remember("test-user".to_owned());
-    HttpResponse::Ok()
+pub async fn get_user(
+    req: OAuthRequest,
+    state: web::Data<Addr<AuthServer>>,
+) -> Result<OAuthResponse, WebError> {
+    match state.send(Resource(req).wrap(Extras::Nothing)).await? {
+        Ok(grant) => Ok(OAuthResponse::ok()
+            .content_type("application/json")?
+            .body(&format!(r#"{{"username":"{}"}}"#, grant.owner_id))),
+        Err(Ok(e)) => Ok(e),
+        Err(Err(e)) => Err(e),
+    }
 }

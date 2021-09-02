@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::query::{GearQuery, UserQuery};
-use tf_models::backend::User;
 use rmp_serde as rmps;
+use tf_models::backend::User;
 
 #[derive(Clone)]
 pub struct UserTree {
@@ -49,21 +49,22 @@ impl UserTree {
 
     */
     pub fn insert_user(&self, query: &UserQuery, user: &User) -> Result<Option<()>> {
-        Ok(self.username_user
+        Ok(self
+            .username_user
             .insert(&query.to_key(), rmps::to_vec(user)?)?
             .as_deref()
             .map(|_| ()))
     }
 
     pub fn remove_user(&self, query: &UserQuery) -> Result<()> {
-        self.username_user
-            .remove(&query.to_key())?;
+        self.username_user.remove(&query.to_key())?;
 
         Ok(())
     }
 
     pub fn get_user(&self, query: &UserQuery) -> Result<Option<User>> {
-        Ok(self.username_user
+        Ok(self
+            .username_user
             .get(&query.to_key())?
             .as_deref()
             .map(|x| rmps::from_read_ref(&x))

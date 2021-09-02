@@ -1,28 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign in - Tf-viewer</title>
-  <link rel="stylesheet" href="static/css/spectre.min.css">
-</head>
-<body>
-  <div class="container">
-    <h2>Sign in</h2>
-    <form action="signin" method="POST" class="form-group">
-      <fieldset>
-	<div class="form-group">
-	  <label class="form-label" for="username">Username</label>
-	  <input type="text" class="form-input" name="username" id="username" autofocus required>
-	</div>
-	<div class="form-group">
-	  <label class="form-label" for="password">Password</label>
-	  <input type='password' class="form-input" name='password' id='password' required>
-	</div>
-	<button type="submit" class="btn btn-primary">Sign in</button>
-      </fieldset>
+<article class="grid">
+	<div>
+		<hgroup>
+    	<h1>Sign in</h1>
+			<h2>Sign in to an existing account</h2>
+		</hgroup>
+		<form method="post" formaction="signin?{query}">
+    	<input type="text" name="username" placeholder="Username" aria-label="Username" autocomplete="nickname" required>
+      <input type="password" name="password" placeholder="Password" aria-label="Password" autocomplete="current-password" required>
+			<button type="submit" class="contrast">Sign in</button>
     </form>
-    <p>Not registered? <a href="signup">Sign up</a></p>
+		Don't have an account? <a href="signup?{query}">Sign up</a>
   </div>
-</body>
-</html>
+</article>

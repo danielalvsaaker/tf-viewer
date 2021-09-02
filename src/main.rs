@@ -1,7 +1,8 @@
 mod error;
 mod routes;
 
-use actix_web::{middleware::Compress, web, App, HttpServer, Responder, HttpResponse};
+use actix::Actor;
+use actix_web::{middleware::Compress, web, App, HttpResponse, HttpServer, Responder};
 use tf_database::Database;
 
 async fn index() -> impl Responder {
@@ -21,16 +22,15 @@ async fn favicon() -> impl Responder {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let database = Database::load_or_create().unwrap();
+    let state = tf_auth::AuthServer::preconfigured().start();
 
     HttpServer::new(move || {
         App::new()
             .wrap(Compress::default())
             .app_data(web::Data::new(database.clone()))
+            .app_data(web::Data::new(state.clone()))
             .app_data(web::PayloadConfig::new(1024 * 1024 * 15))
-            .service(
-                web::scope("/oauth")
-                    .configure(tf_auth::config)
-            )
+            .configure(tf_auth::config)
             .route("/", web::route().to(index))
             .route("/favicon.ico", web::route().to(favicon))
             .service(actix_files::Files::new("/static", "static"))

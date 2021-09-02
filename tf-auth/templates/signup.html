@@ -1,35 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign in - Tf-viewer</title>
-  <link rel="stylesheet" href="static/css/spectre.min.css">
-</head>
-<body>
-  <div class="container">
-    <h2>Sign up</h2>
-      <form action="signup" method="POST" class="form-group">
-	<fieldset>
-	  <div class="form-group">
-	    <label class="form-label" for="username">Username</label>
-	    <input type="text" class="form-input" name="username" id="username" pattern="^[a-zA-Z0-9-_]{2,15}$" autofocus required 
-	      title="Please enter a username consisting of only letters, numbers, hyphen (-) and underscore (_).">
-	  </div>
-	  <div class="form-group">
-	    <label class="form-label" for="password">Password</label>
-	    <input type="password" class="form-input" name="password" id="password" required
-	      pattern="^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$ %^&*-]).{14,}$"
-	      title="Please enter a password consisting of minimum 14 characters, with at least one uppercase, one lowercase, one number and one special character">
-	  </div>
-	  <div class="form-group">
-	    <label class="form-label" for="confirm_password">Confirm password</label>
-	    <input type="password" class="form-input" name="confirm_password" id="confirm_password" required>
-	  </div>
-	  <button type="submit" class="btn btn-primary">Sign up</button>
-	</fieldset>
-      </form>
-      <p>Already registered? <a href="signin">Sign in</a></p>
+<article class="grid">
+	<div>
+  	<hgroup>
+    	<h1>Sign up</h1>
+			<h2>Create a new account</h2>
+    </hgroup>
+		<form method="post" formaction="signup?{query}">
+    	<input type="text" name="username" placeholder="Username" aria-label="Username" autocomplete="nickname" required>
+      <input type="password" name="password" placeholder="Password" aria-label="Password" autocomplete="current-password" required>
+      <input type="password" name="confirmpassword" placeholder="Confirm password" aria-label="Confirm password" autocomplete="current-password" required>
+			<button type="submit" class="contrast">Sign up</button>
+    </form>
+		Already have an account? <a href="signin?{query}">Sign in</a>
   </div>
-</body>
-</html>
+</article>

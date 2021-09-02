@@ -101,7 +101,7 @@ impl ActivityTree {
 
     pub fn insert_activity(&self, query: &UserQuery, activity: &Activity) -> Result<()> {
         let mut key = query.to_prefix();
-        key.extend_from_slice(&activity.id.as_bytes());
+        key.extend_from_slice(activity.id.as_bytes());
 
         let session = rmps::to_vec(&activity.session)?;
         self.usernameid_session.insert(&key, session)?;
@@ -193,8 +193,7 @@ impl ActivityTree {
             .as_deref()
             .map(|x| rmps::from_read_ref::<'_, _, Option<String>>(&x))
             .transpose()?
-            .flatten()
-        )
+            .flatten())
     }
 
     pub fn username_iter_session(&self, user: &UserQuery) -> Result<impl Iterator<Item = Session>> {

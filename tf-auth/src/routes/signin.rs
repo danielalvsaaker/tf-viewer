@@ -2,7 +2,7 @@ use super::Callback;
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 
-use crate::templates::signin_template;
+use crate::{error::Result, routes::UserForm, templates::signin_template, Database};
 
 pub async fn get_signin(req: HttpRequest) -> impl Responder {
     HttpResponse::Ok()
@@ -10,16 +10,27 @@ pub async fn get_signin(req: HttpRequest) -> impl Responder {
         .body(signin_template(req.uri().query().unwrap_or_default()))
 }
 
-pub async fn post_signin(id: Identity, query: Option<web::Query<Callback>>) -> impl Responder {
-    id.remember("test-user".to_owned());
+pub async fn post_signin(
+    id: Identity,
+    req: HttpRequest,
+    db: web::Data<Database>,
+    query: Option<web::Query<Callback>>,
+    web::Form(user): web::Form<UserForm>,
+) -> Result<impl Responder> {
+    if db.verify_hash(&user)? {
+        id.remember(user.username);
+    } else {
+        return Ok(HttpResponse::Unauthorized()
+            .body(signin_template(req.uri().query().unwrap_or_default())));
+    }
 
     if let Some(q) = query {
-        HttpResponse::Found()
+        Ok(HttpResponse::Found()
             .append_header(("Location", q.into_inner().callback))
-            .finish()
+            .finish())
     } else {
-        HttpResponse::Found()
+        Ok(HttpResponse::Found()
             .append_header(("Location", "index"))
-            .finish()
+            .finish())
     }
 }

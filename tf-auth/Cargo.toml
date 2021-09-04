@@ -7,10 +7,13 @@ edition = "2018"
 [dependencies]
 actix = { version = "0.11", default-features = false }
 actix-web = { version = "4.0.0-beta.8", default-features = false }
+argon2 = { version = "*", features = ["std"] }
 oxide-auth = { git = "https://github.com/videni/oxide-auth" }
 oxide-auth-actix = { git = "https://github.com/videni/oxide-auth" }
 actix-identity = "0.4.0-beta.2"
+thiserror = "*"
 url = "*"
 serde = { version = "1", features = ["derive"] }
 serde_urlencoded = "*"
+sled = { git = "https://github.com/spacejam/sled", features = ["compression"] }
 nanoid = "*"

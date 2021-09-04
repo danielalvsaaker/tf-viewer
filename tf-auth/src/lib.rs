@@ -1,24 +1,31 @@
+use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::web;
 use serde::Deserialize;
 
-pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("/oauth")
-            .wrap(actix_identity::IdentityService::new(
-                actix_identity::CookieIdentityPolicy::new(&[3; 32]) // <- create cookie identity policy
-                    .name("auth-cookie")
-                    .secure(false),
-            ))
-            .configure(routes::configure)
-            .route("/user", web::get().to(routes::get_user)),
-    );
+pub fn config(db: &web::Data<Database>) -> impl Fn(&mut web::ServiceConfig) + '_ {
+    move |cfg: &mut web::ServiceConfig| {
+        cfg.service(
+            web::scope("/oauth")
+                .app_data(db.clone())
+                .wrap(IdentityService::new(
+                    CookieIdentityPolicy::new(&[3; 32]) // <- create cookie identity policy
+                        .name("auth-cookie")
+                        .secure(false),
+                ))
+                .configure(routes::config)
+                .route("/user", web::get().to(routes::get_user)),
+        );
+    }
 }
 
+mod database;
+mod error;
 mod middleware;
 mod routes;
 mod server;
 pub mod templates;
 
+pub use database::Database;
 pub use server::AuthServer;
 
 pub enum Extras {

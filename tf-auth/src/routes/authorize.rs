@@ -38,10 +38,7 @@ pub async fn post_authorize(
 ) -> Result<OAuthResponse, WebError> {
     if let Some(username) = id.identity() {
         state
-            .send(Authorize(oreq).wrap(Extras::AuthPost {
-                consent,
-                username,
-            }))
+            .send(Authorize(oreq).wrap(Extras::AuthPost { consent, username }))
             .await?
     } else {
         let mut response = OAuthResponse::ok();

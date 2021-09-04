@@ -50,7 +50,8 @@ pub fn authorize_template(
             include_str!("../templates/authorize.html"),
             query = query,
             client_id = grant.client_id,
-            user_id = user_id
+            user_id = user_id,
+            scopes = grant.scope.iter().collect::<Vec<_>>().join(", ")
         ),
     )
 }

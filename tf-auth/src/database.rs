@@ -1,45 +1,55 @@
-use crate::error::{Error, Result};
-use std::convert::TryInto;
-use crate::models::*;
-use argon2::{hash_encoded, verify_encoded, Config};
-use actix_web::http::StatusCode;
+use crate::{error::Result, routes::UserForm};
+use argon2::{
+    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
+    Argon2,
+};
 
 #[derive(Clone)]
 pub struct Database {
     pub(super) username_password: sled::Tree,
+    pub(super) _db: sled::Db,
 }
 
 impl Database {
-    pub fn exists(&self, user: &UserQuery) -> Result<()> {
-        Ok(self.username_password.contains_key(user.to_key())?)
+    pub fn load_or_create() -> Result<Self> {
+        let db = sled::Config::new()
+            .path("auth-db")
+            .use_compression(true)
+            .open()?;
+
+        Ok(Self {
+            username_password: db.open_tree("username_password")?,
+            _db: db,
+        })
     }
 
-    pub fn insert(&self, user: UserForm) -> Result<()> {
-        let mut salt = [0u8; 32];
-        getrandom::getrandom(&mut salt).unwrap();
+    pub fn insert(&self, user: &UserForm) -> Result<()> {
+        let salt = SaltString::generate(&mut OsRng);
 
-        let hash = hash_encoded(user.password.as_bytes(), &salt, &Config::default())
-            .map_err(|_| OwnerConsent::Error(WebError::InternalError(
-                Some("Failed to hash password")
-            )))?;
+        let hash = Argon2::default()
+            .hash_password(user.password.as_bytes(), &salt)?
+            .to_string();
 
-        self.username_password.insert(&user.username, hash.as_bytes())?;
+        self.username_password.insert(&user.username, &hash)?;
 
         Ok(())
     }
 
-    pub fn verify_hash(&self, user: &UserForm) -> Result<OwnerConsent> {
-        let hash = String::from_utf8(
-            self.username_password
-                .get(&user.username)?
-                .ok_or(OwnerConsent::Denied)?
-                .to_vec(),
-        )
-        .map_err(|_| OwnerConsent::Denied)?;
-
-        match verify_encoded(&hash, user.password.as_bytes()) {
-            Ok(true) => Ok(OwnerConsent::Authorized(user.username)),
-            _ => Err(OwnerConsent::Denied),
-        }
+    pub fn verify_hash(&self, user: &UserForm) -> Result<bool> {
+        Ok(self
+            .username_password
+            .get(&user.username)?
+            .as_deref()
+            .map(std::str::from_utf8)
+            .transpose()
+            .unwrap_or_default()
+            .map(PasswordHash::new)
+            .transpose()?
+            .map(|x| {
+                Argon2::default()
+                    .verify_password(user.password.as_bytes(), &x)
+                    .is_ok()
+            })
+            .unwrap_or_default())
     }
 }

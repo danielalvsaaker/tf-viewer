@@ -2,7 +2,8 @@
 	<div>
 		<hgroup>
 			<h1>Authorize {client_id}</h1>
-			<h2>{client_id} wants access to your <em>{user_id}</em> account with the following permissions</h2>
+			<h4>{client_id} wants access to your <em>{user_id}</em> account with the following permissions:</h4>
+			<h4>{scopes}</h2>
 		</hgroup>
     <form method="post">
 			<button type="submit" value="Allow" class="contrast" formaction="authorize?{query}&consent=allow">Allow</button>

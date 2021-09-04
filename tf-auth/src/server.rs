@@ -23,32 +23,25 @@ impl AuthServer {
     pub fn preconfigured() -> Self {
         Self {
             endpoint: Generic {
-                // A registrar with one pre-registered client
                 registrar: vec![Client::public(
-                    "LocalClient",
-                    "http://localhost:8021/endpoint"
+                    "tf-viewer",
+                    "http://localhost:8777/#/callback"
                         .parse::<url::Url>()
                         .unwrap()
                         .into(),
-                    "default-scope".parse().unwrap(),
+                    "profile:read activity:read".parse().unwrap(),
                 )]
                 .into_iter()
                 .collect(),
-                // Authorization tokens are 16 byte random keys to a memory hash map.
                 authorizer: AuthMap::new(RandomGenerator::new(16)),
-                // Bearer tokens are also random generated but 256-bit tokens, since they live longer
-                // and this example is somewhat paranoid.
-                //
-                // We could also use a `TokenSigner::ephemeral` here to create signed tokens which can
-                // be read and parsed by anyone, but not maliciously created. However, they can not be
-                // revoked and thus don't offer even longer lived refresh tokens.
                 issuer: TokenMap::new(RandomGenerator::new(16)),
-
                 solicitor: Vacant,
-
-                // A single scope that will guard resources for this endpoint
-                scopes: vec!["default-scope".parse().unwrap()],
-
+                scopes: vec![
+                    "activity:read".parse().unwrap(),
+                    "activity:write".parse().unwrap(),
+                    "profile:read".parse().unwrap(),
+                    "profile:write".parse().unwrap(),
+                ],
                 response: OAuthResponse::ok,
             },
         }

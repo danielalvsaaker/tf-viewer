@@ -5,10 +5,11 @@ use actix::Addr;
 use actix_web::web;
 use oxide_auth_actix::{OAuthOperation, OAuthRequest, OAuthResponse, Resource, WebError};
 
-pub fn configure(cfg: &mut web::ServiceConfig) {
+pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/index")
-            .wrap(Redirect::Private) .route(web::get().to(index::get_index)),
+            .wrap(Redirect::Private)
+            .route(web::get().to(index::get_index)),
     )
     .service(
         web::resource("/signin")
@@ -51,7 +52,7 @@ pub struct Callback {
     pub callback: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct UserForm {
     pub username: String,
     pub password: String,

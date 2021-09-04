@@ -118,11 +118,13 @@ async fn put_activity_gear(
     query: web::Path<ActivityQuery<'_>>,
     gear_id: web::Json<String>,
 ) -> Result<impl Responder> {
-    Ok(match db.activity.insert_gear(&query, Some(gear_id.deref()))? {
-        Some(_) => HttpResponse::NoContent(),
-        None => HttpResponse::Created(),
-    }
-    .finish())
+    Ok(
+        match db.activity.insert_gear(&query, Some(gear_id.deref()))? {
+            Some(_) => HttpResponse::NoContent(),
+            None => HttpResponse::Created(),
+        }
+        .finish(),
+    )
 }
 
 #[derive(Deserialize)]

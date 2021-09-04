@@ -1,0 +1,15 @@
+<article class="grid">
+	<div>
+  	<hgroup>
+    	<h1>Sign up</h1>
+			<h2>Create a new account</h2>
+    </hgroup>
+		<form method="post" formaction="signup?{query}">
+    	<input type="text" name="username" placeholder="Username" aria-label="Username" autocomplete="nickname" required>
+      <input type="password" name="password" placeholder="Password" aria-label="Password" autocomplete="current-password" required>
+      <input type="password" name="confirmpassword" placeholder="Confirm password" aria-label="Confirm password" autocomplete="current-password" required>
+			<button type="submit" class="contrast">Sign up</button>
+    </form>
+		Already have an account? <a href="signin?{query}">Sign in</a>
+  </div>
+</article>

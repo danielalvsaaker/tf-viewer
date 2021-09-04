@@ -11,7 +11,7 @@ impl<'a> GearQuery<'a> {
     pub fn to_key(&self) -> Vec<u8> {
         let mut key = self.user_id.as_bytes().to_vec();
         key.push(0xff);
-        key.extend_from_slice(&self.id.as_bytes());
+        key.extend_from_slice(self.id.as_bytes());
 
         key
     }
@@ -27,7 +27,7 @@ impl<'a> ActivityQuery<'a> {
     pub fn to_key(&self) -> Vec<u8> {
         let mut key = self.user_id.as_bytes().to_vec();
         key.push(0xff);
-        key.extend_from_slice(&self.id.as_bytes());
+        key.extend_from_slice(self.id.as_bytes());
 
         key
     }

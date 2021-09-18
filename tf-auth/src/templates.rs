@@ -1,3 +1,6 @@
+use oxide_auth::endpoint::QueryParameter;
+use std::borrow::Cow;
+
 pub fn base_template(title: &str, template: &str) -> String {
     format!(
         include_str!("../templates/base.html"),
@@ -26,16 +29,28 @@ pub fn signup_template(query: &str) -> String {
 }
 
 pub fn authorize_template(
+    req: &oxide_auth_actix::OAuthRequest,
     solicitation: oxide_auth::endpoint::Solicitation,
     user_id: &str,
 ) -> String {
+    macro_rules! to_string {
+        ($query:expr) => {
+            $query.unwrap_or(Cow::Borrowed("")).to_string()
+        };
+    }
+
+    let query = req.query().unwrap();
     let grant = solicitation.pre_grant();
     let state = solicitation.state();
+    let code_challenge = to_string!(query.unique_value("code_challenge"));
+    let method = to_string!(query.unique_value("code_challenge_method"));
 
     let mut extra = vec![
         ("response_type", "code"),
         ("client_id", grant.client_id.as_str()),
         ("redirect_uri", grant.redirect_uri.as_str()),
+        ("code_challenge", &code_challenge),
+        ("code_challenge_method", &method),
     ];
 
     if let Some(state) = state {

@@ -1,8 +1,10 @@
 use super::{templates::authorize_template, Consent, Extras};
 use actix::{Actor, Context, Handler};
 use oxide_auth::{
+    code_grant::extensions::Pkce,
     endpoint::{Endpoint, OwnerConsent, OwnerSolicitor, Solicitation},
     frontends::simple::endpoint::{ErrorInto, FnSolicitor, Generic, Vacant},
+    frontends::simple::extensions::{AddonList, Extended},
     primitives::prelude::{AuthMap, Client, ClientMap, RandomGenerator, Scope, TokenMap},
 };
 use oxide_auth_actix::{OAuthMessage, OAuthOperation, OAuthRequest, OAuthResponse, WebError};
@@ -25,7 +27,7 @@ impl AuthServer {
             endpoint: Generic {
                 registrar: vec![Client::public(
                     "tf-viewer",
-                    "http://localhost:8777/#/callback"
+                    "http://localhost:8080/callback"
                         .parse::<url::Url>()
                         .unwrap()
                         .into(),
@@ -54,14 +56,21 @@ impl AuthServer {
     where
         S: OwnerSolicitor<OAuthRequest> + 'static,
     {
-        ErrorInto::new(Generic {
-            authorizer: &mut self.endpoint.authorizer,
-            registrar: &mut self.endpoint.registrar,
-            issuer: &mut self.endpoint.issuer,
-            solicitor,
-            scopes: &mut self.endpoint.scopes,
-            response: OAuthResponse::ok,
-        })
+        let pkce = Pkce::required();
+        let mut extensions = AddonList::new();
+        extensions.push_code(pkce);
+
+        ErrorInto::new(Extended::extend_with(
+            Generic {
+                authorizer: &mut self.endpoint.authorizer,
+                registrar: &mut self.endpoint.registrar,
+                issuer: &mut self.endpoint.issuer,
+                solicitor,
+                scopes: &mut self.endpoint.scopes,
+                response: OAuthResponse::ok,
+            },
+            extensions,
+        ))
     }
 }
 
@@ -81,14 +90,14 @@ where
         match ex {
             Extras::AuthGet { username } => {
                 let solicitor =
-                    FnSolicitor(move |_: &mut OAuthRequest, pre_grant: Solicitation| {
+                    FnSolicitor(move |req: &mut OAuthRequest, pre_grant: Solicitation| {
                         // This will display a page to the user asking for his permission to proceed. The submitted form
                         // will then trigger the other authorization handler which actually completes the flow.
                         OwnerConsent::InProgress(
                             OAuthResponse::ok()
                                 .content_type("text/html")
                                 .unwrap()
-                                .body(&authorize_template(pre_grant, &username)),
+                                .body(&authorize_template(req, pre_grant, &username)),
                         )
                     });
 

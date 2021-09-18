@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::query::{FollowerQuery, GearQuery, UserQuery};
+use crate::query::{GearQuery, UserQuery, FollowerQuery};
 use rmp_serde as rmps;
 use tf_models::backend::User;
 
@@ -16,9 +16,7 @@ impl Default for Visibility {
 }
 
 #[derive(Clone)]
-pub struct UserTree {
-    pub(super) username_user: sled::Tree,
-    pub(super) username_standardgearid: sled::Tree,
+pub struct AccessTree {
     pub(super) username_visibility: sled::Tree,
     pub(super) usernamefollower_follower: sled::Tree,
     pub(super) usernamefollower_request: sled::Tree,
@@ -28,8 +26,7 @@ impl UserTree {
     pub fn has_access(&self, owner: &UserQuery, user: &UserQuery) -> Result<bool> {
         let owner_key = owner.to_key();
 
-        let vis: Visibility = self
-            .username_visibility
+        let vis: Visibility = self.username_visibility
             .get(&owner_key)?
             .as_deref()
             .map(rmps::from_read_ref)
@@ -51,8 +48,7 @@ impl UserTree {
     pub fn follow(&self, owner: &UserQuery, user: &UserQuery) -> Result<()> {
         let owner_key = owner.to_key();
 
-        let vis: Visibility = self
-            .username_visibility
+        let vis: Visibility = self.username_visibility
             .get(&owner_key)?
             .as_deref()
             .map(rmps::from_read_ref)
@@ -61,11 +57,9 @@ impl UserTree {
 
         let key = FollowerQuery::from((owner, user)).to_key();
         if let Visibility::Public = vis {
-            self.usernamefollower_follower
-                .insert(&key, rmps::to_vec(&user.user_id)?)?;
+            self.usernamefollower_follower.insert(&key, rmps::to_vec(&user.user_id)?)?;
         } else {
-            self.usernamefollower_request
-                .insert(&key, rmps::to_vec(&user.user_id)?)?;
+            self.usernamefollower_request.insert(&key, rmps::to_vec(&user.user_id)?)?;
         }
 
         Ok(())
@@ -82,8 +76,7 @@ impl UserTree {
     pub fn requests(&self, user: &UserQuery) -> Result<Option<impl Iterator<Item = String>>> {
         let key = user.to_key();
 
-        let vis: Visibility = self
-            .username_visibility
+        let vis: Visibility = self.username_visibility
             .get(key)?
             .as_deref()
             .map(rmps::from_read_ref)
@@ -93,16 +86,14 @@ impl UserTree {
         if let Visibility::Public = vis {
             Ok(None)
         } else {
-            Ok(Some(
-                self.usernamefollower_request
-                    .scan_prefix(user.to_prefix())
-                    .keys()
-                    .flatten()
-                    .flat_map(|x| rmps::from_read_ref(&x)),
-            ))
+            Ok(Some(self.usernamefollower_request
+                .scan_prefix(user.to_prefix())
+                .keys()
+                .flatten()
+                .flat_map(|x| rmps::from_read_ref(&x))))
         }
     }
-
+    
     /*
 
     pub fn insert(&self, user: UserForm) -> Result<()> {

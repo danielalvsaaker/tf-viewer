@@ -38,6 +38,30 @@ pub struct UserQuery<'a> {
     pub user_id: Cow<'a, str>,
 }
 
+pub struct FollowerQuery<'a> {
+    pub owner_id: Cow<'a, str>,
+    pub user_id: Cow<'a, str>,
+}
+
+impl<'a> FollowerQuery<'a> {
+    pub fn to_key(&self) -> Vec<u8> {
+        let mut key = self.owner_id.as_bytes().to_vec();
+        key.push(0xff);
+        key.extend_from_slice(self.user_id.as_bytes());
+
+        key
+    }
+}
+
+impl<'a> From<(&'a UserQuery<'a>, &'a UserQuery<'a>)> for FollowerQuery<'a> {
+    fn from((owner, user): (&'a UserQuery<'a>, &'a UserQuery<'a>)) -> Self {
+        Self {
+            owner_id: Cow::Borrowed(&owner.user_id),
+            user_id: Cow::Borrowed(&user.user_id),
+        }
+    }
+}
+
 impl<'a> From<&'a str> for UserQuery<'a> {
     fn from(user_id: &'a str) -> Self {
         Self {

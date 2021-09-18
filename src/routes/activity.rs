@@ -6,6 +6,7 @@ use tf_database::{
     query::{ActivityQuery, UserQuery},
     Database,
 };
+use tf_macro::protect;
 use tf_models::{
     frontend::{Activity, Lap, Record, Session},
     Unit,
@@ -62,6 +63,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     );
 }
 
+#[protect]
 async fn activity_session(
     db: web::Data<Database>,
     query: web::Path<ActivityQuery<'_>>,
@@ -75,6 +77,7 @@ async fn activity_session(
     )))
 }
 
+#[protect]
 async fn activity_record(
     db: web::Data<Database>,
     query: web::Path<ActivityQuery<'_>>,
@@ -88,6 +91,7 @@ async fn activity_record(
     )))
 }
 
+#[protect]
 async fn activity_lap(
     db: web::Data<Database>,
     query: web::Path<ActivityQuery<'_>>,
@@ -106,6 +110,7 @@ async fn activity_lap(
     Ok(web::Json(lap))
 }
 
+#[protect]
 async fn get_activity_gear(
     db: web::Data<Database>,
     query: web::Path<ActivityQuery<'_>>,
@@ -113,6 +118,7 @@ async fn get_activity_gear(
     Ok(web::Json(db.activity.get_gear(&query)?))
 }
 
+#[protect]
 async fn put_activity_gear(
     db: web::Data<Database>,
     query: web::Path<ActivityQuery<'_>>,
@@ -141,12 +147,15 @@ impl Default for Filters {
     }
 }
 
+#[protect]
 async fn get_activity(
     db: web::Data<Database>,
     query: web::Path<ActivityQuery<'_>>,
     unit: Option<web::Query<Unit>>,
 ) -> Result<impl Responder> {
     let id = query.id.to_string();
+
+    dbg!(&grant);
 
     let gear_id = db.activity.get_gear(&query)?;
 
@@ -166,6 +175,7 @@ async fn get_activity(
     Ok(web::Json(activity))
 }
 
+#[protect]
 async fn get_activity_zones(
     db: web::Data<Database>,
     query: web::Path<ActivityQuery<'_>>,
@@ -177,6 +187,7 @@ async fn get_activity_zones(
     Ok(web::Json(zones))
 }
 
+#[protect]
 async fn get_activity_prev(
     db: web::Data<Database>,
     query: web::Path<ActivityQuery<'_>>,
@@ -184,6 +195,7 @@ async fn get_activity_prev(
     Ok(web::Json(db.activity.prev(&query)?))
 }
 
+#[protect]
 async fn get_activity_next(
     db: web::Data<Database>,
     query: web::Path<ActivityQuery<'_>>,
@@ -191,6 +203,7 @@ async fn get_activity_next(
     Ok(web::Json(db.activity.next(&query)?))
 }
 
+#[protect]
 async fn delete_activity(
     db: web::Data<Database>,
     query: web::Path<ActivityQuery<'_>>,
@@ -200,6 +213,7 @@ async fn delete_activity(
     Ok(HttpResponse::NoContent())
 }
 
+#[protect]
 async fn get_activity_index(
     db: web::Data<Database>,
     query: web::Path<UserQuery<'_>>,
@@ -218,6 +232,7 @@ async fn get_activity_index(
     ))
 }
 
+#[protect]
 async fn post_activity_index(
     db: web::Data<Database>,
     query: web::Path<UserQuery<'_>>,

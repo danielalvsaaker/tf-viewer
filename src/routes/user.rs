@@ -1,15 +1,9 @@
-use crate::error::{Error, Result};
+use crate::error::Result;
 use actix_web::{http, web, HttpRequest, HttpResponse, Responder};
 use std::ops::Deref;
-use tf_database::{
-    query::{ActivityQuery, UserQuery},
-    Database,
-};
-use tf_models::{
-    backend::User,
-    frontend::{Activity, Lap, Record, Session},
-    Unit,
-};
+use tf_database::{query::UserQuery, Database};
+use tf_macro::protect;
+use tf_models::backend::User;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -20,6 +14,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     );
 }
 
+#[protect]
 async fn get_user(
     db: web::Data<Database>,
     query: web::Path<UserQuery<'_>>,
@@ -29,6 +24,7 @@ async fn get_user(
     Ok(web::Json(user))
 }
 
+#[protect]
 pub async fn post_user(
     db: web::Data<Database>,
     user: web::Json<User>,
@@ -46,6 +42,7 @@ pub async fn post_user(
         .finish())
 }
 
+#[protect]
 async fn put_user(
     db: web::Data<Database>,
     query: web::Path<UserQuery<'_>>,

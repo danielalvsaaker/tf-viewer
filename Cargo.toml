@@ -8,15 +8,17 @@ include = ["src/**/*", "LICENSE", "README.md"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace]
+resolver = "2"
 members = [
     "tf-auth",
     "tf-parse",
     "tf-database",
+    "tf-macro",
 ]
 
 [dependencies]
 # web server etc.
-actix-web = { version = "4.0.0-beta.8", default-features = false, features = ["compress-brotli"] }
+actix-web = { version = "4.0.0-beta.9", default-features = false, features = ["compress-brotli"] }
 actix = "0.11"
 actix-files = "0.6.0-beta.6"
 serde = { version = "1", features = ["derive"] }
@@ -25,6 +27,7 @@ serde = { version = "1", features = ["derive"] }
 thiserror = "1.0"
 
 tf-models = { path = "tf-models" }
+tf-macro = { path = "tf-macro" }
 tf-database = { path = "tf-database" }
 tf-auth = { path = "tf-auth" }
 tf-parse = { path = "tf-parse" }

@@ -24,6 +24,9 @@ impl Database {
             user: user::UserTree {
                 username_user: db.open_tree("username_user")?,
                 username_standardgearid: db.open_tree("username_standardgearid")?,
+                username_visibility: db.open_tree("username_visibility")?,
+                usernamefollower_follower: db.open_tree("usernamefollower_follower")?,
+                usernamefollower_request: db.open_tree("usernamefollower_rquest")?,
             },
 
             activity: activity::ActivityTree {

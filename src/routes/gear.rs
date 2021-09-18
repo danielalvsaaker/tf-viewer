@@ -5,6 +5,7 @@ use tf_database::{
     query::{GearQuery, UserQuery},
     Database,
 };
+use tf_macro::protect;
 use tf_models::{backend::Gear, frontend::Totals, Unit};
 
 pub fn config(cfg: &mut web::ServiceConfig) {
@@ -28,6 +29,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     );
 }
 
+#[protect]
 async fn get_gear(
     db: web::Data<Database>,
     query: web::Path<GearQuery<'_>>,
@@ -37,6 +39,7 @@ async fn get_gear(
     Ok(web::Json(gear))
 }
 
+#[protect]
 async fn put_gear(
     db: web::Data<Database>,
     query: web::Path<GearQuery<'_>>,
@@ -52,6 +55,7 @@ async fn put_gear(
     }
 }
 
+#[protect]
 async fn post_gear_index(
     db: web::Data<Database>,
     query: web::Path<UserQuery<'_>>,
@@ -72,6 +76,7 @@ async fn post_gear_index(
         .finish())
 }
 
+#[protect]
 async fn get_gear_index(
     db: web::Data<Database>,
     query: web::Path<UserQuery<'_>>,
@@ -87,6 +92,7 @@ async fn get_gear_index(
     Ok(web::Json(gears))
 }
 
+#[protect]
 async fn delete_gear(
     db: web::Data<Database>,
     query: web::Path<GearQuery<'_>>,
@@ -96,6 +102,7 @@ async fn delete_gear(
     Ok(HttpResponse::NoContent())
 }
 
+#[protect]
 async fn get_totals(
     db: web::Data<Database>,
     query: web::Path<GearQuery<'_>>,

@@ -1,6 +1,10 @@
-use fitparser::{profile::field_types::MesgNum, FitDataField, Value};
+use fitparser::{de::DecodeOption, profile::field_types::MesgNum, FitDataField, Value};
 use std::time::Duration;
-use std::{collections::HashMap, str::FromStr};
+use std::{
+    collections::{HashMap, HashSet},
+    iter::FromIterator,
+    str::FromStr,
+};
 
 use crate::error::{Error, Result};
 
@@ -30,6 +34,13 @@ macro_rules! map_value {
     }
 }
 
+map_value!(map_uint8, u8, Value::UInt8(x) => *x);
+map_value!(map_uint16, u16, Value::UInt16(x) => *x);
+map_value!(map_sint32, i32, Value::SInt32(x) => *x);
+map_value!(map_float64, f64, Value::Float64(x) => *x);
+map_value!(map_string, String, Value::String(x) => x.to_string());
+map_value!(map_timestamp, DateTime<Local>, Value::Timestamp(x) => *x);
+
 fn between(lhs: &Option<DateTime<Local>>, rhs: Option<DateTime<Local>>) -> Option<Duration> {
     if let Some((x, y)) = lhs.zip(rhs) {
         chrono::Duration::to_std(&x.signed_duration_since(y)).ok()
@@ -38,13 +49,6 @@ fn between(lhs: &Option<DateTime<Local>>, rhs: Option<DateTime<Local>>) -> Optio
     }
 }
 
-map_value!(map_uint8, u8, Value::UInt8(x) => *x);
-map_value!(map_uint16, u16, Value::UInt16(x) => *x);
-map_value!(map_sint32, i32, Value::SInt32(x) => *x);
-map_value!(map_float64, f64, Value::Float64(x) => *x);
-map_value!(map_string, String, Value::String(x) => x.to_string());
-map_value!(map_timestamp, DateTime<Local>, Value::Timestamp(x) => *x);
-
 const MULTIPLIER: f64 = 180_f64 / (2_u32 << 30) as f64;
 
 pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
@@ -52,7 +56,8 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
     let mut record: Record = Record::default();
     let mut lap_vec: Vec<Lap> = Vec::new();
 
-    let file = fitparser::from_bytes(fit_data)?;
+    let options = HashSet::from_iter([DecodeOption::SkipHeaderCrcValidation]);
+    let file = fitparser::de::from_bytes_with_options(fit_data, &options)?;
 
     if !file.iter().any(|x| x.kind() == MesgNum::Session) {
         return Err(Error::MissingData);

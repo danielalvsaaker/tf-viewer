@@ -18,7 +18,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(Compress::default())
             .app_data(database.clone())
             .app_data(state.clone())
-            .app_data(web::PayloadConfig::new(1024 * 1024 * 15 * 1024 * 1024))
+            .app_data(web::PayloadConfig::new(1024 * 1024 * 15))
             .configure(tf_auth::config(&auth_database))
             .service(
                 web::resource("/user")

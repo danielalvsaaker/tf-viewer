@@ -2,22 +2,9 @@ mod error;
 mod routes;
 
 use actix::Actor;
-use actix_web::{middleware::Compress, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{middleware::Compress, web, App, HttpServer};
+use actix_cors::Cors;
 use tf_database::Database;
-
-async fn index() -> impl Responder {
-    HttpResponse::Ok()
-        .content_type("text/html;charset=utf8")
-        .body(include_str!("../static/index.html"))
-}
-
-async fn favicon() -> impl Responder {
-    const FAVICON: &[u8] = include_bytes!("../static/img/favicon.ico");
-
-    HttpResponse::Ok()
-        .content_type("image/x-icon")
-        .body(FAVICON)
-}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -27,14 +14,12 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .wrap(Cors::permissive())
             .wrap(Compress::default())
             .app_data(database.clone())
             .app_data(state.clone())
-            .app_data(web::PayloadConfig::new(1024 * 1024 * 15))
+            .app_data(web::PayloadConfig::new(1024 * 1024 * 15 * 1024 * 1024))
             .configure(tf_auth::config(&auth_database))
-            .route("/", web::route().to(index))
-            .route("/favicon.ico", web::route().to(favicon))
-            .service(actix_files::Files::new("/static", "static"))
             .service(
                 web::resource("/user")
                     .name("user_index")

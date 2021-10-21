@@ -14,7 +14,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            .wrap(Cors::permissive())
+            .wrap(Cors::permissive().expose_headers(["Location"]))
             .wrap(Compress::default())
             .app_data(database.clone())
             .app_data(state.clone())

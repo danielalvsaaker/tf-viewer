@@ -22,6 +22,8 @@ struct ErrorTemplate<'a> {
 
 #[derive(Error, Debug)]
 pub enum Error {
+    #[error("Parse Error.")]
+    ParseError,
     #[error("Database error.")]
     SledError {
         #[from]

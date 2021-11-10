@@ -31,6 +31,7 @@ rmp-serde = "0.15"
 serde = { version = "1.0", features = ["derive"] }
 
 # activity related functions and types
+gpx = "0.8"
 fitparser = "0.3"
 uom = { version = "0.31", default-features = false, features = ["si", "use_serde", "u16", "f64"] }
 

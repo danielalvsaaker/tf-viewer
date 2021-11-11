@@ -94,7 +94,7 @@
 
 	  const mapDiv = document.getElementById('map');
 	  const resizeObserver = new ResizeObserver(() => {
-  	    map.invalidateSize();  
+  	    map.invalidateSize();
 	    map.fitBounds([
 	      [{{ session.nec_lat.unwrap() }}, {{ session.nec_lon.unwrap() }}],
 	      [{{ session.swc_lat.unwrap()}}, {{ session.swc_lon.unwrap()}}]

@@ -54,20 +54,19 @@ async fn upload_post(
         data.activities
             .insert(x, &id)
             .map(|_| HttpResponse::Ok().finish().into_body())
-    } else if let Ok(x) = crate::parser::gpxp::parse(&f, gear.clone()) {
+    } else if let Ok(x) = crate::parser::gpxp::parse(&f, gear) {
         let id = id.identity().unwrap();
         data.activities
             .insert(x, &id)
             .map(|_| HttpResponse::Ok().finish().into_body())
     } else {
-
-    // match parsed {
-    //     Ok(x) => {
-    //         let id = id.identity().unwrap();
-    //         data.activities
-    //             .insert(x, &id)
-    //             .map(|_| HttpResponse::Ok().finish().into_body())
-    //     }
+        // match parsed {
+        //     Ok(x) => {
+        //         let id = id.identity().unwrap();
+        //         data.activities
+        //             .insert(x, &id)
+        //             .map(|_| HttpResponse::Ok().finish().into_body())
+        //     }
         Ok(HttpResponse::BadRequest().body("FIT or GPX invalid".to_string()))
     }
 }

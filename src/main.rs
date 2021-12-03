@@ -2,8 +2,8 @@ mod error;
 mod routes;
 
 use actix::Actor;
-use actix_web::{middleware::Compress, web, App, HttpServer};
 use actix_cors::Cors;
+use actix_web::{middleware::Compress, web, App, HttpServer};
 use tf_database::Database;
 
 #[actix_web::main]

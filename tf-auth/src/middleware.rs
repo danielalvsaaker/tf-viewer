@@ -86,7 +86,7 @@ where
     fn call(&self, req: ServiceRequest) -> Self::Future {
         macro_rules! execute {
             (send $self:ident) => {
-                Either::Left(self.service.call(req));
+                Either::Left(self.service.call(req))
             };
 
             (redirect $path:expr) => {

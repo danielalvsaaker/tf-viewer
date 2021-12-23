@@ -4,7 +4,7 @@ mod record;
 mod session;
 mod user;
 
-pub use gear::Gear;
+pub use gear::*;
 pub use lap::Lap;
 pub use record::Record;
 pub use session::Session;

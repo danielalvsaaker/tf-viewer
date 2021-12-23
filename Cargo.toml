@@ -2,7 +2,7 @@
 name = "tf-viewer"
 version = "0.1.1"
 authors = ["danielalvsaaker <daniel@nopemail.net>", "vidarandrebo"]
-edition = "2018"
+edition = "2021"
 include = ["src/**/*", "LICENSE", "README.md"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -18,10 +18,14 @@ members = [
 
 [dependencies]
 # web server etc.
-actix-web = { version = "4.0.0-beta.13", default-features = false, features = ["compress-brotli"] }
-actix-cors = "0.6.0-beta.2"
-actix = "0.12"
+axum = "*"
+tower-http = { version = "*", features = ["cors"] }
+tokio = { version = "1", features = ["full", "macros", "rt-multi-thread"] }
 serde = { version = "1", features = ["derive"] }
+
+oxide-auth-axum = { git = "https://github.com/danielalvsaaker/oxide-auth" }
+oxide-auth = { git = "https://github.com/danielalvsaaker/oxide-auth" }
+axum-debug = "*"
 
 # error handling
 thiserror = "1.0"
@@ -32,3 +36,7 @@ tf-database = { path = "tf-database" }
 tf-auth = { path = "tf-auth" }
 tf-parse = { path = "tf-parse" }
 nanoid = "*"
+bytes = "*"
+
+[patch.crates-io]
+chrono = { git = "https://github.com/chronotope/chrono", default-features = false }

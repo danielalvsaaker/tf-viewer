@@ -11,7 +11,7 @@ use crate::error::{Error, Result};
 use chrono::{offset::Local, DateTime};
 use tf_models::{
     backend::{Lap, Record, Session},
-    Activity, ActivityType,
+    Activity, Sport,
 };
 
 use uom::si::{
@@ -24,7 +24,7 @@ use uom::si::{
 };
 
 macro_rules! map_value {
-    ($name:ident, $type:path, $( $pattern:pat )|+ => $mapping:expr) => {
+    ($name:ident, $type:path, $( $pattern:pat )+ => $mapping:expr) => {
         fn $name(v: &&fitparser::Value) -> Option<$type> {
             match v {
                 $( $pattern )|+ => ::std::option::Option::Some($mapping),
@@ -65,7 +65,7 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
 
     for data in file {
         match data.kind() {
-            MesgNum::Session => parse_session(data.fields(), &mut session),
+            MesgNum::Session => parse_session(data.fields(), &mut session)?,
             MesgNum::Record => parse_record(data.fields(), &mut record),
             MesgNum::Lap => {
                 let mut lap = Lap::default();
@@ -118,11 +118,7 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
     }
 
     Ok(Activity {
-        id: session
-            .start_time
-            .ok_or(Error::MissingData)?
-            .format("%Y%m%d%H%M")
-            .to_string(),
+        id: session.start_time.format("%Y%m%d%H%M").to_string(),
         gear_id,
         session,
         record,
@@ -130,7 +126,7 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
     })
 }
 
-fn parse_session(fields: &[FitDataField], session: &mut Session) {
+fn parse_session(fields: &[FitDataField], session: &mut Session) -> Result<()> {
     let field_map: HashMap<&str, &fitparser::Value> =
         fields.iter().map(|x| (x.name(), x.value())).collect();
 
@@ -184,7 +180,7 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) {
 
     session.laps = field_map.get("num_laps").and_then(map_uint16);
 
-    session.activity_type = ActivityType::from_str(
+    session.sport = Sport::from_str(
         &field_map
             .get("sport")
             .and_then(map_string)
@@ -223,7 +219,14 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) {
         .map(Duration::from_secs_f64)
         .unwrap_or_default();
 
-    session.start_time = field_map.get("start_time").and_then(map_timestamp);
+    session.start_time = field_map
+        .get("start_time")
+        .and_then(map_timestamp)
+        // https://github.com/chronotope/chrono/issues/576
+        //.map(|x| DateTime::from_utc(x.naive_utc(), *x.offset()))
+        .ok_or(Error::MissingData)?;
+
+    Ok(())
 }
 
 fn parse_record(fields: &[FitDataField], record: &mut Record) {

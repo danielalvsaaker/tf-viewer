@@ -45,19 +45,6 @@ impl GearTree {
             .flat_map(|x| rmps::from_read_ref(&x)))
     }
 
-    pub fn iter_id(&self, query: &UserQuery) -> Result<impl Iterator<Item = String>> {
-        let suffix = |x: &[u8]| x.split(|y| y == &0xff).last().map(|x| x.to_vec());
-
-        Ok(self
-            .usernameid_gear
-            .scan_prefix(&query.to_prefix())
-            .keys()
-            .rev()
-            .flatten()
-            .flat_map(move |x| suffix(&x))
-            .flat_map(String::from_utf8))
-    }
-
     /*
     pub fn iter(&self, user: &UserQuery) -> Result<impl Iterator<Item = Gear>> {
         Ok(self

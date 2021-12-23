@@ -1,136 +1,93 @@
 use crate::error::{Error, Result};
-use actix_web::{http, web, HttpRequest, HttpResponse, Responder};
+use axum::{
+    extract::{Extension, Path, Query},
+    http::{self, HeaderValue, StatusCode},
+    response::{Headers, IntoResponse},
+    routing::get,
+    Json, Router,
+};
 use serde::Deserialize;
-use std::ops::Deref;
 use tf_database::{
     query::{ActivityQuery, UserQuery},
     Database,
 };
-use tf_macro::protect;
-use tf_models::{
-    frontend::{Activity, Lap, Record, Session},
-    Unit,
-};
+use tf_macro::oauth;
 
-pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::resource("/{user_id}/activity/{id}")
-            .name("activity")
-            .route(web::get().to(get_activity))
-            .route(web::delete().to(delete_activity)),
-    )
-    .service(
-        web::resource("/{user_id}/activity/{id}/session")
-            .name("activity_session")
-            .route(web::get().to(activity_session)),
-    )
-    .service(
-        web::resource("/{user_id}/activity/{id}/record")
-            .name("activity_record")
-            .route(web::get().to(activity_record)),
-    )
-    .service(
-        web::resource("/{user_id}/activity/{id}/lap")
-            .name("activity_lap")
-            .route(web::get().to(activity_lap)),
-    )
-    .service(
-        web::resource("/{user_id}/activity/{id}/gear")
-            .name("activity_gear")
-            .route(web::get().to(get_activity_gear))
-            .route(web::put().to(put_activity_gear)),
-    )
-    .service(
-        web::resource("/{user_id}/activity/{id}/zones")
-            .name("activity_zones")
-            .route(web::get().to(get_activity_zones)),
-    )
-    .service(
-        web::resource("/{user_id}/activity/{id}/prev")
-            .name("activity_prev")
-            .route(web::get().to(get_activity_prev)),
-    )
-    .service(
-        web::resource("/{user_id}/activity/{id}/next")
-            .name("activity_next")
-            .route(web::get().to(get_activity_next)),
-    )
-    .service(
-        web::resource("/{user_id}/activity")
-            .name("activity_index")
-            .route(web::get().to(get_activity_index))
-            .route(web::post().to(post_activity_index)),
-    );
+pub fn router() -> Router {
+    Router::new()
+        .route("/:id", get(get_activity))
+        .route("/:id/session", get(activity_session))
+        .route("/:id/record", get(activity_record))
 }
 
-#[protect]
-async fn activity_session(
-    db: web::Data<Database>,
-    query: web::Path<ActivityQuery<'_>>,
-    unit: Option<web::Query<Unit>>,
-) -> Result<impl Responder> {
-    let session = db.activity.get_session(&query)?.ok_or(Error::NotFound)?;
-
-    Ok(web::Json(Session::from_backend(
-        session,
-        unit.as_deref().unwrap_or_default(),
-    )))
+#[oauth("activity:read")]
+pub async fn get_activity(
+    Extension(db): Extension<Database>,
+    Path(query): Path<ActivityQuery<'_>>,
+) -> Result<impl IntoResponse> {
+    db.activity
+        .get_activity(&query)?
+        .map(Json)
+        .ok_or(Error::NotFound)
 }
 
-#[protect]
-async fn activity_record(
-    db: web::Data<Database>,
-    query: web::Path<ActivityQuery<'_>>,
-    unit: Option<web::Query<Unit>>,
-) -> Result<impl Responder> {
-    let record = db.activity.get_record(&query)?.ok_or(Error::NotFound)?;
-
-    Ok(web::Json(Record::from_backend(
-        record,
-        unit.as_deref().unwrap_or_default(),
-    )))
+#[oauth("activity:read")]
+pub async fn activity_session(
+    Extension(db): Extension<Database>,
+    Path(query): Path<ActivityQuery<'_>>,
+) -> Result<impl IntoResponse> {
+    db.activity
+        .get_session(&query)?
+        .map(Json)
+        .ok_or(Error::NotFound)
 }
 
-#[protect]
+#[oauth("activity:read")]
+pub async fn activity_record(
+    Extension(db): Extension<Database>,
+    Path(query): Path<ActivityQuery<'_>>,
+) -> Result<impl IntoResponse> {
+    db.activity
+        .get_record(&query)?
+        .map(Json)
+        .ok_or(Error::NotFound)
+}
+
+#[oauth("activity:read")]
 async fn activity_lap(
-    db: web::Data<Database>,
-    query: web::Path<ActivityQuery<'_>>,
-    unit: Option<web::Query<Unit>>,
-) -> Result<impl Responder> {
-    let unit = unit.as_deref().unwrap_or_default();
-
-    let lap: Vec<Lap> = db
-        .activity
+    Extension(db): Extension<Database>,
+    Path(query): Path<ActivityQuery<'_>>,
+) -> Result<impl IntoResponse> {
+    db.activity
         .get_lap(&query)?
-        .ok_or(Error::NotFound)?
-        .into_iter()
-        .map(|x| Lap::from_backend(x, unit))
-        .collect();
-
-    Ok(web::Json(lap))
+        .map(Json)
+        .ok_or(Error::NotFound)
 }
 
-#[protect]
+#[oauth("activity:read")]
 async fn get_activity_gear(
-    db: web::Data<Database>,
-    query: web::Path<ActivityQuery<'_>>,
-) -> Result<impl Responder> {
-    Ok(web::Json(db.activity.get_gear(&query)?))
+    Extension(db): Extension<Database>,
+    Path(query): Path<ActivityQuery<'_>>,
+) -> Result<impl IntoResponse> {
+    db.activity
+        .get_gear(&query)?
+        .map(Json)
+        .ok_or(Error::NotFound)
 }
 
-#[protect]
+#[oauth("activity:write")]
 async fn put_activity_gear(
-    db: web::Data<Database>,
-    query: web::Path<ActivityQuery<'_>>,
-    gear_id: web::Json<String>,
-) -> Result<impl Responder> {
-    Ok(
-        match db.activity.insert_gear(&query, Some(gear_id.deref()))? {
-            Some(_) => HttpResponse::NoContent(),
-            None => HttpResponse::Created(),
-        }
-        .finish(),
-    )
+    Extension(db): Extension<Database>,
+    Path(query): Path<ActivityQuery<'_>>,
+    Json(gear_id): Json<String>,
+) -> Result<impl IntoResponse> {
+    db.activity
+        .insert_gear(&query, Some(&gear_id))?
+        .map(|x| {
+            x.map(|_| StatusCode::NO_CONTENT)
+                .unwrap_or(StatusCode::CREATED)
+        })
+        .ok_or(Error::NotFound)
 }
 
 #[derive(Deserialize)]
@@ -147,110 +104,79 @@ impl Default for Filters {
     }
 }
 
-#[protect]
-async fn get_activity(
-    db: web::Data<Database>,
-    query: web::Path<ActivityQuery<'_>>,
-    unit: Option<web::Query<Unit>>,
-) -> Result<impl Responder> {
-    let id = query.id.to_string();
-
-    dbg!(&grant);
-
-    let gear_id = db.activity.get_gear(&query)?;
-
-    let session = db.activity.get_session(&query)?.ok_or(Error::NotFound)?;
-    let record = db.activity.get_record(&query)?.ok_or(Error::NotFound)?;
-    let lap = db.activity.get_lap(&query)?.ok_or(Error::NotFound)?;
-
-    let activity = Activity::from_backend(
-        id,
-        gear_id,
-        session,
-        record,
-        lap,
-        unit.as_deref().unwrap_or_default(),
-    );
-
-    Ok(web::Json(activity))
-}
-
-#[protect]
+#[oauth("activity:read")]
 async fn get_activity_zones(
-    db: web::Data<Database>,
-    query: web::Path<ActivityQuery<'_>>,
-) -> Result<impl Responder> {
-    let record = db.activity.get_record(&query)?.ok_or(Error::NotFound)?;
-
-    let zones = super::utils::zone_duration(&record, 50, 205);
-
-    Ok(web::Json(zones))
+    Extension(db): Extension<Database>,
+    Path(query): Path<ActivityQuery<'_>>,
+) -> Result<impl IntoResponse> {
+    db.activity
+        .get_record(&query)?
+        .map(|x| super::utils::zone_duration(&x, 50, 205))
+        .map(Json)
+        .ok_or(Error::NotFound)
 }
 
-#[protect]
+#[oauth("activity:read")]
 async fn get_activity_prev(
-    db: web::Data<Database>,
-    query: web::Path<ActivityQuery<'_>>,
-) -> Result<impl Responder> {
-    Ok(web::Json(db.activity.prev(&query)?))
+    Extension(db): Extension<Database>,
+    Path(query): Path<ActivityQuery<'_>>,
+) -> Result<impl IntoResponse> {
+    db.activity.prev(&query)?.map(Json).ok_or(Error::NotFound)
 }
 
-#[protect]
+#[oauth("activity:read")]
 async fn get_activity_next(
-    db: web::Data<Database>,
-    query: web::Path<ActivityQuery<'_>>,
-) -> Result<impl Responder> {
-    Ok(web::Json(db.activity.next(&query)?))
+    Extension(db): Extension<Database>,
+    Path(query): Path<ActivityQuery<'_>>,
+) -> Result<impl IntoResponse> {
+    db.activity.next(&query)?.map(Json).ok_or(Error::NotFound)
 }
 
-#[protect]
+#[oauth("activity:write")]
 async fn delete_activity(
-    db: web::Data<Database>,
-    query: web::Path<ActivityQuery<'_>>,
-) -> Result<impl Responder> {
+    Extension(db): Extension<Database>,
+    Path(query): Path<ActivityQuery<'_>>,
+) -> Result<impl IntoResponse> {
     db.activity.remove_activity(&query)?;
 
-    Ok(HttpResponse::NoContent())
+    Ok(StatusCode::NO_CONTENT)
 }
 
-#[protect]
+#[oauth("activity:read")]
 async fn get_activity_index(
-    db: web::Data<Database>,
-    query: web::Path<UserQuery<'_>>,
-    unit: Option<web::Query<Unit>>,
-    filters: web::Query<Filters>,
-) -> Result<impl Responder> {
-    let ids = db
+    Extension(db): Extension<Database>,
+    Path(query): Path<UserQuery<'_>>,
+    Query(filters): Query<Filters>,
+) -> Result<impl IntoResponse> {
+    let sessions: Vec<_> = db
         .activity
         .username_iter_session(&query)?
         .skip(filters.skip)
-        .take(filters.take);
+        .take(filters.take)
+        .collect();
 
-    Ok(web::Json(
-        ids.map(|x| Session::from_backend(x, unit.as_deref().unwrap_or_default()))
-            .collect::<Vec<Session>>(),
-    ))
+    Ok(Json(sessions))
 }
 
-#[protect]
+#[oauth("activity:write")]
 async fn post_activity_index(
-    db: web::Data<Database>,
-    query: web::Path<UserQuery<'_>>,
-    file: web::Bytes,
-    req: HttpRequest,
-) -> Result<impl Responder> {
+    Extension(db): Extension<Database>,
+    Path(query): Path<UserQuery<'_>>,
+    file: bytes::Bytes,
+) -> Result<impl IntoResponse> {
     let gear = db.user.get_standard_gear(&query)?;
 
     let parsed = tf_parse::parse(&file, gear)?;
     db.activity.insert_activity(&query, &parsed)?;
 
-    let activity_query = ActivityQuery::from((query.deref(), parsed.id.as_str()));
+    let activity_query = ActivityQuery::from((&query, parsed.id.as_str()));
+    let url = format!(
+        "/user/{}/activity/{}",
+        activity_query.user_id, activity_query.id
+    );
 
-    let url = req
-        .url_for("activity", &[&activity_query.user_id, &activity_query.id])
-        .unwrap();
-
-    Ok(HttpResponse::Created()
-        .insert_header((http::header::LOCATION, url.to_string()))
-        .finish())
+    Ok(Headers(vec![(
+        http::header::LOCATION,
+        HeaderValue::from_str(&url).unwrap(),
+    )]))
 }

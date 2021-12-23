@@ -1,22 +1,18 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::ToTokens;
-use syn::{parse_macro_input, ItemFn};
+use syn::{parse_macro_input, ItemFn, LitStr};
 
-use crate::expand::Protect;
-
-mod expand;
+mod oauth;
 
 #[proc_macro_attribute]
-pub fn protect(_: TokenStream, input: TokenStream) -> TokenStream {
-    check_permissions(input)
-}
+pub fn oauth(scopes: TokenStream, route: TokenStream) -> TokenStream {
+    let scopes = parse_macro_input!(scopes as LitStr).value();
+    let scopes = scopes.split(", ").collect();
+    let route = parse_macro_input!(route as ItemFn);
 
-fn check_permissions(input: TokenStream) -> TokenStream {
-    let func = parse_macro_input!(input as ItemFn);
-
-    match Protect::new(func) {
-        Ok(has_permissions) => has_permissions.into_token_stream().into(),
-        Err(err) => err.to_compile_error().into(),
-    }
+    oauth::OAuth::new(route, scopes)
+        .unwrap()
+        .into_token_stream()
+        .into()
 }

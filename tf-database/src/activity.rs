@@ -129,27 +129,24 @@ impl ActivityTree {
         Ok(())
     }
 
-    /*
-    pub fn get_activity(&self, query: &ActivityQuery) -> Result<()> {
-        let key = query.to_key();
-
-        let session = self.get_session(&key)?;
-
-        let record = self.get_record(&key)?;
-
-        let lap = self.get_lap(&key)?;
-
-        let gear_id = self.get_gear(&key)?;
-
-        Ok(Activity {
-            id: query.id.into(),
-            gear_id,
-            session,
-            record,
-            lap,
-        })
+    pub fn exists(&self, query: &ActivityQuery) -> Result<bool> {
+        Ok(self.usernameid_session.contains_key(query.to_key())?)
     }
-    */
+
+    pub fn get_activity(&self, query: &ActivityQuery) -> Result<Option<Activity>> {
+        Ok(self
+            .get_session(query)?
+            .zip(self.get_record(query)?)
+            .zip(self.get_lap(query)?)
+            .zip(self.get_gear(query)?)
+            .map(|(((session, record), lap), gear_id)| Activity {
+                id: query.id.to_string(),
+                gear_id,
+                session,
+                record,
+                lap,
+            }))
+    }
 
     pub fn get_session(&self, query: &ActivityQuery) -> Result<Option<Session>> {
         Ok(self
@@ -178,22 +175,30 @@ impl ActivityTree {
             .transpose()?)
     }
 
-    pub fn insert_gear(&self, query: &ActivityQuery, gear: Option<&str>) -> Result<Option<()>> {
+    pub fn insert_gear(
+        &self,
+        query: &ActivityQuery,
+        gear: Option<&str>,
+    ) -> Result<Option<Option<()>>> {
+        if !self.exists(query)? {
+            return Ok(None);
+        }
+
         Ok(self
             .usernameid_gearid
             .insert(&query.to_key(), rmps::to_vec(&gear)?)?
-            .as_deref()
-            .map(|_| ()))
+            .map(|x| rmps::from_read_ref::<'_, _, Option<String>>(&x))
+            .transpose()?
+            .map(|x| x.map(|_| ())))
     }
 
-    pub fn get_gear(&self, query: &ActivityQuery) -> Result<Option<String>> {
+    pub fn get_gear(&self, query: &ActivityQuery) -> Result<Option<Option<String>>> {
         Ok(self
             .usernameid_gearid
             .get(&query.to_key())?
             .as_deref()
             .map(|x| rmps::from_read_ref::<'_, _, Option<String>>(&x))
-            .transpose()?
-            .flatten())
+            .transpose()?)
     }
 
     pub fn username_iter_session(&self, user: &UserQuery) -> Result<impl Iterator<Item = Session>> {

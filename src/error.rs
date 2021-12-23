@@ -1,4 +1,7 @@
-use actix_web::{http::StatusCode, ResponseError};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -17,18 +20,15 @@ pub enum Error {
     },
     #[error("Not found")]
     NotFound,
-    #[error("Web error.")]
-    Web {
-        #[from]
-        source: actix_web::error::Error,
-    },
 }
 
-impl ResponseError for Error {
-    fn status_code(&self) -> StatusCode {
-        match self {
+impl IntoResponse for Error {
+    fn into_response(self) -> Response {
+        let status_code = match self {
             Self::NotFound => StatusCode::NOT_FOUND,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
-        }
+        };
+
+        (status_code, self.to_string()).into_response()
     }
 }

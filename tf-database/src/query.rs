@@ -104,6 +104,15 @@ impl<'a> From<(&'a UserQuery<'a>, &'a str)> for ActivityQuery<'a> {
     }
 }
 
+impl<'a> From<(&'a str, &'a str)> for ActivityQuery<'a> {
+    fn from((query, id): (&'a str, &'a str)) -> Self {
+        Self {
+            user_id: Cow::Borrowed(&query),
+            id: Cow::Borrowed(&id),
+        }
+    }
+}
+
 impl<'a> UserQuery<'a> {
     pub fn to_key(&'_ self) -> &'_ [u8] {
         self.user_id.as_bytes()

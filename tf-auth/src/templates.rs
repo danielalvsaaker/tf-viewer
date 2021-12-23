@@ -1,4 +1,4 @@
-use oxide_auth::endpoint::QueryParameter;
+use oxide_auth::endpoint::WebRequest;
 use std::borrow::Cow;
 
 pub fn base_template(title: &str, template: &str) -> String {
@@ -29,7 +29,7 @@ pub fn signup_template(query: &str) -> String {
 }
 
 pub fn authorize_template(
-    req: &oxide_auth_actix::OAuthRequest,
+    req: &mut oxide_auth_axum::OAuthRequest,
     solicitation: oxide_auth::endpoint::Solicitation,
     user_id: &str,
 ) -> String {

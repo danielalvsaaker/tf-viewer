@@ -12,6 +12,7 @@ pub enum GearType {
 
 #[derive(Serialize, Deserialize)]
 pub struct Gear {
+    pub id: String,
     pub name: String,
     pub gear_type: GearType,
 }

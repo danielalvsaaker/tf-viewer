@@ -1,11 +1,13 @@
-use crate::{AuthServer, Extras};
-use actix::Addr;
-use actix_web::web;
-use oxide_auth_actix::{OAuthOperation, OAuthRequest, OAuthResponse, Refresh, WebError};
+use crate::AuthState;
+use oxide_auth_axum::{OAuthRequest, OAuthResponse, WebError};
+use axum::extract::Extension;
 
 pub async fn post_refresh(
     req: OAuthRequest,
-    state: web::Data<Addr<AuthServer>>,
+    Extension(state): Extension<AuthState>,
 ) -> Result<OAuthResponse, WebError> {
-    state.send(Refresh(req).wrap(Extras::Nothing)).await?
+    state
+        .endpoint()
+        .refresh_flow()
+        .execute(req)
 }

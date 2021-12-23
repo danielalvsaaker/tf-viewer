@@ -1,12 +1,12 @@
 use crate::{ActivityType, Unit, Value};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use chrono::{offset::Local, DateTime};
 use std::time::Duration;
 use uom::si::length::{foot, kilometer, meter, mile};
 use uom::si::velocity::{kilometer_per_hour, mile_per_hour};
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Session<'a> {
     pub start_time: Option<DateTime<Local>>,
 

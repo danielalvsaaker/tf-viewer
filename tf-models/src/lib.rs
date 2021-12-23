@@ -1,7 +1,8 @@
 pub mod backend;
-pub mod frontend;
+mod sport;
+pub use sport::{Sport, SPORTS};
 
-#[derive(serde::Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct Activity {
     pub id: String,
     pub gear_id: Option<String>,
@@ -16,7 +17,7 @@ use uom::si::Unit as _;
 #[derive(Serialize, Deserialize)]
 pub struct Timestamp(chrono::DateTime<chrono::offset::Local>);
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum ActivityType {
     Cycling,
     Running,
@@ -26,6 +27,17 @@ pub enum ActivityType {
 impl Default for ActivityType {
     fn default() -> Self {
         Self::Cycling
+    }
+}
+
+impl std::fmt::Display for ActivityType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            ActivityType::Cycling => "Cycling",
+            ActivityType::Running => "Running",
+            ActivityType::Other(ref inner) => inner,
+        };
+        write!(f, "{}", s)
     }
 }
 
@@ -41,15 +53,24 @@ impl std::str::FromStr for ActivityType {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Value<'a, T> {
     value: T,
-    unit: &'a str,
+    unit: std::borrow::Cow<'a, str>,
+}
+
+impl<'a, T: std::fmt::Display> std::fmt::Display for Value<'a, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.value, self.unit)
+    }
 }
 
 impl<'a, T> Value<'a, T> {
     pub fn new(value: T, unit: &'a str) -> Self {
-        Self { value, unit }
+        Self {
+            value,
+            unit: std::borrow::Cow::Borrowed(unit),
+        }
     }
 }
 
@@ -57,7 +78,7 @@ impl<'a> Value<'a, u16> {
     pub fn from_power(power: uom::si::u16::Power) -> Value<'a, u16> {
         Self {
             value: power.get::<uom::si::power::watt>(),
-            unit: uom::si::power::watt::abbreviation(),
+            unit: std::borrow::Cow::Borrowed(uom::si::power::watt::abbreviation()),
         }
     }
 }
@@ -69,7 +90,7 @@ impl<'a> Value<'a, Vec<Option<u16>>> {
                 .into_iter()
                 .map(|x| x.map(|y| y.get::<uom::si::power::watt>()))
                 .collect(),
-            unit: uom::si::power::watt::abbreviation(),
+            unit: std::borrow::Cow::Borrowed(uom::si::power::watt::abbreviation()),
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::ActivityType;
+use crate::Sport;
 use chrono::{offset::Local, DateTime};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -7,7 +7,7 @@ use uom::si::f64::{Length as Length_f64, Velocity};
 use uom::si::u16::Power;
 use uom::si::u32::Length as Length_u32;
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Clone, Copy, Serialize, Deserialize)]
 pub struct Session {
     pub cadence_avg: Option<u8>,
     pub cadence_max: Option<u8>,
@@ -22,12 +22,12 @@ pub struct Session {
     pub swc_lat: Option<f64>,
     pub swc_lon: Option<f64>,
     pub laps: Option<u16>,
-    pub activity_type: ActivityType,
+    pub sport: Sport,
     pub ascent: Option<Length_u32>,
     pub descent: Option<Length_u32>,
     pub calories: Option<u16>,
     pub distance: Option<Length_f64>,
     pub duration: Duration,
     pub duration_active: Duration,
-    pub start_time: Option<DateTime<Local>>,
+    pub start_time: DateTime<Local>,
 }

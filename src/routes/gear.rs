@@ -1,12 +1,13 @@
 use crate::error::{Error, Result};
 use actix_web::{http, web, HttpRequest, HttpResponse, Responder};
+use serde::Deserialize;
 use std::ops::Deref;
 use tf_database::{
     query::{GearQuery, UserQuery},
     Database,
 };
 use tf_macro::protect;
-use tf_models::{backend::Gear, frontend::Totals, Unit};
+use tf_models::backend::{Gear, GearType};
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -39,6 +40,12 @@ async fn get_gear(
     Ok(web::Json(gear))
 }
 
+#[derive(Deserialize)]
+struct GearForm {
+    name: String,
+    gear_type: GearType,
+}
+
 #[protect]
 async fn put_gear(
     db: web::Data<Database>,
@@ -59,13 +66,19 @@ async fn put_gear(
 async fn post_gear_index(
     db: web::Data<Database>,
     query: web::Path<UserQuery<'_>>,
-    gear: web::Json<Gear>,
+    gear: web::Json<GearForm>,
     req: HttpRequest,
 ) -> Result<impl Responder> {
     let id = nanoid::nanoid!(10);
     let gear_query = GearQuery::from((query.deref(), id.as_str()));
+    let gear = gear.into_inner();
+    let gear = Gear {
+        id: id.clone(),
+        name: gear.name,
+        gear_type: gear.gear_type,
+    };
 
-    db.gear.insert_gear(&gear_query, gear.into_inner())?;
+    db.gear.insert_gear(&gear_query, gear)?;
 
     let url = req
         .url_for("gear", &[&gear_query.user_id, &gear_query.id])
@@ -81,13 +94,7 @@ async fn get_gear_index(
     db: web::Data<Database>,
     query: web::Path<UserQuery<'_>>,
 ) -> Result<impl Responder> {
-    let gears = db.gear.iter_gear(&query)?;
-    let ids = db.gear.iter_id(&query)?;
-
-    let gears: Vec<_> = gears
-        .zip(ids)
-        .map(|(x, y)| tf_models::frontend::Gear::from_backend(x, y))
-        .collect();
+    let gears: Vec<_> = db.gear.iter_gear(&query)?.collect();
 
     Ok(web::Json(gears))
 }
@@ -103,16 +110,12 @@ async fn delete_gear(
 }
 
 #[protect]
-async fn get_totals(
-    db: web::Data<Database>,
-    query: web::Path<GearQuery<'_>>,
-    unit: Option<web::Query<Unit>>,
-) -> Result<impl Responder> {
+async fn get_totals(db: web::Data<Database>, query: web::Path<GearQuery<'_>>) -> Result<String> {
     let user_query: UserQuery = query.deref().into();
 
     let filter = |id: &Option<String>| id.as_deref() == Some(&query.id);
 
-    let unit = unit.as_deref().unwrap_or_default();
+    /*
     let totals = db
         .activity
         .username_iter_session(&user_query)?
@@ -122,4 +125,6 @@ async fn get_totals(
         .fold(Totals::new(unit), |acc, x| Totals::fold(acc, &x, unit));
 
     Ok(web::Json(totals))
+    */
+    todo!()
 }

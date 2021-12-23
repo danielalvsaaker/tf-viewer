@@ -1,10 +1,16 @@
 use serde::Deserialize;
 
-use super::{middleware::Redirect, AuthServer, Extras};
-use actix::Addr;
-use actix_web::web;
-use oxide_auth_actix::{OAuthOperation, OAuthRequest, OAuthResponse, Resource, WebError};
+use axum::Router;
+mod oauth;
 
+pub fn routes() -> Router {
+    //   Router::new()
+    //.merge(oauth::routes())
+    //
+    oauth::routes()
+}
+
+/*
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/index")
@@ -38,14 +44,16 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     .route("/refresh", web::post().to(refresh::post_refresh))
     .route("/token", web::post().to(token::post_token));
 }
+*/
 
+/*
 mod authorize;
 mod index;
-mod refresh;
 mod signin;
 mod signout;
 mod signup;
 mod token;
+*/
 
 #[derive(Deserialize)]
 pub struct Callback {
@@ -56,17 +64,4 @@ pub struct Callback {
 pub struct UserForm {
     pub username: String,
     pub password: String,
-}
-
-pub async fn get_user(
-    req: OAuthRequest,
-    state: web::Data<Addr<AuthServer>>,
-) -> Result<OAuthResponse, WebError> {
-    match state.send(Resource(req).wrap(Extras::Nothing)).await? {
-        Ok(grant) => Ok(OAuthResponse::ok()
-            .content_type("application/json")?
-            .body(&format!(r#"{{"username":"{}"}}"#, grant.owner_id))),
-        Err(Ok(e)) => Ok(e),
-        Err(Err(e)) => Err(e),
-    }
 }

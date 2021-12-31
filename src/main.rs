@@ -2,7 +2,10 @@ mod error;
 mod routes;
 
 use axum::{AddExtensionLayer, Router, Server};
-use tower_http::cors::CorsLayer;
+use tower_http::{
+    compression::CompressionLayer,
+    cors::CorsLayer,
+};
 
 use tf_database::Database;
 
@@ -16,7 +19,8 @@ async fn main() -> std::io::Result<()> {
         .nest("/user/:user_id/activity", routes::activity::router())
         .layer(AddExtensionLayer::new(database))
         .layer(AddExtensionLayer::new(state))
-        .layer(CorsLayer::permissive());
+        .layer(CorsLayer::permissive())
+        .layer(CompressionLayer::new());
 
     Server::bind(&([127, 0, 0, 1], 8777).into())
         .serve(router.into_make_service())

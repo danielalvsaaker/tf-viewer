@@ -1,7 +1,7 @@
 use crate::query::{ActivityQuery, UserQuery};
 use rmp_serde as rmps;
 use tf_models::{
-    backend::{Lap, Record, Session},
+    activity::{Lap, Record, Session},
     Activity,
 };
 

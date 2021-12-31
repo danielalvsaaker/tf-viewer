@@ -15,6 +15,4 @@ serde = { version = "1", features = ["derive"] }
 serde_urlencoded = "*"
 sled = { git = "https://github.com/spacejam/sled", features = ["compression"] }
 nanoid = "*"
-dashmap = "*"
 chrono = { version = "*", default-features = false }
-axum-debug = "*"

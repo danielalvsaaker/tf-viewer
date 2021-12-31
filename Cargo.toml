@@ -10,33 +10,37 @@ include = ["src/**/*", "LICENSE", "README.md"]
 [workspace]
 resolver = "2"
 members = [
-    "tf-auth",
-    "tf-parse",
-    "tf-database",
-    "tf-macro",
+    "crates/tf-auth",
+    "crates/tf-parse",
+    "crates/tf-database",
+    "crates/tf-macro",
 ]
 
 [dependencies]
 # web server etc.
 axum = "*"
-tower-http = { version = "*", features = ["cors"] }
+tower-http = { version = "0.2", features = ["cors", "compression-full"] }
 tokio = { version = "1", features = ["full", "macros", "rt-multi-thread"] }
 serde = { version = "1", features = ["derive"] }
 
 oxide-auth-axum = { git = "https://github.com/danielalvsaaker/oxide-auth" }
 oxide-auth = { git = "https://github.com/danielalvsaaker/oxide-auth" }
-axum-debug = "*"
 
 # error handling
 thiserror = "1.0"
-
-tf-models = { path = "tf-models" }
-tf-macro = { path = "tf-macro" }
-tf-database = { path = "tf-database" }
-tf-auth = { path = "tf-auth" }
-tf-parse = { path = "tf-parse" }
-nanoid = "*"
 bytes = "*"
+
+tf-models = { path = "crates/tf-models" }
+tf-macro = { path = "crates/tf-macro" }
+tf-database = { path = "crates/tf-database" }
+tf-auth = { path = "crates/tf-auth" }
+tf-parse = { path = "crates/tf-parse" }
 
 [patch.crates-io]
 chrono = { git = "https://github.com/chronotope/chrono", default-features = false }
+
+[profile.dev]
+debug = 0
+
+[profile.release]
+incremental = true

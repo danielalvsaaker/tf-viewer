@@ -48,7 +48,7 @@ pub fn generate_thumb(record: Record, path: &std::path::PathBuf) -> Result<()> {
 }
 */
 use std::time::Duration;
-use tf_models::backend::Record;
+use tf_models::activity::Record;
 
 pub fn zone_duration(record: &Record, rest: u8, max: u8) -> Option<[Duration; 6]> {
     let (rest, max): (f32, f32) = (rest.into(), max.into());

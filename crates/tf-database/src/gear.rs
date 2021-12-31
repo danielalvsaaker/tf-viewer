@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::query::{GearQuery, UserQuery};
 use rmp_serde as rmps;
-use tf_models::backend::Gear;
+use tf_models::gear::Gear;
 
 #[derive(Clone)]
 pub struct GearTree {

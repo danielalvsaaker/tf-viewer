@@ -107,8 +107,8 @@ impl<'a> From<(&'a UserQuery<'a>, &'a str)> for ActivityQuery<'a> {
 impl<'a> From<(&'a str, &'a str)> for ActivityQuery<'a> {
     fn from((query, id): (&'a str, &'a str)) -> Self {
         Self {
-            user_id: Cow::Borrowed(&query),
-            id: Cow::Borrowed(&id),
+            user_id: Cow::Borrowed(query),
+            id: Cow::Borrowed(id),
         }
     }
 }

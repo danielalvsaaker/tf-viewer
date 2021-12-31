@@ -15,9 +15,11 @@ use tf_macro::oauth;
 
 pub fn router() -> Router {
     Router::new()
+        .route("/", get(get_activity_index).post(post_activity_index))
         .route("/:id", get(get_activity))
         .route("/:id/session", get(activity_session))
         .route("/:id/record", get(activity_record))
+        .route("/:id/zones", get(get_activity_zones))
 }
 
 #[oauth("activity:read")]

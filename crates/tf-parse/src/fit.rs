@@ -10,7 +10,7 @@ use crate::error::{Error, Result};
 
 use chrono::{offset::Local, DateTime};
 use tf_models::{
-    backend::{Lap, Record, Session},
+    activity::{Lap, Record, Session},
     Activity, Sport,
 };
 

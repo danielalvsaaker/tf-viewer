@@ -14,4 +14,3 @@ pub struct Activity {
     pub record: activity::Record,
     pub lap: Vec<activity::Lap>,
 }
-

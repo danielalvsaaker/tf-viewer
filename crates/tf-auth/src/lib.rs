@@ -95,7 +95,9 @@ impl InnerState {
                 vec![Client::public(
                     "tf-viewer",
                     RegisteredUrl::Semantic("http://localhost:8080/callback".parse().unwrap()),
-                    "activity:read activity:write".parse().unwrap(),
+                    "activity:read activity:write user:read gear:write gear:read"
+                        .parse()
+                        .unwrap(),
                 )]
                 .into_iter()
                 .collect(),

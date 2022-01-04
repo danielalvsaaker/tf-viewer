@@ -1,10 +1,10 @@
-use serde::{Deserialize, Serialize};
 use crate::Sport;
+use serde::{Deserialize, Serialize};
 
 use uom::si::{
     f64::{Length as Length_f64, Velocity},
-    u32::Length as Length_u32,
     u16::Power,
+    u32::Length as Length_u32,
 };
 
 use chrono::{DateTime, Local};

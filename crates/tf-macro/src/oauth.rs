@@ -23,7 +23,7 @@ impl<'a> ToTokens for OAuth<'a> {
         let fn_name = &fn_sig.ident;
         let fn_generics = &fn_sig.generics;
         let fn_args = &fn_sig.inputs;
-        let fn_async = &fn_sig.asyncness.unwrap();
+        let fn_async = &fn_sig.asyncness.unwrap_or_default();
         let fn_output = match &fn_sig.output {
             ReturnType::Type(ref _arrow, ref ty) => ty.to_token_stream(),
             ReturnType::Default => {
@@ -39,14 +39,17 @@ impl<'a> ToTokens for OAuth<'a> {
                 ::axum::extract::Extension(_state_): ::axum::extract::Extension<::tf_auth::State>,
                 _req_: ::oxide_auth_axum::OAuthResource,
                 #fn_args
-            ) -> ::std::result::Result<#fn_output, ::std::result::Result<::oxide_auth_axum::OAuthResponse, ::oxide_auth_axum::WebError>> {
+            ) -> ::std::result::Result<
+                #fn_output,
+                ::std::result::Result<::oxide_auth_axum::OAuthResponse, ::oxide_auth_axum::WebError>
+            > {
                 let _auth_ = _state_
                     .endpoint()
                     .with_scopes(
                         &[#(#scopes.parse().unwrap()),*]
                     )
                     .resource_flow()
-                    .execute(_req_.into_request());
+                    .execute(_req_.into());
 
                 match _auth_ {
                     Ok(grant) => {

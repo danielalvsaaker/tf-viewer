@@ -95,6 +95,15 @@ impl<'a> From<(&'a UserQuery<'a>, &'a str)> for GearQuery<'a> {
     }
 }
 
+impl<'a, A: AsRef<str>> From<(&'a ActivityQuery<'a>, &'a A)> for GearQuery<'a> {
+    fn from((query, id): (&'a ActivityQuery<'a>, &'a A)) -> Self {
+        Self {
+            user_id: Cow::Borrowed(&query.user_id),
+            id: Cow::from(id.as_ref()),
+        }
+    }
+}
+
 impl<'a> From<(&'a UserQuery<'a>, &'a str)> for ActivityQuery<'a> {
     fn from((query, id): (&'a UserQuery<'a>, &'a str)) -> Self {
         Self {

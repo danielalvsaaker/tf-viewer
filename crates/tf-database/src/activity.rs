@@ -197,7 +197,7 @@ impl ActivityTree {
             .usernameid_gearid
             .get(&query.to_key())?
             .as_deref()
-            .map(|x| rmps::from_read_ref::<'_, _, Option<String>>(&x))
+            .map(rmps::from_read_ref)
             .transpose()?)
     }
 

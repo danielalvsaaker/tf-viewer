@@ -8,7 +8,6 @@ include = ["src/**/*", "LICENSE", "README.md"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace]
-resolver = "2"
 members = [
     "crates/tf-auth",
     "crates/tf-parse",
@@ -35,6 +34,8 @@ tf-macro = { path = "crates/tf-macro" }
 tf-database = { path = "crates/tf-database" }
 tf-auth = { path = "crates/tf-auth" }
 tf-parse = { path = "crates/tf-parse" }
+
+nanoid = "*"
 
 [patch.crates-io]
 chrono = { git = "https://github.com/chronotope/chrono", default-features = false }

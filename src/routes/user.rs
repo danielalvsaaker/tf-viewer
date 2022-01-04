@@ -1,29 +1,34 @@
-use crate::error::Result;
-use actix_web::{http, web, HttpRequest, HttpResponse, Responder};
-use std::ops::Deref;
+use crate::error::{Error, Result};
+use axum::{
+    extract::{Extension, Path, Query},
+    http::{self, HeaderValue, StatusCode},
+    response::{Headers, IntoResponse},
+    routing::get,
+    Json, Router,
+};
 use tf_database::{query::UserQuery, Database};
-use tf_macro::protect;
-use tf_models::backend::User;
+use tf_macro::oauth;
 
-pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::resource("/{user_id}")
-            .name("user")
-            .route(web::get().to(get_user))
-            .route(web::put().to(put_user)),
-    );
+pub fn router() -> Router {
+    Router::new()
+        .route("/", get(get_authenticated_user))
+        .route("/:user_id", get(get_user))
 }
 
-#[protect]
+#[oauth("user:read")]
+async fn get_authenticated_user() -> impl IntoResponse {
+    Json(grant.owner_id)
+}
+
+#[oauth("user:read")]
 async fn get_user(
-    db: web::Data<Database>,
-    query: web::Path<UserQuery<'_>>,
-) -> Result<impl Responder> {
-    let user = db.user.get_user(&query)?;
-
-    Ok(web::Json(user))
+    Extension(db): Extension<Database>,
+    Path(query): Path<UserQuery<'_>>,
+) -> Result<impl IntoResponse> {
+    db.user.get_user(&query)?.map(Json).ok_or(Error::NotFound)
 }
 
+/*
 #[protect]
 pub async fn post_user(
     db: web::Data<Database>,
@@ -54,3 +59,4 @@ async fn put_user(
     }
     .finish())
 }
+*/

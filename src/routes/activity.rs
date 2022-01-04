@@ -16,10 +16,19 @@ use tf_macro::oauth;
 pub fn router() -> Router {
     Router::new()
         .route("/", get(get_activity_index).post(post_activity_index))
-        .route("/:id", get(get_activity))
+        .route("/:id", get(get_activity).delete(delete_activity))
         .route("/:id/session", get(activity_session))
         .route("/:id/record", get(activity_record))
+        .route("/:id/lap", get(activity_lap))
+        .route(
+            "/:id/gear",
+            get(get_activity_gear)
+                .put(put_activity_gear)
+                .delete(delete_activity_gear),
+        )
         .route("/:id/zones", get(get_activity_zones))
+        .route("/:id/prev", get(get_activity_prev))
+        .route("/:id/next", get(get_activity_next))
 }
 
 #[oauth("activity:read")]
@@ -83,6 +92,10 @@ async fn put_activity_gear(
     Path(query): Path<ActivityQuery<'_>>,
     Json(gear_id): Json<String>,
 ) -> Result<impl IntoResponse> {
+    if !db.gear.contains_gear(&(&query, &gear_id).into())? {
+        return Ok(StatusCode::UNPROCESSABLE_ENTITY);
+    }
+
     db.activity
         .insert_gear(&query, Some(&gear_id))?
         .map(|x| {
@@ -90,6 +103,16 @@ async fn put_activity_gear(
                 .unwrap_or(StatusCode::CREATED)
         })
         .ok_or(Error::NotFound)
+}
+
+#[oauth("activity:write")]
+async fn delete_activity_gear(
+    Extension(db): Extension<Database>,
+    Path(query): Path<ActivityQuery<'_>>,
+) -> Result<impl IntoResponse> {
+    db.activity.insert_gear(&query, None)?;
+
+    Ok(StatusCode::NO_CONTENT)
 }
 
 #[derive(Deserialize)]
@@ -172,6 +195,7 @@ async fn post_activity_index(
     db.activity.insert_activity(&query, &parsed)?;
 
     let activity_query = ActivityQuery::from((&query, parsed.id.as_str()));
+
     let url = format!(
         "/user/{}/activity/{}",
         activity_query.user_id, activity_query.id

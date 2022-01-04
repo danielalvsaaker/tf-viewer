@@ -2,21 +2,21 @@ mod error;
 mod routes;
 
 use axum::{AddExtensionLayer, Router, Server};
-use tower_http::{
-    compression::CompressionLayer,
-    cors::CorsLayer,
-};
+use tower_http::{compression::CompressionLayer, cors::CorsLayer};
 
 use tf_database::Database;
+use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let database = Database::load_or_create().unwrap();
-    let state = std::sync::Arc::new(tf_auth::InnerState::preconfigured());
+    let state = Arc::new(tf_auth::InnerState::preconfigured());
 
     let router = Router::new()
         .nest("/oauth", tf_auth::routes())
+        .nest("/user", routes::user::router())
         .nest("/user/:user_id/activity", routes::activity::router())
+        .nest("/user/:user_id/gear", routes::gear::router())
         .layer(AddExtensionLayer::new(database))
         .layer(AddExtensionLayer::new(state))
         .layer(CorsLayer::permissive())

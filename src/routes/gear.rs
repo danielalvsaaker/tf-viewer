@@ -1,43 +1,32 @@
 use crate::error::{Error, Result};
-use actix_web::{http, web, HttpRequest, HttpResponse, Responder};
+use axum::{
+    extract::{Extension, Path, Query},
+    http::{self, HeaderValue, StatusCode},
+    response::{Headers, IntoResponse},
+    routing::get,
+    Json, Router,
+};
 use serde::Deserialize;
 use std::ops::Deref;
 use tf_database::{
     query::{GearQuery, UserQuery},
     Database,
 };
-use tf_macro::protect;
-use tf_models::backend::{Gear, GearType};
+use tf_macro::oauth;
+use tf_models::gear::{Gear, GearType};
 
-pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::resource("/{user_id}/gear/{id}")
-            .name("gear")
-            .route(web::get().to(get_gear))
-            .route(web::put().to(put_gear))
-            .route(web::delete().to(delete_gear)),
-    )
-    .service(
-        web::resource("/{user_id}/gear/{id}/totals")
-            .name("gear_totals")
-            .route(web::get().to(get_totals)),
-    )
-    .service(
-        web::resource("/{user_id}/gear")
-            .name("gear_index")
-            .route(web::get().to(get_gear_index))
-            .route(web::post().to(post_gear_index)),
-    );
+pub fn router() -> Router {
+    Router::new()
+        .route("/", get(get_gear_index).post(post_gear_index))
+        .route("/:id", get(get_gear).put(put_gear).delete(delete_gear))
 }
 
-#[protect]
+#[oauth("gear:read")]
 async fn get_gear(
-    db: web::Data<Database>,
-    query: web::Path<GearQuery<'_>>,
-) -> Result<impl Responder> {
-    let gear = db.gear.get_gear(&query)?.ok_or(Error::NotFound)?;
-
-    Ok(web::Json(gear))
+    Extension(db): Extension<Database>,
+    Path(query): Path<GearQuery<'_>>,
+) -> Result<impl IntoResponse> {
+    db.gear.get_gear(&query)?.map(Json).ok_or(Error::NotFound)
 }
 
 #[derive(Deserialize)]
@@ -46,32 +35,30 @@ struct GearForm {
     gear_type: GearType,
 }
 
-#[protect]
+#[oauth("gear:write")]
 async fn put_gear(
-    db: web::Data<Database>,
-    query: web::Path<GearQuery<'_>>,
-    gear: web::Json<Gear>,
-) -> Result<impl Responder> {
+    Extension(db): Extension<Database>,
+    Path(query): Path<GearQuery<'_>>,
+    Json(gear): Json<Gear>,
+) -> Result<impl IntoResponse> {
     if db.gear.contains_gear(&query)? {
-        db.gear
-            .insert_gear(&query.into_inner(), gear.into_inner())?;
+        db.gear.insert_gear(&query, gear)?;
 
-        Ok(HttpResponse::NoContent())
+        Ok(StatusCode::NO_CONTENT)
     } else {
-        Ok(HttpResponse::NotFound())
+        Ok(StatusCode::NOT_FOUND)
     }
 }
 
-#[protect]
+#[oauth("gear:write")]
 async fn post_gear_index(
-    db: web::Data<Database>,
-    query: web::Path<UserQuery<'_>>,
-    gear: web::Json<GearForm>,
-    req: HttpRequest,
-) -> Result<impl Responder> {
+    Extension(db): Extension<Database>,
+    Path(query): Path<UserQuery<'_>>,
+    Json(gear): Json<GearForm>,
+) -> Result<impl IntoResponse> {
     let id = nanoid::nanoid!(10);
-    let gear_query = GearQuery::from((query.deref(), id.as_str()));
-    let gear = gear.into_inner();
+    let gear_query = GearQuery::from((&query, id.as_str()));
+    let gear = gear;
     let gear = Gear {
         id: id.clone(),
         name: gear.name,
@@ -80,35 +67,35 @@ async fn post_gear_index(
 
     db.gear.insert_gear(&gear_query, gear)?;
 
-    let url = req
-        .url_for("gear", &[&gear_query.user_id, &gear_query.id])
-        .unwrap();
+    let url = format!("/user/{}/gear/{}", gear_query.user_id, gear_query.id);
 
-    Ok(HttpResponse::Created()
-        .insert_header((http::header::LOCATION, url.to_string()))
-        .finish())
+    Ok(Headers(vec![(
+        http::header::LOCATION,
+        HeaderValue::from_str(&url).unwrap(),
+    )]))
 }
 
-#[protect]
+#[oauth("gear:read")]
 async fn get_gear_index(
-    db: web::Data<Database>,
-    query: web::Path<UserQuery<'_>>,
-) -> Result<impl Responder> {
-    let gears: Vec<_> = db.gear.iter_gear(&query)?.collect();
+    Extension(db): Extension<Database>,
+    Path(query): Path<UserQuery<'_>>,
+) -> Result<impl IntoResponse> {
+    let gears = db.gear.iter_gear(&query)?.collect::<Vec<_>>();
 
-    Ok(web::Json(gears))
+    Ok(Json(gears))
 }
 
-#[protect]
+#[oauth("gear:write")]
 async fn delete_gear(
-    db: web::Data<Database>,
-    query: web::Path<GearQuery<'_>>,
-) -> Result<impl Responder> {
+    Extension(db): Extension<Database>,
+    Path(query): Path<GearQuery<'_>>,
+) -> Result<impl IntoResponse> {
     db.gear.remove_gear(&query)?;
 
-    Ok(HttpResponse::NoContent())
+    Ok(StatusCode::NO_CONTENT)
 }
 
+/*
 #[protect]
 async fn get_totals(db: web::Data<Database>, query: web::Path<GearQuery<'_>>) -> Result<String> {
     let user_query: UserQuery = query.deref().into();
@@ -128,3 +115,4 @@ async fn get_totals(db: web::Data<Database>, query: web::Path<GearQuery<'_>>) ->
     */
     todo!()
 }
+*/

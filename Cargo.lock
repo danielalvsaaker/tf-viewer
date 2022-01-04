@@ -777,7 +777,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 [[package]]
 name = "oxide-auth"
 version = "0.5.1"
-source = "git+https://github.com/danielalvsaaker/oxide-auth#fba082539d7396d5d410cea6b088dae829daceec"
+source = "git+https://github.com/danielalvsaaker/oxide-auth#d65f2ab6e5d1c8fc4fb399d24f34d06e21cf3c76"
 dependencies = [
  "base64",
  "chrono",
@@ -797,7 +797,7 @@ dependencies = [
 [[package]]
 name = "oxide-auth-axum"
 version = "0.1.0"
-source = "git+https://github.com/danielalvsaaker/oxide-auth#fba082539d7396d5d410cea6b088dae829daceec"
+source = "git+https://github.com/danielalvsaaker/oxide-auth#d65f2ab6e5d1c8fc4fb399d24f34d06e21cf3c76"
 dependencies = [
  "axum",
  "oxide-auth",
@@ -867,9 +867,9 @@ dependencies = [
 
 [[package]]
 name = "pin-project-lite"
-version = "0.2.7"
+version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d31d11c69a6b52a174b42bdc0c30e5e11670f90788b2c471c31c1d17d449443"
+checksum = "e280fbe77cc62c91527259e9442153f4688736748d24660126286329742b4c6c"
 
 [[package]]
 name = "pin-utils"
@@ -1211,6 +1211,7 @@ version = "0.1.1"
 dependencies = [
  "axum",
  "bytes",
+ "nanoid",
  "oxide-auth",
  "oxide-auth-axum",
  "serde",

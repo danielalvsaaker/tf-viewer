@@ -4,8 +4,8 @@ mod routes;
 use axum::{AddExtensionLayer, Router, Server};
 use tower_http::{compression::CompressionLayer, cors::CorsLayer};
 
-use tf_database::Database;
 use std::sync::Arc;
+use tf_database::Database;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {

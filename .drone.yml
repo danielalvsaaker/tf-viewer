@@ -1,0 +1,19 @@
+kind: pipeline
+name: rust
+
+steps:
+  - name: clippy
+    image: rust:latest
+    environment:
+      CARGO_TERM_COLOR: always
+    commands:
+    - rustup component add clippy
+    - cargo clippy
+
+  - name: rustfmt
+    image: rust:latest
+    environment:
+      CARGO_TERM_COLOR: always
+    commands:
+      - rustup component add rustfmt
+      - cargo fmt -- --check

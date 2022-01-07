@@ -22,8 +22,8 @@ tower-http = { version = "0.2", features = ["cors", "compression-full"] }
 tokio = { version = "1", features = ["full", "macros", "rt-multi-thread"] }
 serde = { version = "1", features = ["derive"] }
 
-oxide-auth-axum = { git = "https://github.com/danielalvsaaker/oxide-auth" }
-oxide-auth = { git = "https://github.com/danielalvsaaker/oxide-auth" }
+oxide-auth-axum = "0.1"
+oxide-auth = "0.5"
 
 # error handling
 thiserror = "1.0"

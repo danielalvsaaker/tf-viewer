@@ -6,8 +6,8 @@ edition = "2021"
 
 [dependencies]
 argon2 = { version = "*", features = ["std"] }
-oxide-auth = { git = "https://github.com/danielalvsaaker/oxide-auth" }
-oxide-auth-axum = { git = "https://github.com/danielalvsaaker/oxide-auth" }
+oxide-auth = "0.5"
+oxide-auth-axum = "0.1"
 axum = "*"
 thiserror = "*"
 url = "*"

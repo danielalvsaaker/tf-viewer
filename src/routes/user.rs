@@ -1,8 +1,7 @@
 use crate::error::{Error, Result};
 use axum::{
-    extract::{Extension, Path, Query},
-    http::{self, HeaderValue, StatusCode},
-    response::{Headers, IntoResponse},
+    extract::{Extension, Path},
+    response::IntoResponse,
     routing::get,
     Json, Router,
 };

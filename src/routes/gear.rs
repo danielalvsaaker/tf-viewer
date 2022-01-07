@@ -1,13 +1,12 @@
 use crate::error::{Error, Result};
 use axum::{
-    extract::{Extension, Path, Query},
+    extract::{Extension, Path},
     http::{self, HeaderValue, StatusCode},
     response::{Headers, IntoResponse},
     routing::get,
     Json, Router,
 };
 use serde::Deserialize;
-use std::ops::Deref;
 use tf_database::{
     query::{GearQuery, UserQuery},
     Database,

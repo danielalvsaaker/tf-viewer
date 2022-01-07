@@ -7,6 +7,7 @@ steps:
     image: rust:latest
     environment:
       CARGO_TERM_COLOR: always
+      RUSTFLAGS: -D warnings
     commands:
     - rustup component add clippy
     - cargo clippy
@@ -20,6 +21,6 @@ steps:
       - cargo fmt -- --check
 ---
 kind: signature
-hmac: 5eec1651270c767d1d3e554c47f31efb1481ef4b60a90e33e571955c23758c94
+hmac: 7914177804d5acc8dde3348d9d882a4afbcef295aaee362df3084eb443248959
 
 ...

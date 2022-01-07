@@ -14,12 +14,12 @@ pub fn router() -> Router {
         .route("/:user_id", get(get_user))
 }
 
-#[oauth("user:read")]
+#[oauth(scopes = ["user:read"])]
 async fn get_authenticated_user() -> impl IntoResponse {
     Json(grant.owner_id)
 }
 
-#[oauth("user:read")]
+#[oauth(scopes = ["user:read"])]
 async fn get_user(
     Extension(db): Extension<Database>,
     Path(query): Path<UserQuery<'_>>,

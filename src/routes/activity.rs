@@ -31,7 +31,7 @@ pub fn router() -> Router {
         .route("/:id/next", get(get_activity_next))
 }
 
-#[oauth("activity:read")]
+#[oauth(scopes = ["activity:read"])]
 pub async fn get_activity(
     Extension(db): Extension<Database>,
     Path(query): Path<ActivityQuery<'_>>,
@@ -42,7 +42,7 @@ pub async fn get_activity(
         .ok_or(Error::NotFound)
 }
 
-#[oauth("activity:read")]
+#[oauth(scopes = ["activity:read"])]
 pub async fn activity_session(
     Extension(db): Extension<Database>,
     Path(query): Path<ActivityQuery<'_>>,
@@ -53,7 +53,7 @@ pub async fn activity_session(
         .ok_or(Error::NotFound)
 }
 
-#[oauth("activity:read")]
+#[oauth(scopes = ["activity:read"])]
 pub async fn activity_record(
     Extension(db): Extension<Database>,
     Path(query): Path<ActivityQuery<'_>>,
@@ -64,7 +64,7 @@ pub async fn activity_record(
         .ok_or(Error::NotFound)
 }
 
-#[oauth("activity:read")]
+#[oauth(scopes = ["activity:read"])]
 async fn activity_lap(
     Extension(db): Extension<Database>,
     Path(query): Path<ActivityQuery<'_>>,
@@ -75,7 +75,7 @@ async fn activity_lap(
         .ok_or(Error::NotFound)
 }
 
-#[oauth("activity:read")]
+#[oauth(scopes = ["activity:read"])]
 async fn get_activity_gear(
     Extension(db): Extension<Database>,
     Path(query): Path<ActivityQuery<'_>>,
@@ -86,7 +86,7 @@ async fn get_activity_gear(
         .ok_or(Error::NotFound)
 }
 
-#[oauth("activity:write")]
+#[oauth(scopes = ["activity:write"])]
 async fn put_activity_gear(
     Extension(db): Extension<Database>,
     Path(query): Path<ActivityQuery<'_>>,
@@ -105,7 +105,7 @@ async fn put_activity_gear(
         .ok_or(Error::NotFound)
 }
 
-#[oauth("activity:write")]
+#[oauth(scopes = ["activity:write"])]
 async fn delete_activity_gear(
     Extension(db): Extension<Database>,
     Path(query): Path<ActivityQuery<'_>>,
@@ -129,7 +129,7 @@ impl Default for Filters {
     }
 }
 
-#[oauth("activity:read")]
+#[oauth(scopes = ["activity:read"])]
 async fn get_activity_zones(
     Extension(db): Extension<Database>,
     Path(query): Path<ActivityQuery<'_>>,
@@ -141,7 +141,7 @@ async fn get_activity_zones(
         .ok_or(Error::NotFound)
 }
 
-#[oauth("activity:read")]
+#[oauth(scopes = ["activity:read"])]
 async fn get_activity_prev(
     Extension(db): Extension<Database>,
     Path(query): Path<ActivityQuery<'_>>,
@@ -149,7 +149,7 @@ async fn get_activity_prev(
     db.activity.prev(&query)?.map(Json).ok_or(Error::NotFound)
 }
 
-#[oauth("activity:read")]
+#[oauth(scopes = ["activity:read"])]
 async fn get_activity_next(
     Extension(db): Extension<Database>,
     Path(query): Path<ActivityQuery<'_>>,
@@ -157,7 +157,7 @@ async fn get_activity_next(
     db.activity.next(&query)?.map(Json).ok_or(Error::NotFound)
 }
 
-#[oauth("activity:write")]
+#[oauth(scopes = ["activity:write"])]
 async fn delete_activity(
     Extension(db): Extension<Database>,
     Path(query): Path<ActivityQuery<'_>>,
@@ -167,7 +167,7 @@ async fn delete_activity(
     Ok(StatusCode::NO_CONTENT)
 }
 
-#[oauth("activity:read")]
+#[oauth(scopes = ["activity:read"])]
 async fn get_activity_index(
     Extension(db): Extension<Database>,
     Path(query): Path<UserQuery<'_>>,
@@ -183,7 +183,7 @@ async fn get_activity_index(
     Ok(Json(sessions))
 }
 
-#[oauth("activity:write")]
+#[oauth(scopes = ["activity:write"])]
 async fn post_activity_index(
     Extension(db): Extension<Database>,
     Path(query): Path<UserQuery<'_>>,

@@ -20,7 +20,7 @@ pub fn router() -> Router {
         .route("/:id", get(get_gear).put(put_gear).delete(delete_gear))
 }
 
-#[oauth("gear:read")]
+#[oauth(scopes = ["gear:read"])]
 async fn get_gear(
     Extension(db): Extension<Database>,
     Path(query): Path<GearQuery<'_>>,
@@ -34,7 +34,7 @@ struct GearForm {
     gear_type: GearType,
 }
 
-#[oauth("gear:write")]
+#[oauth(scopes = ["gear:write"])]
 async fn put_gear(
     Extension(db): Extension<Database>,
     Path(query): Path<GearQuery<'_>>,
@@ -49,7 +49,7 @@ async fn put_gear(
     }
 }
 
-#[oauth("gear:write")]
+#[oauth(scopes = ["gear:write"])]
 async fn post_gear_index(
     Extension(db): Extension<Database>,
     Path(query): Path<UserQuery<'_>>,
@@ -74,7 +74,7 @@ async fn post_gear_index(
     )]))
 }
 
-#[oauth("gear:read")]
+#[oauth(scopes = ["gear:read"])]
 async fn get_gear_index(
     Extension(db): Extension<Database>,
     Path(query): Path<UserQuery<'_>>,
@@ -84,7 +84,7 @@ async fn get_gear_index(
     Ok(Json(gears))
 }
 
-#[oauth("gear:write")]
+#[oauth(scopes = ["gear:write"])]
 async fn delete_gear(
     Extension(db): Extension<Database>,
     Path(query): Path<GearQuery<'_>>,

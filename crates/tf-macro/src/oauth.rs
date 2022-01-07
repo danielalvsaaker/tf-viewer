@@ -29,10 +29,7 @@ impl Parse for Scopes {
 
 impl ToTokens for Scopes {
     fn to_tokens(&self, output: &mut TokenStream) {
-        let scopes = {
-            let Scopes { scopes, .. } = self;
-            scopes.iter()
-        };
+        let scopes = self.scopes.iter();
 
         output.extend(quote! { &[#(#scopes.parse().unwrap()),*] })
     }

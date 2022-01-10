@@ -19,6 +19,9 @@ struct Scopes {
 impl Parse for Scopes {
     fn parse(input: ParseStream) -> Result<Self> {
         let content;
+
+        let _: kw::scopes = input.parse()?;
+        let _: Token![=] = input.parse()?;
         let _: Bracket = bracketed!(content in input);
 
         Ok(Self {
@@ -44,9 +47,6 @@ impl Parse for OAuthArguments {
         let lookahead = input.lookahead1();
 
         if lookahead.peek(kw::scopes) {
-            let _: kw::scopes = input.parse()?;
-            let _: Token![=] = input.parse()?;
-
             Ok(Self {
                 scopes: input.parse()?,
             })

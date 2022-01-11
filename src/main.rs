@@ -1,3 +1,4 @@
+mod cache;
 mod error;
 mod routes;
 
@@ -11,6 +12,7 @@ use tf_database::Database;
 async fn main() -> std::io::Result<()> {
     let database = Database::load_or_create().unwrap();
     let state = Arc::new(tf_auth::InnerState::preconfigured());
+    let cache = cache::ThumbnailCache::new();
 
     let router = Router::new()
         .nest("/oauth", tf_auth::routes())
@@ -19,6 +21,7 @@ async fn main() -> std::io::Result<()> {
         .nest("/user/:user_id/gear", routes::gear::router())
         .layer(AddExtensionLayer::new(database))
         .layer(AddExtensionLayer::new(state))
+        .layer(AddExtensionLayer::new(cache))
         .layer(CorsLayer::permissive())
         .layer(CompressionLayer::new());
 

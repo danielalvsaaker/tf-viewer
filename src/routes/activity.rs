@@ -1,12 +1,17 @@
-use crate::error::{Error, Result};
+use crate::{
+    cache::ThumbnailCache,
+    error::{Error, Result},
+};
 use axum::{
-    extract::{Extension, Path, Query},
-    http::{self, HeaderValue, StatusCode},
+    extract::{Extension, Path, Query, TypedHeader},
+    headers::{ContentType, ETag, HeaderMapExt, IfNoneMatch},
+    http::{self, HeaderMap, HeaderValue, StatusCode},
     response::{Headers, IntoResponse},
     routing::get,
     Json, Router,
 };
 use serde::Deserialize;
+use std::str::FromStr;
 use tf_database::{
     query::{ActivityQuery, UserQuery},
     Database,
@@ -29,6 +34,33 @@ pub fn router() -> Router {
         .route("/:id/zones", get(get_activity_zones))
         .route("/:id/prev", get(get_activity_prev))
         .route("/:id/next", get(get_activity_next))
+        .route("/:id/thumbnail", get(get_activity_thumbnail))
+}
+
+async fn get_activity_thumbnail(
+    Extension(db): Extension<Database>,
+    Extension(cache): Extension<ThumbnailCache>,
+    Path(query): Path<ActivityQuery<'_>>,
+    header: Option<TypedHeader<IfNoneMatch>>,
+) -> Result<impl IntoResponse> {
+    let record = db.activity.get_record(&query)?.ok_or(Error::NotFound)?;
+    let thumbnail = cache.get(query.to_key(), record).await;
+
+    let etag = ETag::from_str(&format!(r#""{:#x}""#, thumbnail.crc)).unwrap();
+
+    if header
+        .map(|TypedHeader(header)| !header.precondition_passes(&etag))
+        .unwrap_or_default()
+    {
+        return Ok(StatusCode::NOT_MODIFIED.into_response());
+    }
+
+    let mut headers = HeaderMap::new();
+
+    headers.typed_insert(etag);
+    headers.typed_insert(ContentType::png());
+
+    Ok((headers, thumbnail.data).into_response())
 }
 
 #[oauth(scopes = ["activity:read"])]

@@ -17,7 +17,7 @@ members = [
 
 [dependencies]
 # web server etc.
-axum = "*"
+axum = { version = "*", features = ["headers"] }
 tower-http = { version = "0.2", features = ["cors", "compression-full"] }
 tokio = { version = "1", features = ["full", "macros", "rt-multi-thread"] }
 serde = { version = "1", features = ["derive"] }
@@ -36,6 +36,9 @@ tf-auth = { path = "crates/tf-auth" }
 tf-parse = { path = "crates/tf-parse" }
 
 nanoid = "*"
+moka = { version = "0.7", features = ["future"] }
+staticmap = "*"
+crc32fast = "*"
 
 [patch.crates-io]
 chrono = { git = "https://github.com/chronotope/chrono", default-features = false }

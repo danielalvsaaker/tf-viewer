@@ -29,6 +29,12 @@ impl IntoResponse for Error {
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         };
 
-        (status_code, self.to_string()).into_response()
+        #[cfg(debug_assertions)]
+        {
+            (status_code, self.to_string()).into_response()
+        }
+
+        #[cfg(not(debug_assertions))]
+        status_code.into_response()
     }
 }

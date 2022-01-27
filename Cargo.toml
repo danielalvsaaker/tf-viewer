@@ -39,6 +39,7 @@ nanoid = "*"
 moka = { version = "0.7", features = ["future"] }
 staticmap = "*"
 crc32fast = "*"
+rayon = "*"
 
 [patch.crates-io]
 chrono = { git = "https://github.com/chronotope/chrono", default-features = false }

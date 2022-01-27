@@ -13,11 +13,11 @@ pub struct Thumbnail {
 }
 
 impl Thumbnail {
-    fn new(record: Record) -> Self {
-        let data = Self::generate_thumb(record).map(Bytes::from).unwrap();
+    fn new(record: Record) -> Option<Self> {
+        let data = Self::generate_thumb(record).map(Bytes::from)?;
         let crc = crc32fast::hash(&data);
 
-        Self { data, crc }
+        Some(Self { data, crc })
     }
 
     fn generate_thumb(record: Record) -> Option<Vec<u8>> {
@@ -49,7 +49,7 @@ impl Thumbnail {
 
 #[derive(Clone)]
 pub struct ThumbnailCache {
-    inner: Cache<Vec<u8>, Thumbnail>,
+    inner: Cache<Vec<u8>, Option<Thumbnail>>,
 }
 
 impl ThumbnailCache {
@@ -59,13 +59,20 @@ impl ThumbnailCache {
         }
     }
 
-    pub async fn get(&self, key: Vec<u8>, record: Record) -> Thumbnail {
+    pub async fn get(&self, key: Vec<u8>, record: Record) -> Option<Thumbnail> {
+        let task = async move {
+            let (send, recv) = tokio::sync::oneshot::channel();
+
+            rayon::spawn(move || {
+                let _ = send.send(Thumbnail::new(record));
+            });
+
+            recv.await.ok().flatten()
+        };
+
+
         self.inner
-            .get_or_insert_with(key, async move {
-                tokio::task::spawn_blocking(move || Thumbnail::new(record))
-                    .await
-                    .unwrap()
-            })
+            .get_or_insert_with(key, task)
             .await
     }
 }

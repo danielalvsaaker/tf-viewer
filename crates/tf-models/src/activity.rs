@@ -45,7 +45,7 @@ pub struct Session {
     pub start_time: DateTime<Local>,
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 pub struct Record {
     pub cadence: Vec<Option<u8>>,
     pub distance: Vec<Option<Length_f64>>,

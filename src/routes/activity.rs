@@ -44,7 +44,9 @@ async fn get_activity_thumbnail(
     header: Option<TypedHeader<IfNoneMatch>>,
 ) -> Result<impl IntoResponse> {
     let record = db.activity.get_record(&query)?.ok_or(Error::NotFound)?;
-    let thumbnail = cache.get(query.to_key(), record).await;
+    let thumbnail = cache.get(query.to_key(), record)
+        .await
+        .ok_or(Error::NotFound)?;
 
     let etag = ETag::from_str(&format!(r#""{:#x}""#, thumbnail.crc)).unwrap();
 

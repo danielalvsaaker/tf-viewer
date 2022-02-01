@@ -10,7 +10,7 @@ use uom::si::{
 use chrono::{DateTime, Local};
 use std::time::Duration;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct Activity {
     pub id: String,
     pub gear_id: Option<String>,
@@ -59,7 +59,7 @@ pub struct Record {
     pub duration: Vec<Duration>,
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize, Clone, Copy)]
 pub struct Lap {
     pub cadence_avg: Option<u8>,
     pub cadence_max: Option<u8>,

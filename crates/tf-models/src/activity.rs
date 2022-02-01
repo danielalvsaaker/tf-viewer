@@ -10,14 +10,13 @@ use uom::si::{
 use chrono::{DateTime, Local};
 use std::time::Duration;
 
-#[derive(Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Activity {
     pub id: String,
     pub gear_id: Option<String>,
     pub session: Session,
     pub record: Record,
     pub lap: Vec<Lap>,
-    pub notes: Option<String>,
 }
 
 #[derive(Default, Clone, Copy, Serialize, Deserialize)]

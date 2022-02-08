@@ -55,13 +55,13 @@ async fn put_gear(
 #[oauth(scopes = ["gear:write"])]
 async fn post_gear_index(
     Extension(db): Extension<Database<'_>>,
-    Path(query): Path<UserQuery>,
+    Path(query): Path<UserQuery<'_>>,
     Json(gear): Json<GearForm>,
 ) -> Result<impl IntoResponse> {
     let id = nanoid::nanoid!(10);
     let gear = Gear {
-        owner: query.user_id.to_owned(),
-        id: id.clone(),
+        owner: query.user_id.into(),
+        id,
         name: gear.name,
         gear_type: gear.gear_type,
     };
@@ -81,7 +81,7 @@ async fn post_gear_index(
 #[oauth(scopes = ["gear:read"])]
 async fn get_gear_index(
     Extension(db): Extension<Database<'_>>,
-    Path(query): Path<UserQuery>,
+    Path(query): Path<UserQuery<'_>>,
 ) -> Result<impl IntoResponse> {
     /*
     let gears = db.gear.iter_gear(&query)?.collect::<Vec<_>>();

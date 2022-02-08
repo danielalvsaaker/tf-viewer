@@ -6,5 +6,3 @@ pub mod gear;
 pub mod user;
 
 use serde::{Deserialize, Serialize};
-
-

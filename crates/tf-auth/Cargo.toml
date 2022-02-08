@@ -13,6 +13,6 @@ thiserror = "*"
 url = "*"
 serde = { version = "1", features = ["derive"] }
 serde_urlencoded = "*"
-sled = { git = "https://github.com/spacejam/sled", features = ["compression"] }
+sled = { version = "0.34", features = ["compression"] }
 nanoid = "*"
 chrono = { version = "*", default-features = false }

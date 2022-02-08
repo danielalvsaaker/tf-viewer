@@ -13,7 +13,7 @@ use axum::{
 use serde::Deserialize;
 use std::str::FromStr;
 use tf_database::{
-    query::{ActivityQuery, UserQuery, GearQuery, Key},
+    query::{ActivityQuery, GearQuery, Key, UserQuery},
     Database,
 };
 use tf_macro::oauth;
@@ -44,7 +44,8 @@ async fn get_activity_thumbnail(
     header: Option<TypedHeader<IfNoneMatch>>,
 ) -> Result<impl IntoResponse> {
     let record = db.activity.record.get(&query)?.ok_or(Error::NotFound)?;
-    let thumbnail = cache.get(query.as_key(), record)
+    let thumbnail = cache
+        .get(query.as_key(), record)
         .await
         .ok_or(Error::NotFound)?;
 
@@ -70,10 +71,7 @@ pub async fn get_activity(
     Extension(db): Extension<Database<'_>>,
     Path(query): Path<ActivityQuery<'_>>,
 ) -> Result<impl IntoResponse> {
-    db.activity
-        .get(&query)?
-        .map(Json)
-        .ok_or(Error::NotFound)
+    db.activity.get(&query)?.map(Json).ok_or(Error::NotFound)
 }
 
 #[oauth(scopes = ["activity:read"])]
@@ -180,21 +178,25 @@ async fn get_activity_zones(
 }
 
 #[oauth(scopes = ["activity:read"])]
-async fn get_activity_prev(
-    Extension(db): Extension<Database<'_>>,
-    Path(query): Path<ActivityQuery<'_>>,
-) -> Result<impl IntoResponse> {
-    //db.activity.prev(&query)?.map(Json).ok_or(Error::NotFound)
-    Ok("")
+async fn get_activity_prev<'a>(
+    Extension(db): Extension<Database<'a>>,
+    Path(query): Path<ActivityQuery<'a>>,
+) -> Result<impl IntoResponse + 'a> {
+    let res = db.activity.session.prev(&query)?;
+
+    res.map(Json).ok_or(Error::NotFound)
 }
 
 #[oauth(scopes = ["activity:read"])]
-async fn get_activity_next(
-    Extension(db): Extension<Database<'_>>,
-    Path(query): Path<ActivityQuery<'_>>,
-) -> Result<impl IntoResponse> {
-    //db.activity.next(&query)?.map(Json).ok_or(Error::NotFound)
-    Ok("")
+async fn get_activity_next<'a>(
+    Extension(db): Extension<Database<'a>>,
+    Path(query): Path<ActivityQuery<'a>>,
+) -> Result<impl IntoResponse + 'a> {
+    db.activity
+        .session
+        .next(&query)?
+        .map(Json)
+        .ok_or(Error::NotFound)
 }
 
 #[oauth(scopes = ["activity:write"])]
@@ -210,7 +212,7 @@ async fn delete_activity(
 #[oauth(scopes = ["activity:read"])]
 async fn get_activity_index(
     Extension(db): Extension<Database<'_>>,
-    Path(query): Path<UserQuery>,
+    Path(query): Path<UserQuery<'_>>,
     Query(filters): Query<Filters>,
 ) -> Result<impl IntoResponse> {
     /*
@@ -229,7 +231,7 @@ async fn get_activity_index(
 #[oauth(scopes = ["activity:write"])]
 async fn post_activity_index(
     Extension(db): Extension<Database<'_>>,
-    Path(query): Path<UserQuery>,
+    Path(query): Path<UserQuery<'_>>,
     file: bytes::Bytes,
 ) -> Result<impl IntoResponse> {
     //let gear = db.user.get_standard_gear(&query)?;

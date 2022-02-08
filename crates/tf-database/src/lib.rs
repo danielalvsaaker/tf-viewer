@@ -6,15 +6,15 @@ use anyhow::Result;
 
 */
 
-use crate::query::{ActivityQuery, UserQuery, GearQuery};
+use crate::query::{ActivityQuery, GearQuery, UserQuery};
 use rmp_serde as rmps;
 use tf_models::activity::{Activity, Lap, Record, Session};
 use tf_models::gear::Gear;
 
 use query::Key;
 use serde::{de::DeserializeOwned, Serialize};
-use std::ops::Deref;
 use sled::Transactional;
+use std::ops::Deref;
 
 pub trait Value
 where
@@ -54,8 +54,17 @@ where
             .transpose()?)
     }
 
+    pub fn keys(&self, key: &K) -> Result<impl Iterator<Item = K>> {
+        Ok(self
+            .inner
+            .scan_prefix(key.as_prefix())
+            .keys()
+            .rev()
+            .flatten()
+            .flat_map(|x| K::from_bytes(&x)))
+    }
 
-    pub fn iter(&self, key: &UserQuery) -> Result<impl Iterator<Item = V>> {
+    pub fn values(&self, key: &K) -> Result<impl Iterator<Item = V>> {
         Ok(self
             .inner
             .scan_prefix(key.as_prefix())
@@ -63,6 +72,41 @@ where
             .rev()
             .flatten()
             .flat_map(|x| V::from_bytes(&x)))
+    }
+
+    pub fn prev(&self, key: &K) -> Result<Option<K>> {
+        let set: std::collections::BTreeSet<_> = self
+            .inner
+            .scan_prefix(key.as_prefix())
+            .keys()
+            .flatten()
+            .map(|x| x.to_vec())
+            .collect();
+
+        Ok(set
+            .range(..key.as_key())
+            .next_back()
+            .cloned()
+            .and_then(|x| K::from_bytes(&x)))
+    }
+
+    pub fn next(&self, key: &K) -> Result<Option<K>> {
+        let set: std::collections::BTreeSet<_> = self
+            .inner
+            .scan_prefix(key.as_prefix())
+            .keys()
+            .flatten()
+            .map(|x| x.to_vec())
+            .collect();
+
+        Ok(set
+            .range((
+                std::ops::Bound::Excluded(key.as_key()),
+                std::ops::Bound::Unbounded,
+            ))
+            .next()
+            .cloned()
+            .and_then(|x| K::from_bytes(&x)))
     }
 }
 
@@ -74,7 +118,9 @@ where
     pub fn insert(&self, value: &'a V) -> Result<Option<()>> {
         let key = K::from(value);
 
-        Ok(self.inner.insert(key.as_key(), value.as_bytes()?)?
+        Ok(self
+            .inner
+            .insert(key.as_key(), value.as_bytes()?)?
             .map(|_| ()))
     }
 }
@@ -92,8 +138,8 @@ where
     V: Value,
 {
     pub fn get(&self, key: &K) -> Result<Option<V>> {
-        let res = (self.index.as_ref(), self.foreign.as_ref())
-            .transaction(|(index, foreign)| {
+        let res =
+            (self.index.as_ref(), self.foreign.as_ref()).transaction(|(index, foreign)| {
                 let key = index.get(&key.as_key())?;
                 let key = key.and_then(|x| foreign.get(x).transpose()).transpose()?;
                 Ok::<_, sled::transaction::ConflictableTransactionError<sled::Error>>(key)
@@ -101,7 +147,7 @@ where
 
         Ok(res.map(|x| V::from_bytes(&x)).transpose()?)
     }
-    
+
     pub fn insert(&self, key: &K, foreign_key: &F) -> Result<Option<()>> {
         Ok((self.index.as_ref(), self.foreign.as_ref())
             .transaction(|(index, foreign)| {
@@ -110,10 +156,10 @@ where
                 } else {
                     Ok(None)
                 }
-            })?.map(|_| ()))
+            })?
+            .map(|_| ()))
     }
 }
-
 
 impl<T> Value for T where T: Sized + Serialize + DeserializeOwned {}
 
@@ -125,15 +171,6 @@ pub trait Get<T> {
     type Key;
 
     fn get(&self, key: &Self::Key) -> Result<Option<T>>;
-}
-
-pub trait View<K, V>
-where
-    K: Key,
-    V: Value,
-{
-    fn get(&self, key: &K) -> Result<Option<V>>;
-    fn insert(&self, value: &V) -> Result<Option<()>>;
 }
 
 /*
@@ -217,7 +254,7 @@ impl ActivityTree<'_> {
         self.session.inner.insert(&key, value.session.as_bytes()?)?;
         self.record.inner.insert(&key, value.record.as_bytes()?)?;
         self.lap.inner.insert(&key, value.lap.as_bytes()?)?;
-        
+
         if let Some(gear_id) = &value.gear_id {
             let gear_query = GearQuery {
                 user_id: std::borrow::Cow::Borrowed(&query.user_id),
@@ -236,7 +273,6 @@ impl ActivityTree<'_> {
             None => return Ok(None),
         };
 
-
         let record = match self.record.get(key)? {
             Some(record) => record,
             None => return Ok(None),
@@ -248,8 +284,6 @@ impl ActivityTree<'_> {
         };
 
         let gear_id = self.gear.index.get(key)?.map(|x| x.id.into());
-
-
 
         Ok(Some(Activity {
             owner: key.user_id.to_string(),
@@ -283,24 +317,22 @@ impl<'a> Database<'a> {
 
         let gear = Self::open_tree(&db, "gear")?;
 
-
         Ok(Self {
             activity: ActivityTree {
-                session: Self::open_tree(&db, "session")?,
-                record: Self::open_tree(&db, "record")?,
-                lap: Self::open_tree(&db, "lap")?,
+                session: Self::open_tree(&db, "activity_session")?,
+                record: Self::open_tree(&db, "activity_record")?,
+                lap: Self::open_tree(&db, "activity_lap")?,
                 gear: Relation {
                     index: Self::open_tree(&db, "activity_gear")?,
                     foreign: gear.clone(),
                 },
             },
             gear: GearTree {
-                gear: Self::open_tree(&db, "gear")?,
+                gear: Self::open_tree(&db, "gear_gear")?,
             },
             _db: db,
         })
     }
-
 
     fn open_tree<K, V>(db: &sled::Db, name: &'static str) -> Result<Tree<K, V>> {
         Ok(Tree {
@@ -314,6 +346,8 @@ pub mod error;
 pub mod query;
 pub use error::Result;
 
+/*
 pub mod activity;
 pub mod gear;
 pub mod user;
+*/

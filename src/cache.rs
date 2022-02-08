@@ -70,9 +70,6 @@ impl ThumbnailCache {
             recv.await.ok().flatten()
         };
 
-
-        self.inner
-            .get_or_insert_with(key, task)
-            .await
+        self.inner.get_or_insert_with(key, task).await
     }
 }

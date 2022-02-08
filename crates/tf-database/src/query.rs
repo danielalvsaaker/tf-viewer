@@ -1,41 +1,92 @@
 use serde::Deserialize;
+use serde::{Serialize, de::DeserializeOwned};
 use std::borrow::Cow;
+use tf_models::Activity;
+use tf_models::gear::Gear;
 
-#[derive(Deserialize)]
+pub trait Key: Serialize + DeserializeOwned {
+    fn as_key(&self) -> Vec<u8>;
+    fn as_prefix(&self) -> Vec<u8>;
+}
+
+#[derive(Deserialize, Serialize, Clone)]
 pub struct GearQuery<'a> {
     pub user_id: Cow<'a, str>,
     pub id: Cow<'a, str>,
 }
 
-impl<'a> GearQuery<'a> {
-    pub fn to_key(&self) -> Vec<u8> {
+impl Key for GearQuery<'_> {
+    fn as_key(&self) -> Vec<u8> {
+        let mut key = self.as_prefix();
+        key.extend_from_slice(self.id.as_bytes());
+
+        key
+    }
+
+    fn as_prefix(&self) -> Vec<u8> {
         let mut key = self.user_id.as_bytes().to_vec();
         key.push(0xff);
-        key.extend_from_slice(self.id.as_bytes());
 
         key
     }
 }
 
-#[derive(Deserialize)]
+impl<'a> From<&'a Gear> for GearQuery<'a> {
+    fn from(gear: &'a Gear) -> Self {
+        Self {
+            user_id: Cow::Borrowed(&gear.owner),
+            id: Cow::Borrowed(&gear.id),
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone)]
 pub struct ActivityQuery<'a> {
     pub user_id: Cow<'a, str>,
     pub id: Cow<'a, str>,
 }
 
-impl<'a> ActivityQuery<'a> {
-    pub fn to_key(&self) -> Vec<u8> {
+impl Key for ActivityQuery<'_> {
+    fn as_key(&self) -> Vec<u8> {
+        let mut key = self.as_prefix();
+        key.extend_from_slice(self.id.as_bytes());
+
+        key
+    }
+
+    fn as_prefix(&self) -> Vec<u8> {
         let mut key = self.user_id.as_bytes().to_vec();
         key.push(0xff);
-        key.extend_from_slice(self.id.as_bytes());
 
         key
     }
 }
 
-#[derive(Deserialize)]
-pub struct UserQuery<'a> {
-    pub user_id: Cow<'a, str>,
+impl Key for UserQuery {
+    fn as_key(&self) -> Vec<u8> {
+        self.user_id.as_bytes().to_vec()
+    }
+
+   fn as_prefix(&self) -> Vec<u8> {
+        let mut key = self.as_key();
+        key.push(0xff);
+
+        key
+    }
+}
+
+impl<'a> From<&'a Activity> for ActivityQuery<'a> {
+    fn from(activity: &'a Activity) -> Self {
+        Self {
+            user_id: Cow::Borrowed(&activity.owner),
+            id: Cow::Borrowed(&activity.id),
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct UserQuery {
+    pub user_id: String,
 }
 
 pub struct FollowerQuery<'a> {
@@ -53,84 +104,11 @@ impl<'a> FollowerQuery<'a> {
     }
 }
 
-impl<'a> From<(&'a UserQuery<'a>, &'a UserQuery<'a>)> for FollowerQuery<'a> {
-    fn from((owner, user): (&'a UserQuery<'a>, &'a UserQuery<'a>)) -> Self {
+impl<'a> From<(&'a UserQuery, &'a UserQuery)> for FollowerQuery<'a> {
+    fn from((owner, user): (&'a UserQuery, &'a UserQuery)) -> Self {
         Self {
             owner_id: Cow::Borrowed(&owner.user_id),
             user_id: Cow::Borrowed(&user.user_id),
         }
-    }
-}
-
-impl<'a> From<&'a str> for UserQuery<'a> {
-    fn from(user_id: &'a str) -> Self {
-        Self {
-            user_id: Cow::from(user_id),
-        }
-    }
-}
-
-impl<'a> From<&'a GearQuery<'a>> for UserQuery<'a> {
-    fn from(q: &'a GearQuery) -> Self {
-        Self {
-            user_id: Cow::Borrowed(&q.user_id),
-        }
-    }
-}
-
-impl<'a> From<&'a ActivityQuery<'a>> for UserQuery<'a> {
-    fn from(q: &'a ActivityQuery<'a>) -> Self {
-        Self {
-            user_id: Cow::Borrowed(&q.user_id),
-        }
-    }
-}
-
-impl<'a> From<(&'a UserQuery<'a>, &'a str)> for GearQuery<'a> {
-    fn from((query, id): (&'a UserQuery<'a>, &'a str)) -> Self {
-        Self {
-            user_id: Cow::Borrowed(&query.user_id),
-            id: Cow::from(id),
-        }
-    }
-}
-
-impl<'a, A: AsRef<str>> From<(&'a ActivityQuery<'a>, &'a A)> for GearQuery<'a> {
-    fn from((query, id): (&'a ActivityQuery<'a>, &'a A)) -> Self {
-        Self {
-            user_id: Cow::Borrowed(&query.user_id),
-            id: Cow::from(id.as_ref()),
-        }
-    }
-}
-
-impl<'a> From<(&'a UserQuery<'a>, &'a str)> for ActivityQuery<'a> {
-    fn from((query, id): (&'a UserQuery<'a>, &'a str)) -> Self {
-        Self {
-            user_id: Cow::Borrowed(&query.user_id),
-            id: Cow::from(id),
-        }
-    }
-}
-
-impl<'a> From<(&'a str, &'a str)> for ActivityQuery<'a> {
-    fn from((query, id): (&'a str, &'a str)) -> Self {
-        Self {
-            user_id: Cow::Borrowed(query),
-            id: Cow::Borrowed(id),
-        }
-    }
-}
-
-impl<'a> UserQuery<'a> {
-    pub fn to_key(&'_ self) -> &'_ [u8] {
-        self.user_id.as_bytes()
-    }
-
-    pub fn to_prefix(&self) -> Vec<u8> {
-        let mut key = self.to_key().to_vec();
-        key.push(0xff);
-
-        key
     }
 }

@@ -13,7 +13,7 @@ use axum::{
 use serde::Deserialize;
 use std::str::FromStr;
 use tf_database::{
-    query::{ActivityQuery, UserQuery},
+    query::{ActivityQuery, UserQuery, GearQuery, Key},
     Database,
 };
 use tf_macro::oauth;
@@ -38,13 +38,13 @@ pub fn router() -> Router {
 }
 
 async fn get_activity_thumbnail(
-    Extension(db): Extension<Database>,
+    Extension(db): Extension<Database<'_>>,
     Extension(cache): Extension<ThumbnailCache>,
     Path(query): Path<ActivityQuery<'_>>,
     header: Option<TypedHeader<IfNoneMatch>>,
 ) -> Result<impl IntoResponse> {
-    let record = db.activity.get_record(&query)?.ok_or(Error::NotFound)?;
-    let thumbnail = cache.get(query.to_key(), record)
+    let record = db.activity.record.get(&query)?.ok_or(Error::NotFound)?;
+    let thumbnail = cache.get(query.as_key(), record)
         .await
         .ok_or(Error::NotFound)?;
 
@@ -67,84 +67,87 @@ async fn get_activity_thumbnail(
 
 #[oauth(scopes = ["activity:read"])]
 pub async fn get_activity(
-    Extension(db): Extension<Database>,
+    Extension(db): Extension<Database<'_>>,
     Path(query): Path<ActivityQuery<'_>>,
 ) -> Result<impl IntoResponse> {
     db.activity
-        .get_activity(&query)?
+        .get(&query)?
         .map(Json)
         .ok_or(Error::NotFound)
 }
 
 #[oauth(scopes = ["activity:read"])]
 pub async fn activity_session(
-    Extension(db): Extension<Database>,
+    Extension(db): Extension<Database<'_>>,
     Path(query): Path<ActivityQuery<'_>>,
 ) -> Result<impl IntoResponse> {
     db.activity
-        .get_session(&query)?
+        .session
+        .get(&query)?
         .map(Json)
         .ok_or(Error::NotFound)
 }
 
 #[oauth(scopes = ["activity:read"])]
 pub async fn activity_record(
-    Extension(db): Extension<Database>,
+    Extension(db): Extension<Database<'_>>,
     Path(query): Path<ActivityQuery<'_>>,
 ) -> Result<impl IntoResponse> {
     db.activity
-        .get_record(&query)?
+        .record
+        .get(&query)?
         .map(Json)
         .ok_or(Error::NotFound)
 }
 
 #[oauth(scopes = ["activity:read"])]
 async fn activity_lap(
-    Extension(db): Extension<Database>,
+    Extension(db): Extension<Database<'_>>,
     Path(query): Path<ActivityQuery<'_>>,
 ) -> Result<impl IntoResponse> {
     db.activity
-        .get_lap(&query)?
+        .lap
+        .get(&query)?
         .map(Json)
         .ok_or(Error::NotFound)
 }
 
 #[oauth(scopes = ["activity:read"])]
 async fn get_activity_gear(
-    Extension(db): Extension<Database>,
+    Extension(db): Extension<Database<'_>>,
     Path(query): Path<ActivityQuery<'_>>,
 ) -> Result<impl IntoResponse> {
     db.activity
-        .get_gear(&query)?
+        .gear
+        .get(&query)?
         .map(Json)
         .ok_or(Error::NotFound)
 }
 
 #[oauth(scopes = ["activity:write"])]
 async fn put_activity_gear(
-    Extension(db): Extension<Database>,
+    Extension(db): Extension<Database<'_>>,
     Path(query): Path<ActivityQuery<'_>>,
     Json(gear_id): Json<String>,
 ) -> Result<impl IntoResponse> {
-    if !db.gear.contains_gear(&(&query, &gear_id).into())? {
-        return Ok(StatusCode::UNPROCESSABLE_ENTITY);
-    }
+    let foreign_key = GearQuery {
+        user_id: std::borrow::Cow::Borrowed(&query.user_id),
+        id: gear_id.into(),
+    };
 
     db.activity
-        .insert_gear(&query, Some(&gear_id))?
-        .map(|x| {
-            x.map(|_| StatusCode::NO_CONTENT)
-                .unwrap_or(StatusCode::CREATED)
-        })
+        .gear
+        .insert(&query, &foreign_key)?
+        .map(|x| StatusCode::NO_CONTENT)
         .ok_or(Error::NotFound)
 }
 
 #[oauth(scopes = ["activity:write"])]
 async fn delete_activity_gear(
-    Extension(db): Extension<Database>,
+    Extension(db): Extension<Database<'_>>,
     Path(query): Path<ActivityQuery<'_>>,
 ) -> Result<impl IntoResponse> {
-    db.activity.insert_gear(&query, None)?;
+    //db.activity.insert_gear(&query, None)?;
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -165,11 +168,12 @@ impl Default for Filters {
 
 #[oauth(scopes = ["activity:read"])]
 async fn get_activity_zones(
-    Extension(db): Extension<Database>,
+    Extension(db): Extension<Database<'_>>,
     Path(query): Path<ActivityQuery<'_>>,
 ) -> Result<impl IntoResponse> {
     db.activity
-        .get_record(&query)?
+        .record
+        .get(&query)?
         .map(|x| super::utils::zone_duration(&x, 50, 205))
         .map(Json)
         .ok_or(Error::NotFound)
@@ -177,36 +181,39 @@ async fn get_activity_zones(
 
 #[oauth(scopes = ["activity:read"])]
 async fn get_activity_prev(
-    Extension(db): Extension<Database>,
+    Extension(db): Extension<Database<'_>>,
     Path(query): Path<ActivityQuery<'_>>,
 ) -> Result<impl IntoResponse> {
-    db.activity.prev(&query)?.map(Json).ok_or(Error::NotFound)
+    //db.activity.prev(&query)?.map(Json).ok_or(Error::NotFound)
+    Ok("")
 }
 
 #[oauth(scopes = ["activity:read"])]
 async fn get_activity_next(
-    Extension(db): Extension<Database>,
+    Extension(db): Extension<Database<'_>>,
     Path(query): Path<ActivityQuery<'_>>,
 ) -> Result<impl IntoResponse> {
-    db.activity.next(&query)?.map(Json).ok_or(Error::NotFound)
+    //db.activity.next(&query)?.map(Json).ok_or(Error::NotFound)
+    Ok("")
 }
 
 #[oauth(scopes = ["activity:write"])]
 async fn delete_activity(
-    Extension(db): Extension<Database>,
+    Extension(db): Extension<Database<'_>>,
     Path(query): Path<ActivityQuery<'_>>,
 ) -> Result<impl IntoResponse> {
-    db.activity.remove_activity(&query)?;
+    //db.activity.remove_activity(&query)?;
 
     Ok(StatusCode::NO_CONTENT)
 }
 
 #[oauth(scopes = ["activity:read"])]
 async fn get_activity_index(
-    Extension(db): Extension<Database>,
-    Path(query): Path<UserQuery<'_>>,
+    Extension(db): Extension<Database<'_>>,
+    Path(query): Path<UserQuery>,
     Query(filters): Query<Filters>,
 ) -> Result<impl IntoResponse> {
+    /*
     let sessions: Vec<_> = db
         .activity
         .username_iter_session(&query)?
@@ -215,20 +222,22 @@ async fn get_activity_index(
         .collect();
 
     Ok(Json(sessions))
+    */
+    Ok("")
 }
 
 #[oauth(scopes = ["activity:write"])]
 async fn post_activity_index(
-    Extension(db): Extension<Database>,
-    Path(query): Path<UserQuery<'_>>,
+    Extension(db): Extension<Database<'_>>,
+    Path(query): Path<UserQuery>,
     file: bytes::Bytes,
 ) -> Result<impl IntoResponse> {
-    let gear = db.user.get_standard_gear(&query)?;
+    //let gear = db.user.get_standard_gear(&query)?;
 
-    let parsed = tf_parse::parse(&file, gear)?;
-    db.activity.insert_activity(&query, &parsed)?;
+    let parsed = tf_parse::parse(&file, Default::default())?;
+    db.activity.insert(&parsed)?;
 
-    let activity_query = ActivityQuery::from((&query, parsed.id.as_str()));
+    let activity_query = ActivityQuery::from(&parsed);
 
     let url = format!(
         "/user/{}/activity/{}",

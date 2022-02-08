@@ -5,47 +5,308 @@ pub mod users;
 use anyhow::Result;
 
 */
-#[derive(Clone)]
-pub struct Database {
-    pub user: user::UserTree,
-    pub activity: activity::ActivityTree,
-    pub gear: gear::GearTree,
-    pub _db: sled::Db,
+
+use crate::query::{ActivityQuery, UserQuery, GearQuery};
+use rmp_serde as rmps;
+use tf_models::activity::{Activity, Lap, Record, Session};
+use tf_models::gear::Gear;
+
+use query::Key;
+use serde::{de::DeserializeOwned, Serialize};
+use std::ops::Deref;
+use sled::Transactional;
+
+pub trait Value
+where
+    Self: Sized + Serialize + DeserializeOwned,
+{
+    fn as_bytes(&self) -> Result<Vec<u8>> {
+        Ok(rmps::to_vec(self)?)
+    }
+
+    fn from_bytes(data: &[u8]) -> Result<Self> {
+        Ok(rmps::from_read_ref(data)?)
+    }
 }
 
-impl Database {
+#[derive(Clone)]
+pub struct Tree<K, V> {
+    inner: sled::Tree,
+    _type: std::marker::PhantomData<(K, V)>,
+}
+
+impl<K, V> AsRef<sled::Tree> for Tree<K, V> {
+    fn as_ref(&self) -> &sled::Tree {
+        &self.inner
+    }
+}
+
+impl<K, V> Tree<K, V>
+where
+    K: Key,
+    V: Value,
+{
+    pub fn get(&self, key: &K) -> Result<Option<V>> {
+        Ok(self
+            .inner
+            .get(key.as_key())?
+            .map(|x| V::from_bytes(&x))
+            .transpose()?)
+    }
+
+
+    pub fn iter(&self, key: &UserQuery) -> Result<impl Iterator<Item = V>> {
+        Ok(self
+            .inner
+            .scan_prefix(key.as_prefix())
+            .values()
+            .rev()
+            .flatten()
+            .flat_map(|x| V::from_bytes(&x)))
+    }
+}
+
+impl<'a, K: 'a, V: 'a> Tree<K, V>
+where
+    K: Key + From<&'a V>,
+    V: Value,
+{
+    pub fn insert(&self, value: &'a V) -> Result<Option<()>> {
+        let key = K::from(value);
+
+        Ok(self.inner.insert(key.as_key(), value.as_bytes()?)?
+            .map(|_| ()))
+    }
+}
+
+#[derive(Clone)]
+pub struct Relation<K, F, V> {
+    index: Tree<K, F>,
+    foreign: Tree<F, V>,
+}
+
+impl<K, F, V> Relation<K, F, V>
+where
+    K: Key,
+    F: Key,
+    V: Value,
+{
+    pub fn get(&self, key: &K) -> Result<Option<V>> {
+        let res = (self.index.as_ref(), self.foreign.as_ref())
+            .transaction(|(index, foreign)| {
+                let key = index.get(&key.as_key())?;
+                let key = key.and_then(|x| foreign.get(x).transpose()).transpose()?;
+                Ok::<_, sled::transaction::ConflictableTransactionError<sled::Error>>(key)
+            })?;
+
+        Ok(res.map(|x| V::from_bytes(&x)).transpose()?)
+    }
+    
+    pub fn insert(&self, key: &K, foreign_key: &F) -> Result<Option<()>> {
+        Ok((self.index.as_ref(), self.foreign.as_ref())
+            .transaction(|(index, foreign)| {
+                if foreign.get(foreign_key.as_key())?.is_some() {
+                    Ok(index.insert(key.as_key(), foreign_key.as_key())?)
+                } else {
+                    Ok(None)
+                }
+            })?.map(|_| ()))
+    }
+}
+
+
+impl<T> Value for T where T: Sized + Serialize + DeserializeOwned {}
+
+pub trait Insert<T: Value> {
+    fn insert(&self, value: T) -> Result<()>;
+}
+
+pub trait Get<T> {
+    type Key;
+
+    fn get(&self, key: &Self::Key) -> Result<Option<T>>;
+}
+
+pub trait View<K, V>
+where
+    K: Key,
+    V: Value,
+{
+    fn get(&self, key: &K) -> Result<Option<V>>;
+    fn insert(&self, value: &V) -> Result<Option<()>>;
+}
+
+/*
+impl Insert<Activity> for Database {
+    fn insert(&self, mut value: Activity) -> Result<()> {
+        let key = &vec![];
+
+        self.activity
+            .usernameid_session
+            .insert(key, value.session.as_bytes()?)?;
+        self.activity
+            .usernameid_record
+            .insert(key, value.record.as_bytes()?)?;
+        self.activity
+            .usernameid_lap
+            .insert(key, value.lap.as_bytes()?)?;
+
+        self.activity
+            .usernameid_activity
+            .insert(key, value.as_bytes()?)?;
+
+        Ok(())
+    }
+}
+
+impl Insert<Session> for Database {
+    fn insert(&self, value: Session) -> Result<()> {
+        let key = &vec![];
+
+        self.activity
+            .usernameid_session
+            .insert(key, value.as_bytes()?)?;
+
+        Ok(())
+    }
+}
+
+impl Get<Activity> for Database {
+    type Key = ActivityQuery;
+
+    fn get(&self, key: &Self::Key) -> Result<Option<Activity>> {
+        todo!()
+    }
+}
+
+user -> activity
+     |       ^
+     -> gear |
+*/
+
+/*
+trait Relationship<T: Value> {
+    type Key: Key;
+
+    fn get(key: &Self::Key) -> Result<Option<T>>;
+}
+*/
+
+/*
+impl Relationship<Gear> for (ActivityTree, GearTree) {
+    type Key = ActivityQuery;
+
+    fn get(key: &Self::Key) -> Result<Option<Gear>> {
+
+}
+*/
+
+#[derive(Clone)]
+pub struct ActivityTree<'a> {
+    pub session: Tree<ActivityQuery<'a>, Session>,
+    pub record: Tree<ActivityQuery<'a>, Record>,
+    pub lap: Tree<ActivityQuery<'a>, Vec<Lap>>,
+    pub gear: Relation<ActivityQuery<'a>, GearQuery<'a>, Gear>,
+}
+
+impl ActivityTree<'_> {
+    pub fn insert(&self, value: &Activity) -> Result<()> {
+        let query = ActivityQuery::from(value);
+        let key = query.as_key();
+
+        self.session.inner.insert(&key, value.session.as_bytes()?)?;
+        self.record.inner.insert(&key, value.record.as_bytes()?)?;
+        self.lap.inner.insert(&key, value.lap.as_bytes()?)?;
+        
+        if let Some(gear_id) = &value.gear_id {
+            let gear_query = GearQuery {
+                user_id: std::borrow::Cow::Borrowed(&query.user_id),
+                id: gear_id.into(),
+            };
+
+            self.gear.insert(&query, &gear_query)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn get(&self, key: &ActivityQuery<'_>) -> Result<Option<Activity>> {
+        let session = match self.session.get(key)? {
+            Some(session) => session,
+            None => return Ok(None),
+        };
+
+
+        let record = match self.record.get(key)? {
+            Some(record) => record,
+            None => return Ok(None),
+        };
+
+        let lap = match self.lap.get(key)? {
+            Some(lap) => lap,
+            None => return Ok(None),
+        };
+
+        let gear_id = self.gear.index.get(key)?.map(|x| x.id.into());
+
+
+
+        Ok(Some(Activity {
+            owner: key.user_id.to_string(),
+            id: key.id.to_string(),
+            gear_id,
+            session,
+            record,
+            lap,
+        }))
+    }
+}
+
+#[derive(Clone)]
+pub struct GearTree<'a> {
+    pub gear: Tree<GearQuery<'a>, Gear>,
+}
+
+#[derive(Clone)]
+pub struct Database<'a> {
+    pub activity: ActivityTree<'a>,
+    pub gear: GearTree<'a>,
+    _db: sled::Db,
+}
+
+impl<'a> Database<'a> {
     pub fn load_or_create() -> Result<Self> {
         let db = sled::Config::new()
             .path("db")
             .use_compression(true)
             .open()?;
 
+        let gear = Self::open_tree(&db, "gear")?;
+
+
         Ok(Self {
-            user: user::UserTree {
-                username_user: db.open_tree("username_user")?,
-                username_standardgearid: db.open_tree("username_standardgearid")?,
-                username_visibility: db.open_tree("username_visibility")?,
-                usernamefollower_follower: db.open_tree("usernamefollower_follower")?,
-                usernamefollower_request: db.open_tree("usernamefollower_rquest")?,
+            activity: ActivityTree {
+                session: Self::open_tree(&db, "session")?,
+                record: Self::open_tree(&db, "record")?,
+                lap: Self::open_tree(&db, "lap")?,
+                gear: Relation {
+                    index: Self::open_tree(&db, "activity_gear")?,
+                    foreign: gear.clone(),
+                },
             },
-
-            activity: activity::ActivityTree {
-                usernameid_session: db.open_tree("usernameid_session")?,
-                usernameid_record: db.open_tree("usernameid_record")?,
-                usernameid_lap: db.open_tree("usernameid_lap")?,
-                usernameid_gearid: db.open_tree("usernameid_gearid")?,
+            gear: GearTree {
+                gear: Self::open_tree(&db, "gear")?,
             },
-
-            gear: gear::GearTree {
-                usernameid_gear: db.open_tree("usernameid_gear")?,
-            },
-
             _db: db,
         })
     }
 
-    pub fn generate_id(&self) -> Result<u64> {
-        Ok(self._db.generate_id()?)
+
+    fn open_tree<K, V>(db: &sled::Db, name: &'static str) -> Result<Tree<K, V>> {
+        Ok(Tree {
+            inner: db.open_tree(name)?,
+            _type: Default::default(),
+        })
     }
 }
 

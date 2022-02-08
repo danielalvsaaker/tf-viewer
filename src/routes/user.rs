@@ -21,10 +21,11 @@ async fn get_authenticated_user() -> impl IntoResponse {
 
 #[oauth(scopes = ["user:read"])]
 async fn get_user(
-    Extension(db): Extension<Database>,
-    Path(query): Path<UserQuery<'_>>,
+    Extension(db): Extension<Database<'_>>,
+    Path(query): Path<UserQuery>,
 ) -> Result<impl IntoResponse> {
-    db.user.get_user(&query)?.map(Json).ok_or(Error::NotFound)
+    //db.user.get_user(&query)?.map(Json).ok_or(Error::NotFound)
+    Ok("")
 }
 
 /*

@@ -11,12 +11,13 @@ use chrono::{DateTime, Local};
 use std::time::Duration;
 
 #[derive(Deserialize, Serialize, Clone)]
-pub struct Activity {
+pub struct Activity<S = Session, R = Record, L = Vec<Lap>> {
+    pub owner: String,
     pub id: String,
     pub gear_id: Option<String>,
-    pub session: Session,
-    pub record: Record,
-    pub lap: Vec<Lap>,
+    pub session: S,
+    pub record: R,
+    pub lap: L,
 }
 
 #[derive(Default, Clone, Copy, Serialize, Deserialize)]

@@ -9,7 +9,7 @@ use crate::Result;
 
 #[derive(Clone)]
 pub struct ActivityTree {
-    //pub(super) usernameid_meta: sled::Tree,
+    pub(super) usernameid_activity: sled::Tree,
     pub(super) usernameid_session: sled::Tree,
     pub(super) usernameid_record: sled::Tree,
     pub(super) usernameid_lap: sled::Tree,
@@ -87,7 +87,6 @@ impl ActivityTree {
                 .map(|x| x.split(|y| y == &0xff).last().unwrap().to_vec())
                 .flat_map(String::from_utf8))
         }
-    */
     pub fn username_iter_id(&self, query: &UserQuery) -> Result<impl Iterator<Item = String>> {
         Ok(self
             .usernameid_session
@@ -141,6 +140,7 @@ impl ActivityTree {
             .zip(self.get_gear(query)?)
             .map(|(((session, record), lap), gear_id)| Activity {
                 id: query.id.to_string(),
+                owner: String::new(),
                 gear_id,
                 session,
                 record,
@@ -244,6 +244,7 @@ impl ActivityTree {
             .flat_map(|x| rmps::from_read_ref(&x)))
     }
 
+    /*
     pub fn prev(&self, query: &ActivityQuery) -> Result<Option<String>> {
         let user_query = UserQuery::from(query);
 
@@ -265,4 +266,6 @@ impl ActivityTree {
             .next()
             .cloned())
     }
+    */
+    */
 }

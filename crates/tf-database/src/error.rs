@@ -10,6 +10,12 @@ pub enum Error {
         source: sled::Error,
     },
 
+    #[error("Transaction error")]
+    TransactionError {
+        #[from]
+        source: sled::transaction::TransactionError,
+    },
+
     #[error("Serialization error: {source}")]
     SerializeError {
         #[from]

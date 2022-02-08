@@ -119,6 +119,7 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
 
     Ok(Activity {
         id: session.start_time.format("%Y%m%d%H%M").to_string(),
+        owner: "daniel".into(),
         gear_id,
         session,
         record,

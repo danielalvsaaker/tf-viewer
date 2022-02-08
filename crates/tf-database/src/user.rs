@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::query::{FollowerQuery, GearQuery, UserQuery};
+use crate::query::{FollowerQuery, GearQuery, UserQuery, Key};
 use rmp_serde as rmps;
 use tf_models::user::User;
 
@@ -25,8 +25,9 @@ pub struct UserTree {
 }
 
 impl UserTree {
+    /*
     pub fn has_access(&self, owner: &UserQuery, user: &UserQuery) -> Result<bool> {
-        let owner_key = owner.to_key();
+        let owner_key = owner.as_key();
 
         let vis: Visibility = self
             .username_visibility
@@ -39,7 +40,7 @@ impl UserTree {
         if let Visibility::Public = vis {
             Ok(true)
         } else {
-            let key = FollowerQuery::from((owner, user)).to_key();
+            let key = FollowerQuery::from((owner, user)).as_key();
             if self.usernamefollower_follower.contains_key(&key)? {
                 Ok(true)
             } else {
@@ -49,7 +50,7 @@ impl UserTree {
     }
 
     pub fn follow(&self, owner: &UserQuery, user: &UserQuery) -> Result<()> {
-        let owner_key = owner.to_key();
+        let owner_key = owner.as_key();
 
         let vis: Visibility = self
             .username_visibility
@@ -59,7 +60,7 @@ impl UserTree {
             .transpose()?
             .unwrap_or_default();
 
-        let key = FollowerQuery::from((owner, user)).to_key();
+        let key = FollowerQuery::from((owner, user)).as_key();
         if let Visibility::Public = vis {
             self.usernamefollower_follower
                 .insert(&key, rmps::to_vec(&user.user_id)?)?;
@@ -72,7 +73,7 @@ impl UserTree {
     }
 
     pub fn unfollow(&self, owner: &UserQuery, user: &UserQuery) -> Result<()> {
-        let key = FollowerQuery::from((owner, user)).to_key();
+        let key = FollowerQuery::from((owner, user)).as_key();
 
         self.usernamefollower_follower.remove(&key)?;
 
@@ -80,7 +81,7 @@ impl UserTree {
     }
 
     pub fn requests(&self, user: &UserQuery) -> Result<Option<impl Iterator<Item = String>>> {
-        let key = user.to_key();
+        let key = user.as_key();
 
         let vis: Visibility = self
             .username_visibility
@@ -102,6 +103,7 @@ impl UserTree {
             ))
         }
     }
+*/
 
     /*
 
@@ -139,13 +141,13 @@ impl UserTree {
     pub fn insert_user(&self, query: &UserQuery, user: &User) -> Result<Option<()>> {
         Ok(self
             .username_user
-            .insert(&query.to_key(), rmps::to_vec(user)?)?
+            .insert(&query.as_key(), rmps::to_vec(user)?)?
             .as_deref()
             .map(|_| ()))
     }
 
     pub fn remove_user(&self, query: &UserQuery) -> Result<()> {
-        self.username_user.remove(&query.to_key())?;
+        self.username_user.remove(&query.as_key())?;
 
         Ok(())
     }
@@ -153,26 +155,28 @@ impl UserTree {
     pub fn get_user(&self, query: &UserQuery) -> Result<Option<User>> {
         Ok(self
             .username_user
-            .get(&query.to_key())?
+            .get(&query.as_key())?
             .as_deref()
             .map(|x| rmps::from_read_ref(&x))
             .transpose()?)
     }
 
+    /*
     pub fn set_standard_gear(&self, query: &GearQuery) -> Result<Option<()>> {
         let user_query = UserQuery::from(query);
 
         Ok(self
             .username_standardgearid
-            .insert(&user_query.to_key(), rmps::to_vec(&query.id)?)?
+            .insert(&user_query.as_key(), rmps::to_vec(&query.id)?)?
             .as_deref()
             .map(|_| ()))
     }
+    */
 
     pub fn get_standard_gear(&self, user: &UserQuery) -> Result<Option<String>> {
         Ok(self
             .username_standardgearid
-            .get(&user.to_key())?
+            .get(&user.as_key())?
             .as_deref()
             .map(|x| rmps::from_read_ref(&x))
             .transpose()?)

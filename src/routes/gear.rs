@@ -22,10 +22,10 @@ pub fn router() -> Router {
 
 #[oauth(scopes = ["gear:read"])]
 async fn get_gear(
-    Extension(db): Extension<Database>,
+    Extension(db): Extension<Database<'_>>,
     Path(query): Path<GearQuery<'_>>,
 ) -> Result<impl IntoResponse> {
-    db.gear.get_gear(&query)?.map(Json).ok_or(Error::NotFound)
+    db.gear.gear.get(&query)?.map(Json).ok_or(Error::NotFound)
 }
 
 #[derive(Deserialize)]
@@ -36,10 +36,11 @@ struct GearForm {
 
 #[oauth(scopes = ["gear:write"])]
 async fn put_gear(
-    Extension(db): Extension<Database>,
+    Extension(db): Extension<Database<'_>>,
     Path(query): Path<GearQuery<'_>>,
     Json(gear): Json<Gear>,
 ) -> Result<impl IntoResponse> {
+    /*
     if db.gear.contains_gear(&query)? {
         db.gear.insert_gear(&query, gear)?;
 
@@ -47,24 +48,27 @@ async fn put_gear(
     } else {
         Ok(StatusCode::NOT_FOUND)
     }
+    */
+    Ok("")
 }
 
 #[oauth(scopes = ["gear:write"])]
 async fn post_gear_index(
-    Extension(db): Extension<Database>,
-    Path(query): Path<UserQuery<'_>>,
+    Extension(db): Extension<Database<'_>>,
+    Path(query): Path<UserQuery>,
     Json(gear): Json<GearForm>,
 ) -> Result<impl IntoResponse> {
     let id = nanoid::nanoid!(10);
-    let gear_query = GearQuery::from((&query, id.as_str()));
-    let gear = gear;
     let gear = Gear {
+        owner: query.user_id.to_owned(),
         id: id.clone(),
         name: gear.name,
         gear_type: gear.gear_type,
     };
 
-    db.gear.insert_gear(&gear_query, gear)?;
+    db.gear.gear.insert(&gear)?;
+
+    let gear_query = GearQuery::from(&gear);
 
     let url = format!("/user/{}/gear/{}", gear_query.user_id, gear_query.id);
 
@@ -76,20 +80,23 @@ async fn post_gear_index(
 
 #[oauth(scopes = ["gear:read"])]
 async fn get_gear_index(
-    Extension(db): Extension<Database>,
-    Path(query): Path<UserQuery<'_>>,
+    Extension(db): Extension<Database<'_>>,
+    Path(query): Path<UserQuery>,
 ) -> Result<impl IntoResponse> {
+    /*
     let gears = db.gear.iter_gear(&query)?.collect::<Vec<_>>();
 
     Ok(Json(gears))
+    */
+    Ok("")
 }
 
 #[oauth(scopes = ["gear:write"])]
 async fn delete_gear(
-    Extension(db): Extension<Database>,
+    Extension(db): Extension<Database<'_>>,
     Path(query): Path<GearQuery<'_>>,
 ) -> Result<impl IntoResponse> {
-    db.gear.remove_gear(&query)?;
+    //db.gear.remove_gear(&query)?;
 
     Ok(StatusCode::NO_CONTENT)
 }

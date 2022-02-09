@@ -80,13 +80,14 @@ where
             .scan_prefix(key.as_prefix())
             .keys()
             .flatten()
-            .map(|x| x.to_vec())
             .collect();
 
         Ok(set
-            .range(..key.as_key())
+            .range::<[u8], _>((
+                std::ops::Bound::Unbounded,
+                std::ops::Bound::Excluded(key.as_key().as_slice()),
+            ))
             .next_back()
-            .cloned()
             .and_then(|x| K::from_bytes(&x)))
     }
 
@@ -96,16 +97,14 @@ where
             .scan_prefix(key.as_prefix())
             .keys()
             .flatten()
-            .map(|x| x.to_vec())
             .collect();
 
         Ok(set
-            .range((
-                std::ops::Bound::Excluded(key.as_key()),
+            .range::<[u8], _>((
+                std::ops::Bound::Excluded(key.as_key().as_slice()),
                 std::ops::Bound::Unbounded,
             ))
             .next()
-            .cloned()
             .and_then(|x| K::from_bytes(&x)))
     }
 }

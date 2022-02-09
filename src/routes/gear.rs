@@ -83,12 +83,9 @@ async fn get_gear_index(
     Extension(db): Extension<Database<'_>>,
     Path(query): Path<UserQuery<'_>>,
 ) -> Result<impl IntoResponse> {
-    /*
-    let gears = db.gear.iter_gear(&query)?.collect::<Vec<_>>();
+    let gears = db.gear.gear.values(&query)?.collect::<Vec<_>>();
 
     Ok(Json(gears))
-    */
-    Ok("")
 }
 
 #[oauth(scopes = ["gear:write"])]

@@ -136,8 +136,10 @@ async fn put_activity_gear(
     db.activity
         .gear
         .insert(&query, &foreign_key)?
-        .map(|x| StatusCode::NO_CONTENT)
+        .map(|_| StatusCode::NO_CONTENT)
         .ok_or(Error::NotFound)
+
+    // TODO: Return StatusCode::CREATED if return value is Some
 }
 
 #[oauth(scopes = ["activity:write"])]

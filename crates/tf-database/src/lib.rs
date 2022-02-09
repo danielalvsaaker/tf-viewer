@@ -52,7 +52,7 @@ where
             .transpose()
     }
 
-    pub fn keys(&self, key: &K) -> Result<impl Iterator<Item = K>> {
+    pub fn keys<L: Key>(&self, key: &L) -> Result<impl Iterator<Item = K>> {
         Ok(self
             .inner
             .scan_prefix(key.as_prefix())
@@ -62,7 +62,7 @@ where
             .flat_map(|x| K::from_bytes(&x)))
     }
 
-    pub fn values(&self, key: &K) -> Result<impl Iterator<Item = V>> {
+    pub fn values<L: Key>(&self, key: &L) -> Result<impl Iterator<Item = V>> {
         Ok(self
             .inner
             .scan_prefix(key.as_prefix())
@@ -147,12 +147,15 @@ where
         res.map(|x| V::from_bytes(&x)).transpose()
     }
 
+    // TODO: Verify that neighbour trees contain the existing value
+    // Should not be able to associate a gear with a nonexistant activity
     pub fn insert(&self, key: &K, foreign_key: &F) -> Result<Option<()>> {
         Ok((self.index.as_ref(), self.foreign.as_ref())
             .transaction(|(index, foreign)| {
                 if foreign.get(foreign_key.as_key())?.is_some() {
                     Ok(index.insert(key.as_key(), foreign_key.as_key())?)
                 } else {
+                    // TODO: Return a key constraint error
                     Ok(None)
                 }
             })?
@@ -314,7 +317,7 @@ impl<'a> Database<'a> {
             .use_compression(true)
             .open()?;
 
-        let gear = Self::open_tree(&db, "gear")?;
+        let gear = Self::open_tree(&db, "gear_gear")?;
 
         Ok(Self {
             activity: ActivityTree {
@@ -326,9 +329,7 @@ impl<'a> Database<'a> {
                     foreign: gear.clone(),
                 },
             },
-            gear: GearTree {
-                gear: Self::open_tree(&db, "gear_gear")?,
-            },
+            gear: GearTree { gear },
             _db: db,
         })
     }

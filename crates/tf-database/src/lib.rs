@@ -6,7 +6,7 @@ use anyhow::Result;
 
 */
 
-use crate::query::{ActivityQuery, GearQuery, UserQuery};
+use crate::query::{ActivityQuery, GearQuery};
 use rmp_serde as rmps;
 use tf_models::activity::{Activity, Lap, Record, Session};
 use tf_models::gear::Gear;
@@ -14,7 +14,6 @@ use tf_models::gear::Gear;
 use query::Key;
 use serde::{de::DeserializeOwned, Serialize};
 use sled::Transactional;
-use std::ops::Deref;
 
 pub trait Value
 where
@@ -47,11 +46,10 @@ where
     V: Value,
 {
     pub fn get(&self, key: &K) -> Result<Option<V>> {
-        Ok(self
-            .inner
+        self.inner
             .get(key.as_key())?
             .map(|x| V::from_bytes(&x))
-            .transpose()?)
+            .transpose()
     }
 
     pub fn keys(&self, key: &K) -> Result<impl Iterator<Item = K>> {
@@ -88,7 +86,8 @@ where
                 std::ops::Bound::Excluded(key.as_key().as_slice()),
             ))
             .next_back()
-            .and_then(|x| K::from_bytes(&x)))
+            .map(AsRef::as_ref)
+            .and_then(K::from_bytes))
     }
 
     pub fn next(&self, key: &K) -> Result<Option<K>> {
@@ -105,7 +104,8 @@ where
                 std::ops::Bound::Unbounded,
             ))
             .next()
-            .and_then(|x| K::from_bytes(&x)))
+            .map(AsRef::as_ref)
+            .and_then(K::from_bytes))
     }
 }
 
@@ -144,7 +144,7 @@ where
                 Ok::<_, sled::transaction::ConflictableTransactionError<sled::Error>>(key)
             })?;
 
-        Ok(res.map(|x| V::from_bytes(&x)).transpose()?)
+        res.map(|x| V::from_bytes(&x)).transpose()
     }
 
     pub fn insert(&self, key: &K, foreign_key: &F) -> Result<Option<()>> {

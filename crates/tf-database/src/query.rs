@@ -2,7 +2,6 @@ use serde::Deserialize;
 use serde::{de::DeserializeOwned, Serialize};
 use std::borrow::Cow;
 use tf_models::gear::Gear;
-use tf_models::user::User;
 use tf_models::Activity;
 
 pub trait Key: Serialize + DeserializeOwned {

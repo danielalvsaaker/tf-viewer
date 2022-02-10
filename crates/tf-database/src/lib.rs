@@ -165,16 +165,6 @@ where
 
 impl<T> Value for T where T: Sized + Serialize + DeserializeOwned {}
 
-pub trait Insert<T: Value> {
-    fn insert(&self, value: T) -> Result<()>;
-}
-
-pub trait Get<T> {
-    type Key;
-
-    fn get(&self, key: &Self::Key) -> Result<Option<T>>;
-}
-
 /*
 impl Insert<Activity> for Database {
     fn insert(&self, mut value: Activity) -> Result<()> {
@@ -240,63 +230,29 @@ impl Relationship<Gear> for (ActivityTree, GearTree) {
 }
 */
 
-#[derive(Clone)]
-pub struct ActivityTree<'a> {
-    pub session: Tree<ActivityQuery<'a>, Session>,
-    pub record: Tree<ActivityQuery<'a>, Record>,
-    pub lap: Tree<ActivityQuery<'a>, Vec<Lap>>,
-    pub gear: Relation<ActivityQuery<'a>, GearQuery<'a>, Gear>,
+pub trait Get<K: Key, V: Value> {
+    fn get(&self, key: &K) -> Result<Option<V>>;
 }
 
-impl ActivityTree<'_> {
-    pub fn insert(&self, value: &Activity) -> Result<()> {
-        let query = ActivityQuery::from(value);
-        let key = query.as_key();
-
-        self.session.inner.insert(&key, value.session.as_bytes()?)?;
-        self.record.inner.insert(&key, value.record.as_bytes()?)?;
-        self.lap.inner.insert(&key, value.lap.as_bytes()?)?;
-
-        if let Some(gear_id) = &value.gear_id {
-            let gear_query = GearQuery {
-                user_id: std::borrow::Cow::Borrowed(&query.user_id),
-                id: gear_id.into(),
-            };
-
-            self.gear.insert(&query, &gear_query)?;
-        }
-
-        Ok(())
-    }
-
-    pub fn get(&self, key: &ActivityQuery<'_>) -> Result<Option<Activity>> {
-        let session = match self.session.get(key)? {
-            Some(session) => session,
-            None => return Ok(None),
-        };
-
-        let record = match self.record.get(key)? {
-            Some(record) => record,
-            None => return Ok(None),
-        };
-
-        let lap = match self.lap.get(key)? {
-            Some(lap) => lap,
-            None => return Ok(None),
-        };
-
-        let gear_id = self.gear.index.get(key)?.map(|x| x.id.into());
-
-        Ok(Some(Activity {
-            owner: key.user_id.to_string(),
-            id: key.id.to_string(),
-            gear_id,
-            session,
-            record,
-            lap,
-        }))
+impl<'a> Get<ActivityQuery<'a>, Gear> for Database<'a> {
+    fn get(&self, key: &ActivityQuery<'a>) -> Result<Option<Gear>> {
+        self.activity.gear.get(key)
     }
 }
+
+impl<'a> Get<ActivityQuery<'a>, Session> for Database<'a> {
+    fn get(&self, key: &ActivityQuery<'a>) -> Result<Option<Session>> {
+        self.activity.session.get(key)
+    }
+}
+
+impl<'a> Get<GearQuery<'a>, Gear> for Database<'a> {
+    fn get(&self, key: &GearQuery<'a>) -> Result<Option<Gear>> {
+        self.gear.gear.get(key)
+    }
+}
+
+
 
 #[derive(Clone)]
 pub struct GearTree<'a> {
@@ -305,8 +261,8 @@ pub struct GearTree<'a> {
 
 #[derive(Clone)]
 pub struct Database<'a> {
-    pub activity: ActivityTree<'a>,
-    pub gear: GearTree<'a>,
+    activity: activity::ActivityTree<'a>,
+    gear: GearTree<'a>,
     _db: sled::Db,
 }
 
@@ -320,7 +276,7 @@ impl<'a> Database<'a> {
         let gear = Self::open_tree(&db, "gear_gear")?;
 
         Ok(Self {
-            activity: ActivityTree {
+            activity: activity::ActivityTree {
                 session: Self::open_tree(&db, "activity_session")?,
                 record: Self::open_tree(&db, "activity_record")?,
                 lap: Self::open_tree(&db, "activity_lap")?,
@@ -346,8 +302,8 @@ pub mod error;
 pub mod query;
 pub use error::Result;
 
-/*
+
 pub mod activity;
-pub mod gear;
+/*pub mod gear;
 pub mod user;
 */

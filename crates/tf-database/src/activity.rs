@@ -1,7 +1,11 @@
-use super::{Tree, Relation, Value, error::Result, query::{ActivityQuery, Key, GearQuery}};
+use super::{
+    error::Result,
+    query::{ActivityQuery, GearQuery, Key},
+    Relation, Tree, Value,
+};
 use tf_models::{
+    activity::{Activity, Lap, Record, Session},
     gear::Gear,
-    activity::{Activity, Session, Record, Lap},
 };
 
 #[derive(Clone)]

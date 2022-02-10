@@ -8,7 +8,7 @@ use anyhow::Result;
 
 use crate::query::{ActivityQuery, GearQuery};
 use rmp_serde as rmps;
-use tf_models::activity::{Activity, Lap, Record, Session};
+use tf_models::activity::Session;
 use tf_models::gear::Gear;
 
 use query::Key;
@@ -252,8 +252,6 @@ impl<'a> Get<GearQuery<'a>, Gear> for Database<'a> {
     }
 }
 
-
-
 #[derive(Clone)]
 pub struct GearTree<'a> {
     pub gear: Tree<GearQuery<'a>, Gear>,
@@ -301,7 +299,6 @@ impl<'a> Database<'a> {
 pub mod error;
 pub mod query;
 pub use error::Result;
-
 
 pub mod activity;
 /*pub mod gear;

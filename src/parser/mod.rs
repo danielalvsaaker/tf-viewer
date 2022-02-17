@@ -1,2 +1,4 @@
-mod fit;
-pub use fit::*;
+pub mod fit;
+
+pub mod gpxp;
+

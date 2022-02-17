@@ -41,6 +41,7 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
     let file = fitparser::from_bytes(fit_data)
         .map_err(|_| Error::BadRequest(ErrorKind::BadRequest, "File is not a valid .fit-file"))?;
 
+    // TODO: if you convert gpx to fit with gpsbabel, there's no session info.
     if !file.iter().any(|x| x.kind() == MesgNum::Session) {
         return Err(Error::BadRequest(
             ErrorKind::BadRequest,

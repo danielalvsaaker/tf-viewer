@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "graphql", derive(async_graphql::Enum))]
 #[serde(rename_all = "snake_case")]
 pub enum GearType {
     RoadBike,
@@ -16,10 +17,10 @@ impl Default for GearType {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[cfg_attr(feature = "graphql", derive(async_graphql::SimpleObject))]
+#[cfg_attr(feature = "graphql", graphql(name = "_Gear"))]
 pub struct Gear {
-    pub owner: String,
-    pub id: String,
     pub name: String,
     pub gear_type: GearType,
 }

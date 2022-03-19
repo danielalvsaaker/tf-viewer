@@ -5,11 +5,14 @@ use oxide_auth::{
         RefreshFlow, ResourceFlow, Scopes, Template,
     },
     frontends::simple::{endpoint::Vacant, extensions::AddonList},
-    primitives::{prelude::*, registrar::RegisteredUrl, scope::Scope},
+    primitives::{prelude::*, scope::Scope},
 };
 use oxide_auth_axum::{OAuthRequest, OAuthResponse, WebError};
-use serde::Deserialize;
+use serde::{Deserialize};
 use std::sync::{Arc, Mutex, MutexGuard};
+
+pub mod database;
+pub mod session;
 
 #[derive(Deserialize)]
 #[serde(tag = "consent", rename_all = "lowercase")]
@@ -18,20 +21,107 @@ pub enum Consent {
     Deny,
 }
 
+pub mod scopes {
+    pub trait Inner {
+        const READ: &'static str;
+        const WRITE: &'static str;
+    }
+
+    pub struct Activity;
+    pub struct Gear;
+    pub struct User;
+
+    impl Inner for Activity {
+        const READ: &'static str = "activity:read";
+        const WRITE: &'static str = "activity:write";
+    }
+
+    impl Inner for Gear {
+        const READ: &'static str = "gear:read";
+        const WRITE: &'static str = "gear:write";
+    }
+
+    impl Inner for User {
+        const READ: &'static str = "user:read";
+        const WRITE: &'static str = "user:write";
+    }
+
+    pub struct Read<S>(pub S);
+    pub struct Write<S>(pub S);
+
+    pub trait Scope {
+        const SCOPE: &'static str;
+    }
+
+    impl Scope for () {
+        const SCOPE: &'static str = "";
+    }
+
+    impl<S: Inner> Scope for Read<S> {
+        const SCOPE: &'static str = S::READ;
+    }
+
+    impl<S: Inner> Scope for Write<S> {
+        const SCOPE: &'static str = S::WRITE;
+    }
+
+    pub struct Grant<S> {
+        pub grant: oxide_auth::primitives::grant::Grant,
+        _type: std::marker::PhantomData<S>,
+    }
+
+    use super::{State, WebError};
+    use axum::{
+        body::HttpBody,
+        extract::{Extension, FromRequest, RequestParts},
+        BoxError,
+    };
+    use oxide_auth_axum::{OAuthResource, OAuthResponse};
+
+    #[axum::async_trait]
+    impl<B, S> FromRequest<B> for Grant<S>
+    where
+        B: Send + HttpBody,
+        B::Data: Send,
+        B::Error: Into<BoxError>,
+        S: Scope,
+    {
+        type Rejection = Result<OAuthResponse, WebError>;
+
+        async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
+            let Extension(state) = Extension::<State>::from_request(req).await.unwrap();
+            let req = OAuthResource::from_request(req).await.unwrap();
+
+            let auth = state
+                .endpoint()
+                .with_scopes(&[S::SCOPE.parse().unwrap()])
+                .resource_flow()
+                .execute(req.into());
+
+            auth.map(|grant| Self {
+                grant,
+                _type: Default::default(),
+            })
+        }
+    }
+}
+
 mod routes;
 pub use routes::routes;
+pub mod error;
 pub mod templates;
+use database::Database;
 
 pub type State = Arc<InnerState>;
 
 pub struct InnerState {
-    registrar: Mutex<ClientMap>,
+    registrar: Database,
     authorizer: Mutex<AuthMap<RandomGenerator>>,
     issuer: Mutex<TokenMap<RandomGenerator>>,
 }
 
 pub struct AuthEndpoint<'a, E, S, C> {
-    registrar: MutexGuard<'a, ClientMap>,
+    registrar: &'a Database,
     authorizer: MutexGuard<'a, AuthMap<RandomGenerator>>,
     issuer: MutexGuard<'a, TokenMap<RandomGenerator>>,
     extension: E,
@@ -89,19 +179,9 @@ where
 }
 
 impl InnerState {
-    pub fn preconfigured() -> Self {
+    pub fn new(database: &Database) -> Self {
         Self {
-            registrar: Mutex::new(
-                vec![Client::public(
-                    "tf-viewer",
-                    RegisteredUrl::Semantic("http://localhost:8080/callback".parse().unwrap()),
-                    "activity:read activity:write user:read gear:write gear:read"
-                        .parse()
-                        .unwrap(),
-                )]
-                .into_iter()
-                .collect(),
-            ),
+            registrar: database.clone(),
             // Authorization tokens are 16 byte random keys to a memory hash map.
             authorizer: Mutex::new(AuthMap::new(RandomGenerator::new(16))),
             // Bearer tokens are also random generated but 256-bit tokens, since they live longer
@@ -116,7 +196,7 @@ impl InnerState {
 
     pub fn endpoint(&self) -> AuthEndpoint<'_, (), Vacant, Vacant> {
         AuthEndpoint {
-            registrar: self.registrar.lock().unwrap(),
+            registrar: &self.registrar,
             authorizer: self.authorizer.lock().unwrap(),
             issuer: self.issuer.lock().unwrap(),
             extension: (),

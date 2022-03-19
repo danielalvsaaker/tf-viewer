@@ -11,7 +11,7 @@ use crate::error::{Error, Result};
 use chrono::{offset::Local, DateTime};
 use tf_models::{
     activity::{Lap, Record, Session},
-    Activity, Sport,
+    Activity, ActivityId, Sport, UserId,
 };
 
 use uom::si::{
@@ -51,7 +51,7 @@ fn between(lhs: &Option<DateTime<Local>>, rhs: Option<DateTime<Local>>) -> Optio
 
 const MULTIPLIER: f64 = 180_f64 / (2_u32 << 30) as f64;
 
-pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
+pub fn parse(user: UserId, fit_data: &[u8]) -> Result<Activity> {
     let mut session: Session = Session::default();
     let mut record: Record = Record::default();
     let mut lap_vec: Vec<Lap> = Vec::new();
@@ -118,9 +118,17 @@ pub fn parse(fit_data: &[u8], gear_id: Option<String>) -> Result<Activity> {
     }
 
     Ok(Activity {
-        id: session.start_time.format("%Y%m%d%H%M").to_string(),
-        owner: "daniel".into(),
-        gear_id,
+        id: ActivityId::from_bytes(
+            session
+                .start_time
+                .format("%Y%m%d%H%M")
+                .to_string()
+                .as_bytes(),
+        )
+        .unwrap(),
+        // TODO: Correct username
+        owner: user,
+        gear_id: None,
         session,
         record,
         lap: lap_vec,
@@ -142,22 +150,26 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) -> Result<()> {
     session.speed_avg = field_map
         .get("enhanced_avg_speed")
         .and_then(map_float64)
-        .map(Velocity::new::<meter_per_second>);
+        .map(Velocity::new::<meter_per_second>)
+        .map(Into::into);
 
     session.speed_max = field_map
         .get("enhanced_max_speed")
         .and_then(map_float64)
-        .map(Velocity::new::<meter_per_second>);
+        .map(Velocity::new::<meter_per_second>)
+        .map(Into::into);
 
     session.power_avg = field_map
         .get("avg_power")
         .and_then(map_uint16)
-        .map(Power::new::<watt>);
+        .map(Power::new::<watt>)
+        .map(Into::into);
 
     session.power_max = field_map
         .get("max_power")
         .and_then(map_uint16)
-        .map(Power::new::<watt>);
+        .map(Power::new::<watt>)
+        .map(Into::into);
 
     session.nec_lat = field_map
         .get("nec_lat")
@@ -193,31 +205,36 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) -> Result<()> {
         .get("total_ascent")
         .and_then(map_uint16)
         .map(u32::from)
-        .map(Length_u32::new::<meter>);
+        .map(Length_u32::new::<meter>)
+        .map(Into::into);
 
     session.descent = field_map
         .get("total_descent")
         .and_then(map_uint16)
         .map(u32::from)
-        .map(Length_u32::new::<meter>);
+        .map(Length_u32::new::<meter>)
+        .map(Into::into);
 
     session.calories = field_map.get("total_calories").and_then(map_uint16);
 
     session.distance = field_map
         .get("total_distance")
         .and_then(map_float64)
-        .map(Length_f64::new::<meter>);
+        .map(Length_f64::new::<meter>)
+        .map(Into::into);
 
     session.duration = field_map
         .get("total_elapsed_time")
         .and_then(map_float64)
         .map(Duration::from_secs_f64)
+        .map(Into::into)
         .unwrap_or_default();
 
     session.duration_active = field_map
         .get("total_timer_time")
         .and_then(map_float64)
         .map(Duration::from_secs_f64)
+        .map(Into::into)
         .unwrap_or_default();
 
     session.start_time = field_map
@@ -242,28 +259,32 @@ fn parse_record(fields: &[FitDataField], record: &mut Record) {
         field_map
             .get("distance")
             .and_then(map_float64)
-            .map(Length_f64::new::<meter>),
+            .map(Length_f64::new::<meter>)
+            .map(Into::into),
     );
 
     record.altitude.push(
         field_map
             .get("enhanced_altitude")
             .and_then(map_float64)
-            .map(Length_f64::new::<meter>),
+            .map(Length_f64::new::<meter>)
+            .map(Into::into),
     );
 
     record.speed.push(
         field_map
             .get("enhanced_speed")
             .and_then(map_float64)
-            .map(Velocity::new::<meter_per_second>),
+            .map(Velocity::new::<meter_per_second>)
+            .map(Into::into),
     );
 
     record.power.push(
         field_map
             .get("power")
             .and_then(map_uint16)
-            .map(Power::new::<watt>),
+            .map(Power::new::<watt>)
+            .map(Into::into),
     );
 
     record
@@ -290,6 +311,7 @@ fn parse_record(fields: &[FitDataField], record: &mut Record) {
         .timestamp
         .first()
         .and_then(|x| between(&timestamp, *x))
+        .map(Into::into)
         .unwrap_or_default();
 
     record.duration.push(duration);
@@ -311,71 +333,84 @@ fn parse_lap(fields: &[FitDataField], lap: &mut Lap) {
     lap.speed_avg = field_map
         .get("enhanced_avg_speed")
         .and_then(map_float64)
-        .map(Velocity::new::<meter_per_second>);
+        .map(Velocity::new::<meter_per_second>)
+        .map(Into::into);
 
     lap.speed_max = field_map
         .get("enhanced_max_speed")
         .and_then(map_float64)
-        .map(Velocity::new::<meter_per_second>);
+        .map(Velocity::new::<meter_per_second>)
+        .map(Into::into);
 
     lap.power_avg = field_map
         .get("avg_power")
         .and_then(map_uint16)
-        .map(Power::new::<watt>);
+        .map(Power::new::<watt>)
+        .map(Into::into);
 
     lap.power_max = field_map
         .get("max_power")
         .and_then(map_uint16)
-        .map(Power::new::<watt>);
+        .map(Power::new::<watt>)
+        .map(Into::into);
 
     lap.lat_start = field_map
         .get("start_position_lat")
         .and_then(map_sint32)
-        .map(|x| f64::from(x) * MULTIPLIER);
+        .map(|x| f64::from(x) * MULTIPLIER)
+        .map(Into::into);
 
     lap.lon_start = field_map
         .get("start_position_long")
         .and_then(map_sint32)
-        .map(|x| f64::from(x) * MULTIPLIER);
+        .map(|x| f64::from(x) * MULTIPLIER)
+        .map(Into::into);
 
     lap.lat_end = field_map
         .get("end_position_lat")
         .and_then(map_sint32)
-        .map(|x| f64::from(x) * MULTIPLIER);
+        .map(|x| f64::from(x) * MULTIPLIER)
+        .map(Into::into);
 
     lap.lon_end = field_map
         .get("end_position_long")
         .and_then(map_sint32)
-        .map(|x| f64::from(x) * MULTIPLIER);
+        .map(|x| f64::from(x) * MULTIPLIER)
+        .map(Into::into);
 
     lap.ascent = field_map
         .get("total_ascent")
         .and_then(map_uint16)
         .map(u32::from)
-        .map(Length_u32::new::<meter>);
+        .map(Length_u32::new::<meter>)
+        .map(Into::into);
 
     lap.descent = field_map
         .get("total_descent")
         .and_then(map_uint16)
         .map(u32::from)
-        .map(Length_u32::new::<meter>);
+        .map(Length_u32::new::<meter>)
+        .map(Into::into);
 
     lap.calories = field_map.get("total_calories").and_then(map_uint16);
 
     lap.distance = field_map
         .get("total_distance")
         .and_then(map_float64)
-        .map(Length_f64::new::<meter>);
+        .map(Length_f64::new::<meter>)
+        .map(Into::into);
 
     lap.duration = field_map
         .get("total_elapsed_time")
         .and_then(map_float64)
         .map(Duration::from_secs_f64)
+        .map(Into::into)
         .unwrap_or_default();
 
     lap.duration_active = field_map
         .get("total_timer_time")
         .and_then(map_float64)
         .map(Duration::from_secs_f64)
+        .map(Into::into)
         .unwrap_or_default();
 }

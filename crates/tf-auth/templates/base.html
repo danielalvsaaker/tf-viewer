@@ -1,6 +1,5 @@
 <!doctype html>
 <html lang="en">
-
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -30,13 +29,12 @@
 
     <!-- Main -->
     <main class="container">
-			{template}
+			{% block content %}{% endblock %}
     </main>
 		<!-- ./ Main -->
 
     <!-- Minimal theme switcher -->
     <script>
-			{switcher_script}
 		</script>
 
   </body>

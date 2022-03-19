@@ -1,36 +1,57 @@
-use super::Callback;
-use actix_identity::Identity;
-use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use super::{Callback, UserForm};
+use crate::error::Result;
+use crate::templates::SignIn;
 
-use crate::{error::Result, routes::UserForm, templates::signin_template, Database};
+use axum::{
+    extract::{Extension, Form, Query},
+    http::{StatusCode, Uri},
+    response::{IntoResponse, Redirect},
+    routing::get,
+    Router,
+};
 
-pub async fn get_signin(req: HttpRequest) -> impl Responder {
-    HttpResponse::Ok()
-        .content_type("text/html")
-        .body(signin_template(req.uri().query().unwrap_or_default()))
+pub fn routes() -> Router {
+    Router::new().route("/", get(get_signin).post(post_signin))
 }
 
-pub async fn post_signin(
-    id: Identity,
-    req: HttpRequest,
-    db: web::Data<Database>,
-    query: Option<web::Query<Callback>>,
-    web::Form(user): web::Form<UserForm>,
-) -> Result<impl Responder> {
-    if db.verify_hash(&user)? {
-        id.remember(user.username);
-    } else {
-        return Ok(HttpResponse::Unauthorized()
-            .body(signin_template(req.uri().query().unwrap_or_default())));
-    }
+async fn get_signin(query: Option<Query<Callback<'_>>>) -> impl IntoResponse {
+    let query = query.as_ref().map(|x| x.as_str()).unwrap_or_default();
+    SignIn { query }.into_response()
+}
 
-    if let Some(q) = query {
-        Ok(HttpResponse::Found()
-            .append_header(("Location", q.into_inner().callback))
-            .finish())
+async fn post_signin(
+    session: crate::session::Session,
+    Extension(_db): Extension<crate::database::Database>,
+    query: Option<Query<Callback<'_>>>,
+    Form(user): Form<UserForm>,
+) -> Result<impl IntoResponse> {
+    let query = query.as_ref().map(|x| x.as_str());
+    /*
+    let authorized = db.get(&user.username)?
+        .as_deref()
+        .map(PasswordHash::new)
+        .transpose()?
+        .map(|x| {
+            Argon2::default()
+             .verify_password(user.password.as_bytes(), &x)
+             .is_ok()
+        })
+        .unwrap_or_default();
+        */
+
+    let cookie = if true {
+        session.remember(user.username).await
     } else {
-        Ok(HttpResponse::Found()
-            .append_header(("Location", "index"))
-            .finish())
+        return Ok((
+            StatusCode::UNAUTHORIZED,
+            SignIn { query: query.unwrap_or_default() }
+        )
+            .into_response());
+    };
+
+    if let Some(query) = query {
+        Ok((cookie, Redirect::to(query.parse().unwrap_or_default())).into_response())
+    } else {
+        Ok((cookie, Redirect::to(Uri::from_static("/oauth/"))).into_response())
     }
 }

@@ -1,72 +1,66 @@
+use askama::Template;
+
 use oxide_auth::endpoint::WebRequest;
 use std::borrow::Cow;
 
-pub fn base_template(title: &str, template: &str) -> String {
-    format!(
-        include_str!("../templates/base.html"),
-        switcher_script = include_str!("../static/js/minimal-switcher.js"),
-        template = template,
-        title = title
-    )
+#[derive(Template)]
+#[template(path = "signin.html")]
+pub struct SignIn<'a> {
+    pub query: &'a str,
 }
 
-pub fn index_template() -> String {
-    base_template("Index", include_str!("../templates/index.html"))
+#[derive(Template)]
+#[template(path = "signup.html")]
+pub struct SignUp<'a> {
+    pub query: &'a str,
 }
 
-pub fn signin_template(query: &str) -> String {
-    base_template(
-        "Sign in",
-        &format!(include_str!("../templates/signin.html"), query = query),
-    )
+#[derive(Template)]
+#[template(path = "authorize.html")]
+pub struct Authorize<'a> {
+    pub query: String,
+    pub client_id: String,
+    pub user_id: &'a str,
+    pub scopes: String,
 }
 
-pub fn signup_template(query: &str) -> String {
-    base_template(
-        "Sign up",
-        &format!(include_str!("../templates/signup.html"), query = query),
-    )
-}
+impl<'a> Authorize<'a> {
+    pub fn new(
+        req: &mut oxide_auth_axum::OAuthRequest,
+        solicitation: oxide_auth::endpoint::Solicitation<'a>,
+        user_id: &'a str,
+    ) -> Self {
+        macro_rules! to_string {
+            ($query:expr) => {
+                $query.unwrap_or(Cow::Borrowed("")).to_string()
+            };
+        }
 
-pub fn authorize_template(
-    req: &mut oxide_auth_axum::OAuthRequest,
-    solicitation: oxide_auth::endpoint::Solicitation,
-    user_id: &str,
-) -> String {
-    macro_rules! to_string {
-        ($query:expr) => {
-            $query.unwrap_or(Cow::Borrowed("")).to_string()
-        };
+        let query = req.query().unwrap();
+        let grant = solicitation.pre_grant();
+        let state = solicitation.state();
+        let code_challenge = to_string!(query.unique_value("code_challenge"));
+        let method = to_string!(query.unique_value("code_challenge_method"));
+
+        let mut extra = vec![
+            ("response_type", "code"),
+            ("client_id", grant.client_id.as_str()),
+            ("redirect_uri", grant.redirect_uri.as_str()),
+            ("code_challenge", &code_challenge),
+            ("code_challenge_method", &method),
+        ];
+
+        if let Some(state) = state {
+            extra.push(("state", state));
+        }
+
+        let query = serde_urlencoded::to_string(extra).unwrap();
+
+        Self {
+            query: query,
+            client_id: grant.client_id.to_owned(),
+            user_id: user_id,
+            scopes: grant.scope.iter().collect::<Vec<_>>().join(", "),
+        }
     }
-
-    let query = req.query().unwrap();
-    let grant = solicitation.pre_grant();
-    let state = solicitation.state();
-    let code_challenge = to_string!(query.unique_value("code_challenge"));
-    let method = to_string!(query.unique_value("code_challenge_method"));
-
-    let mut extra = vec![
-        ("response_type", "code"),
-        ("client_id", grant.client_id.as_str()),
-        ("redirect_uri", grant.redirect_uri.as_str()),
-        ("code_challenge", &code_challenge),
-        ("code_challenge_method", &method),
-    ];
-
-    if let Some(state) = state {
-        extra.push(("state", state));
-    }
-
-    let query = serde_urlencoded::to_string(extra).unwrap();
-
-    base_template(
-        "Authorize",
-        &format!(
-            include_str!("../templates/authorize.html"),
-            query = query,
-            client_id = grant.client_id,
-            user_id = user_id,
-            scopes = grant.scope.iter().collect::<Vec<_>>().join(", ")
-        ),
-    )
 }

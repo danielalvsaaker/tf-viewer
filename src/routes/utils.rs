@@ -67,12 +67,13 @@ pub fn zone_duration(record: &Record, rest: u8, max: u8) -> Option<[Duration; 6]
         .duration
         .as_slice()
         .windows(2)
+        .map(|x| [x[0].as_ref(), x[1].as_ref()])
         .zip(record.heartrate.iter())
         .fold(
             zones_duration,
-            |mut acc: [Duration; 6], (d, h): (&[Duration], &Option<u8>)| {
+            |mut acc: [Duration; 6], (d, h): ([&Duration; 2], &Option<u8>)| {
                 if let Some(h) = h {
-                    let time_diff = d[1] - d[0];
+                    let time_diff = *d[1] - *d[0];
                     if time_diff < Duration::from_secs_f64(30.0) {
                         for (i, z) in zones.windows(2).enumerate() {
                             if (z[0]..z[1]).contains(&f32::from(*h)) {

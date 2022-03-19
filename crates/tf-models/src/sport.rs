@@ -56,6 +56,7 @@ pub const SPORTS: [Sport; 52] = [
 ];
 
 #[derive(Clone, Copy, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[cfg_attr(feature = "graphql", derive(async_graphql::Enum))]
 pub enum Sport {
     Generic,
     Running,

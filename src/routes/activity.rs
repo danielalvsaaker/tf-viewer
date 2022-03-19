@@ -3,47 +3,40 @@ use crate::{
     error::{Error, Result},
 };
 use axum::{
-    extract::{Extension, Path, Query, TypedHeader},
+    extract::{Extension, Path, TypedHeader},
     headers::{ContentType, ETag, HeaderMapExt, IfNoneMatch},
     http::{self, HeaderMap, HeaderValue, StatusCode},
     response::{Headers, IntoResponse},
-    routing::get,
-    Json, Router,
+    routing::{get, post},
+    Router,
 };
-use serde::Deserialize;
 use std::str::FromStr;
+use tf_auth::scopes::{Activity, Grant, Read, Write};
 use tf_database::{
-    query::{ActivityQuery, GearQuery, Key, UserQuery},
-    Database,
+    Database, primitives::Key, query::{ActivityQuery, UserQuery},
 };
-use tf_macro::oauth;
+use tf_models::{
+    user::User, activity::{Session, Record, Lap},
+};
 
 pub fn router() -> Router {
     Router::new()
-        .route("/", get(get_activity_index).post(post_activity_index))
-        .route("/:id", get(get_activity).delete(delete_activity))
-        .route("/:id/session", get(activity_session))
-        .route("/:id/record", get(activity_record))
-        .route("/:id/lap", get(activity_lap))
-        .route(
-            "/:id/gear",
-            get(get_activity_gear)
-                .put(put_activity_gear)
-                .delete(delete_activity_gear),
-        )
-        .route("/:id/zones", get(get_activity_zones))
-        .route("/:id/prev", get(get_activity_prev))
-        .route("/:id/next", get(get_activity_next))
+        .route("/", post(post_activity_index))
         .route("/:id/thumbnail", get(get_activity_thumbnail))
 }
 
 async fn get_activity_thumbnail(
-    Extension(db): Extension<Database<'_>>,
+    _: Grant<Read<Activity>>,
+    Extension(db): Extension<Database>,
     Extension(cache): Extension<ThumbnailCache>,
-    Path(query): Path<ActivityQuery<'_>>,
+    Path(query): Path<ActivityQuery>,
     header: Option<TypedHeader<IfNoneMatch>>,
 ) -> Result<impl IntoResponse> {
-    let record = db.activity.record.get(&query)?.ok_or(Error::NotFound)?;
+    let record = db
+        .root::<User>()?
+        .traverse::<Record>()?
+        .get(&query)?
+        .ok_or(Error::NotFound)?;
     let thumbnail = cache
         .get(query.as_key(), record)
         .await
@@ -66,187 +59,35 @@ async fn get_activity_thumbnail(
     Ok((headers, thumbnail.data).into_response())
 }
 
-#[oauth(scopes = ["activity:read"])]
-pub async fn get_activity(
-    Extension(db): Extension<Database<'_>>,
-    Path(query): Path<ActivityQuery<'_>>,
-) -> Result<impl IntoResponse> {
-    db.activity.get(&query)?.map(Json).ok_or(Error::NotFound)
-}
-
-#[oauth(scopes = ["activity:read"])]
-pub async fn activity_session(
-    Extension(db): Extension<Database<'_>>,
-    Path(query): Path<ActivityQuery<'_>>,
-) -> Result<impl IntoResponse> {
-    db.activity
-        .session
-        .get(&query)?
-        .map(Json)
-        .ok_or(Error::NotFound)
-}
-
-#[oauth(scopes = ["activity:read"])]
-pub async fn activity_record(
-    Extension(db): Extension<Database<'_>>,
-    Path(query): Path<ActivityQuery<'_>>,
-) -> Result<impl IntoResponse> {
-    db.activity
-        .record
-        .get(&query)?
-        .map(Json)
-        .ok_or(Error::NotFound)
-}
-
-#[oauth(scopes = ["activity:read"])]
-async fn activity_lap(
-    Extension(db): Extension<Database<'_>>,
-    Path(query): Path<ActivityQuery<'_>>,
-) -> Result<impl IntoResponse> {
-    db.activity
-        .lap
-        .get(&query)?
-        .map(Json)
-        .ok_or(Error::NotFound)
-}
-
-#[oauth(scopes = ["activity:read"])]
-async fn get_activity_gear(
-    Extension(db): Extension<Database<'_>>,
-    Path(query): Path<ActivityQuery<'_>>,
-) -> Result<impl IntoResponse> {
-    db.activity
-        .gear
-        .get(&query)?
-        .map(Json)
-        .ok_or(Error::NotFound)
-}
-
-#[oauth(scopes = ["activity:write"])]
-async fn put_activity_gear(
-    Extension(db): Extension<Database<'_>>,
-    Path(query): Path<ActivityQuery<'_>>,
-    Json(gear_id): Json<String>,
-) -> Result<impl IntoResponse> {
-    let foreign_key = GearQuery {
-        user_id: std::borrow::Cow::Borrowed(&query.user_id),
-        id: gear_id.into(),
-    };
-
-    db.activity
-        .gear
-        .insert(&query, &foreign_key)?
-        .map(|_| StatusCode::NO_CONTENT)
-        .ok_or(Error::NotFound)
-
-    // TODO: Return StatusCode::CREATED if return value is Some
-}
-
-#[oauth(scopes = ["activity:write"])]
-async fn delete_activity_gear(
-    Extension(db): Extension<Database<'_>>,
-    Path(query): Path<ActivityQuery<'_>>,
-) -> Result<impl IntoResponse> {
-    //db.activity.insert_gear(&query, None)?;
-
-    Ok(StatusCode::NO_CONTENT)
-}
-
-#[derive(Deserialize)]
-#[serde(default)]
-struct Filters {
-    skip: usize,
-    take: usize,
-    //sort_by: Sort,
-}
-
-impl Default for Filters {
-    fn default() -> Self {
-        Self { skip: 0, take: 25 }
-    }
-}
-
-#[oauth(scopes = ["activity:read"])]
-async fn get_activity_zones(
-    Extension(db): Extension<Database<'_>>,
-    Path(query): Path<ActivityQuery<'_>>,
-) -> Result<impl IntoResponse> {
-    db.activity
-        .record
-        .get(&query)?
-        .map(|x| super::utils::zone_duration(&x, 50, 205))
-        .map(Json)
-        .ok_or(Error::NotFound)
-}
-
-#[oauth(scopes = ["activity:read"])]
-async fn get_activity_prev<'a>(
-    Extension(db): Extension<Database<'a>>,
-    Path(query): Path<ActivityQuery<'a>>,
-) -> Result<impl IntoResponse + 'a> {
-    let res = db.activity.session.prev(&query)?;
-
-    res.map(Json).ok_or(Error::NotFound)
-}
-
-#[oauth(scopes = ["activity:read"])]
-async fn get_activity_next<'a>(
-    Extension(db): Extension<Database<'a>>,
-    Path(query): Path<ActivityQuery<'a>>,
-) -> Result<impl IntoResponse + 'a> {
-    db.activity
-        .session
-        .next(&query)?
-        .map(Json)
-        .ok_or(Error::NotFound)
-}
-
-#[oauth(scopes = ["activity:write"])]
-async fn delete_activity(
-    Extension(db): Extension<Database<'_>>,
-    Path(query): Path<ActivityQuery<'_>>,
-) -> Result<impl IntoResponse> {
-    //db.activity.remove_activity(&query)?;
-
-    Ok(StatusCode::NO_CONTENT)
-}
-
-#[oauth(scopes = ["activity:read"])]
-async fn get_activity_index(
-    Extension(db): Extension<Database<'_>>,
-    Path(query): Path<UserQuery<'_>>,
-    Query(filters): Query<Filters>,
-) -> Result<impl IntoResponse> {
-    /*
-    let sessions: Vec<_> = db
-        .activity
-        .username_iter_session(&query)?
-        .skip(filters.skip)
-        .take(filters.take)
-        .collect();
-
-    Ok(Json(sessions))
-    */
-    Ok("")
-}
-
-#[oauth(scopes = ["activity:write"])]
 async fn post_activity_index(
-    Extension(db): Extension<Database<'_>>,
-    Path(query): Path<UserQuery<'_>>,
+    //_grant: Grant<Write<Activity>>,
+    Extension(db): Extension<Database>,
+    Path(query): Path<UserQuery>,
     file: bytes::Bytes,
 ) -> Result<impl IntoResponse> {
-    //let gear = db.user.get_standard_gear(&query)?;
 
-    let parsed = tf_parse::parse(&file, Default::default())?;
-    db.activity.insert(&parsed)?;
+    let parsed = tf_parse::parse(query.user_id, &file)?;
 
-    let activity_query = ActivityQuery::from(&parsed);
+    let activity_query = ActivityQuery {
+        user_id: query.user_id,
+        id: parsed.id,
+    };
 
-    let url = format!(
-        "/user/{}/activity/{}",
-        activity_query.user_id, activity_query.id
-    );
+    let root = db
+        .root()?;
+
+    root.insert(&query, &tf_models::user::User { heartrate_rest: 50, heartrate_max: 205, name: "daniel".into(), })?;
+
+    root.traverse::<Session>()?
+        .insert(&activity_query, &parsed.session, &query)?;
+
+    root.traverse::<Record>()?
+        .insert(&activity_query, &parsed.record, &query)?;
+
+    root.traverse::<Vec<Lap>>()?
+        .insert(&activity_query, &parsed.lap, &query)?;
+
+    let url = format!("/user/{}/activity/{}", activity_query.user_id, activity_query.id,);
 
     Ok(Headers(vec![(
         http::header::LOCATION,

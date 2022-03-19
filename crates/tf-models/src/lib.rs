@@ -4,3 +4,107 @@ pub mod activity;
 pub use activity::Activity;
 pub mod gear;
 pub mod user;
+
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+#[derive(Clone, Copy)]
+struct Id<const L: usize> {
+    inner: [u8; L],
+}
+
+impl<const L: usize> Id<L> {
+    const LENGTH: usize = L;
+
+    pub fn as_bytes(&self) -> [u8; L] {
+        self.inner
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, InvalidLengthError> {
+        Ok(Self {
+            inner: bytes.try_into().map_err(|_| InvalidLengthError {
+                expected: L,
+                actual: bytes.len(),
+            })?,
+        })
+    }
+}
+
+impl<const L: usize> Serialize for Id<L> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer
+            .serialize_str(std::str::from_utf8(&self.inner).map_err(serde::ser::Error::custom)?)
+    }
+}
+
+impl<'de, const L: usize> Deserialize<'de> for Id<L> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Self::from_bytes(String::deserialize(deserializer)?.as_bytes())
+            .map_err(serde::de::Error::custom)
+    }
+}
+
+#[derive(Debug)]
+pub struct InvalidLengthError {
+    expected: usize,
+    actual: usize,
+}
+
+impl std::fmt::Display for InvalidLengthError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "invalid id length, expected: {}, actual: {}",
+            self.expected, self.actual
+        )
+    }
+}
+
+impl std::error::Error for InvalidLengthError {}
+
+macro_rules! declare_id {
+    ($name:ident, $length:expr) => {
+        #[derive(Serialize, Deserialize, Clone, Copy)]
+        pub struct $name(Id<$length>);
+
+        impl $name {
+            pub const LENGTH: usize = Id::<$length>::LENGTH;
+
+            pub fn as_bytes(&self) -> [u8; Self::LENGTH] {
+                self.0.as_bytes()
+            }
+
+            pub fn from_bytes(bytes: &[u8]) -> Result<Self, InvalidLengthError> {
+                Ok(Self(Id::from_bytes(bytes)?))
+            }
+        }
+
+        impl ::std::fmt::Display for $name {
+            fn fmt(&self, f: &mut ::std::fmt::Formatter) -> std::fmt::Result {
+                f.write_str(::std::str::from_utf8(&self.as_bytes()).unwrap_or_default())
+            }
+        }
+    };
+}
+
+declare_id!(UserId, 21);
+declare_id!(GearId, 21);
+declare_id!(ActivityId, 12);
+declare_id!(ClientId, 21);
+
+#[cfg(feature = "graphql")]
+#[path = "graphql/mod.rs"]
+pub mod types;
+
+#[cfg(not(feature = "graphql"))]
+pub mod types {
+    pub use std::time::Duration;
+    pub use uom::si::{
+        f64::Length as LengthF64, f64::Velocity, u16::Power, u32::Length as LengthU32,
+    };
+}

@@ -1,30 +1,40 @@
+use sled::transaction::TransactionError;
 use thiserror::Error;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("Database error: {source}")]
-    SledError {
+    #[error("Internal error")]
+    InternalError {
         #[from]
-        source: sled::Error,
+        source: nebari::Error,
+        //source: sled::Error,
     },
 
-    #[error("Transaction error")]
-    TransactionError {
+    #[error("Foreign key constraint error")]
+    ForeignKeyConstraint,
+
+    #[error("Invalid key")]
+    InvalidKey {
         #[from]
-        source: sled::transaction::TransactionError,
+        source: tf_models::InvalidLengthError,
     },
 
-    #[error("Serialization error: {source}")]
-    SerializeError {
+    #[error("Serialization/deserialization error: {source}")]
+    PotError {
         #[from]
-        source: rmp_serde::encode::Error,
-    },
-
-    #[error("Deserialization error: {source}")]
-    DeserializeError {
-        #[from]
-        source: rmp_serde::decode::Error,
+        source: pot::Error,
     },
 }
+
+/*
+impl From<TransactionError<Self>> for Error {
+    fn from(e: TransactionError<Self>) -> Self {
+        match e {
+            TransactionError::Abort(inner) => inner,
+            TransactionError::Storage(source) => Self::InternalError { source },
+        }
+    }
+}
+*/

@@ -1,26 +1,24 @@
 use crate::Sport;
+use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 
-use uom::si::{
-    f64::{Length as Length_f64, Velocity},
-    u16::Power,
-    u32::Length as Length_u32,
+use crate::{
+    types::{Duration, LengthF64, LengthU32, Power, Velocity},
+    ActivityId, GearId, UserId,
 };
 
-use chrono::{DateTime, Local};
-use std::time::Duration;
-
-#[derive(Deserialize, Serialize, Clone)]
-pub struct Activity<S = Session, R = Record, L = Vec<Lap>> {
-    pub owner: String,
-    pub id: String,
-    pub gear_id: Option<String>,
-    pub session: S,
-    pub record: R,
-    pub lap: L,
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Activity {
+    pub owner: UserId,
+    pub id: ActivityId,
+    pub gear_id: Option<GearId>,
+    pub session: Session,
+    pub record: Record,
+    pub lap: Vec<Lap>,
 }
 
 #[derive(Default, Clone, Copy, Serialize, Deserialize)]
+#[cfg_attr(feature = "graphql", derive(async_graphql::SimpleObject))]
 pub struct Session {
     pub cadence_avg: Option<u8>,
     pub cadence_max: Option<u8>,
@@ -36,20 +34,21 @@ pub struct Session {
     pub swc_lon: Option<f64>,
     pub laps: Option<u16>,
     pub sport: Sport,
-    pub ascent: Option<Length_u32>,
-    pub descent: Option<Length_u32>,
+    pub ascent: Option<LengthU32>,
+    pub descent: Option<LengthU32>,
     pub calories: Option<u16>,
-    pub distance: Option<Length_f64>,
+    pub distance: Option<LengthF64>,
     pub duration: Duration,
     pub duration_active: Duration,
     pub start_time: DateTime<Local>,
 }
 
 #[derive(Default, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "graphql", derive(async_graphql::SimpleObject))]
 pub struct Record {
     pub cadence: Vec<Option<u8>>,
-    pub distance: Vec<Option<Length_f64>>,
-    pub altitude: Vec<Option<Length_f64>>,
+    pub distance: Vec<Option<LengthF64>>,
+    pub altitude: Vec<Option<LengthF64>>,
     pub speed: Vec<Option<Velocity>>,
     pub heartrate: Vec<Option<u8>>,
     pub power: Vec<Option<Power>>,
@@ -60,6 +59,7 @@ pub struct Record {
 }
 
 #[derive(Default, Serialize, Deserialize, Clone, Copy)]
+#[cfg_attr(feature = "graphql", derive(async_graphql::SimpleObject))]
 pub struct Lap {
     pub cadence_avg: Option<u8>,
     pub cadence_max: Option<u8>,
@@ -73,10 +73,10 @@ pub struct Lap {
     pub lon_start: Option<f64>,
     pub lat_end: Option<f64>,
     pub lon_end: Option<f64>,
-    pub ascent: Option<Length_u32>,
-    pub descent: Option<Length_u32>,
+    pub ascent: Option<LengthU32>,
+    pub descent: Option<LengthU32>,
     pub calories: Option<u16>,
-    pub distance: Option<Length_f64>,
+    pub distance: Option<LengthF64>,
     pub duration: Duration,
     pub duration_active: Duration,
 }

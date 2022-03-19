@@ -1,6 +1,12 @@
-use crate::{templates::authorize_template, Consent, State};
+use super::Callback;
+use crate::{
+    templates::Authorize,
+    Consent, State,
+};
 use axum::{
-    extract::{Extension, Query},
+    extract::{Extension, OriginalUri, Query},
+    http::Uri,
+    response::{IntoResponse, Redirect},
     routing::{get, post},
     Router,
 };
@@ -8,6 +14,7 @@ use oxide_auth::{
     endpoint::{OwnerConsent, QueryParameter, Solicitation},
     frontends::simple::endpoint::FnSolicitor,
 };
+use askama::Template;
 use oxide_auth_axum::{OAuthRequest, OAuthResponse, WebError};
 
 pub fn routes() -> Router {
@@ -20,33 +27,54 @@ pub fn routes() -> Router {
 async fn get_authorize(
     req: OAuthRequest,
     Extension(state): Extension<State>,
-) -> Result<OAuthResponse, WebError> {
-    let username = "daniel".to_string();
+    session: crate::session::Session,
+    OriginalUri(uri): OriginalUri,
+) -> Result<impl IntoResponse, WebError> {
+    if session.id().is_none() {
+        let callback =
+            Callback::from_str(uri.path_and_query().map(|x| x.as_str()).unwrap_or_default());
+
+        let uri = format!(
+            "/oauth/signin?{}",
+            serde_urlencoded::to_string(&callback).unwrap()
+        );
+        return Ok(Redirect::to(uri.parse().unwrap_or_default()).into_response());
+    }
+
+    let username = session.id().unwrap();
 
     state
         .endpoint()
         .with_solicitor(FnSolicitor(
             move |req: &mut OAuthRequest, pre_grant: Solicitation| {
-                // This will display a page to the user asking for his permission to proceed. The submitted form
-                // will then trigger the other authorization handler which actually completes the flow.
-                OwnerConsent::InProgress(
-                    OAuthResponse::default()
-                        .content_type("text/html")
-                        .unwrap()
-                        .body(&authorize_template(req, pre_grant, &username)),
-                )
+                let body = Authorize::new(req, pre_grant, &username);
+
+                match body.render() {
+                    Ok(inner) => OwnerConsent::InProgress(
+                        OAuthResponse::default()
+                            .content_type("text/html")
+                            .unwrap()
+                            .body(&inner),
+                    ),
+                    Err(inner) => OwnerConsent::Error(WebError::InternalError(Some(inner.to_string()))),
+                }
             },
         ))
         .authorization_flow()
         .execute(req)
+        .map(IntoResponse::into_response)
 }
 
 async fn post_authorize(
     req: OAuthRequest,
     Extension(state): Extension<State>,
     Query(consent): Query<Consent>,
-) -> Result<OAuthResponse, WebError> {
-    let username = "daniel".to_string();
+    session: crate::session::Session,
+) -> Result<impl IntoResponse, WebError> {
+    let username = match session.id() {
+        Some(username) => username,
+        _ => return Ok(Redirect::to(Uri::from_static("/oauth/signin")).into_response()),
+    };
 
     state
         .endpoint()
@@ -58,6 +86,7 @@ async fn post_authorize(
         ))
         .authorization_flow()
         .execute(req)
+        .map(IntoResponse::into_response)
 }
 
 async fn token(

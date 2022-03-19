@@ -5,14 +5,19 @@ authors = ["danielalvsaaker <daniel@nopemail.net>"]
 edition = "2021"
 
 [dependencies]
-argon2 = { version = "*", features = ["std"] }
+askama = { version = "*", features = ["with-axum"] }
+askama_axum = "*"
+
+argon2 = { version = "0.3", features = ["std"] }
 oxide-auth = "0.5"
 oxide-auth-axum = "0.1"
-axum = "*"
+axum = { version = "*", features = ["headers"] }
 thiserror = "*"
 url = "*"
 serde = { version = "1", features = ["derive"] }
 serde_urlencoded = "*"
-sled = { version = "0.34", features = ["compression"] }
 nanoid = "*"
 chrono = { version = "*", default-features = false }
+async-session = "*"
+tf-models = { path = "../tf-models" }
+tf-database = { path = "../tf-database" }

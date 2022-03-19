@@ -1,10 +1,15 @@
-use actix_identity::Identity;
-use actix_web::{HttpResponse, Responder};
+use axum::{
+    response::{IntoResponse, Redirect},
+    routing::get,
+    Router,
+};
 
-pub async fn get_signout(id: Identity) -> impl Responder {
-    id.forget();
+pub fn routes() -> Router {
+    Router::new().route("/", get(get_signout))
+}
 
-    HttpResponse::Found()
-        .append_header(("Location", "signin"))
-        .finish()
+async fn get_signout(mut session: crate::session::Session) -> impl IntoResponse {
+    session.forget().await;
+
+    Redirect::to("/oauth/signin".parse().unwrap())
 }

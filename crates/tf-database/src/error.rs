@@ -1,4 +1,3 @@
-use sled::transaction::TransactionError;
 use thiserror::Error;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -9,7 +8,6 @@ pub enum Error {
     InternalError {
         #[from]
         source: nebari::Error,
-        //source: sled::Error,
     },
 
     #[error("Foreign key constraint error")]
@@ -28,13 +26,11 @@ pub enum Error {
     },
 }
 
-/*
-impl From<TransactionError<Self>> for Error {
-    fn from(e: TransactionError<Self>) -> Self {
+impl From<nebari::AbortError<Self>> for Error {
+    fn from(e: nebari::AbortError<Self>) -> Self {
         match e {
-            TransactionError::Abort(inner) => inner,
-            TransactionError::Storage(source) => Self::InternalError { source },
+            nebari::AbortError::Nebari(source) => Self::InternalError { source },
+            nebari::AbortError::Other(inner) => inner,
         }
     }
 }
-*/

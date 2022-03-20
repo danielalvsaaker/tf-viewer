@@ -1,9 +1,5 @@
 use super::{Key, Tree, Value};
 use crate::error::{Error, Result};
-use sled::{
-    transaction::{ConflictableTransactionError, ConflictableTransactionResult},
-    Transactional,
-};
 
 #[derive(Clone)]
 pub struct Relation<LK, LV, FK, FV> {
@@ -20,26 +16,6 @@ where
     FV: Value,
 {
     pub fn get_foreign(&self, key: &LK) -> Result<Option<FK>> {
-        /*
-        (
-            self.local.as_ref(),
-            self.index.as_ref(),
-            self.foreign.as_ref(),
-        )
-            .transaction(
-                |(local, index, foreign)| -> ConflictableTransactionResult<_, Error> {
-                    let key = key.as_key();
-
-                    Ok(local
-                        .get(&key)?
-                        .and(index.get(&key).transpose())
-                        .transpose()?
-                        .filter(|key| foreign.get(key).map(|x| x.is_some()).unwrap_or_default()))
-                },
-            )?
-            .map(|x| FK::from_bytes(&x))
-            .transpose()
-            */
         let key = key.as_key();
         self.local.as_ref().get(&key)?
             .and(self.index.as_ref().get(&key).transpose())
@@ -50,31 +26,6 @@ where
     }
 
     pub fn get(&self, key: &LK) -> Result<Option<LV>> {
-        /*
-        (
-            self.local.as_ref(),
-            self.index.as_ref(),
-            self.foreign.as_ref(),
-        )
-            .transaction(
-                |(local, index, foreign)| -> ConflictableTransactionResult<_, Error> {
-                    let key = key.as_key();
-
-                    Ok(local.get(&key)?.filter(|_| {
-                        if let Ok(Some(foreign_key)) = index.get(key) {
-                            foreign
-                                .get(foreign_key)
-                                .map(|x| x.is_some())
-                                .unwrap_or_default()
-                        } else {
-                            false
-                        }
-                    }))
-                },
-            )?
-            .map(|x| LV::from_bytes(&x))
-            .transpose()
-            */
         let key = key.as_key();
         self.local.as_ref().get(&key)?.filter(|_| {
             if let Ok(Some(foreign_key)) = self.index.as_ref().get(&key) {
@@ -91,7 +42,7 @@ where
         .transpose()
     }
 
-    pub fn keys<L: Key>(&self, key: &L, skip: usize, take: usize) -> impl Iterator<Item = LK> {
+    pub fn keys<L: Key>(&self, key: &L, skip: usize, take: usize) -> Result<impl Iterator<Item = LK>> {
         self.local.keys(key, skip, take)
     }
 
@@ -115,29 +66,6 @@ where
     }
 
     pub fn insert(&self, key: &LK, value: &LV, foreign_key: &FK) -> Result<()> {
-        /*
-        Ok((
-            self.local.as_ref(),
-            self.index.as_ref(),
-            self.foreign.as_ref(),
-        )
-            .transaction(|(local, index, foreign)| {
-                if foreign.get(foreign_key.as_key())?.is_some() {
-                    let value = value
-                        .as_bytes()
-                        .map_err(ConflictableTransactionError::Abort)?;
-
-                    index.insert(key.as_key(), foreign_key.as_key())?;
-                    local.insert(key.as_key(), value)?;
-
-                    Ok(())
-                } else {
-                    Err(ConflictableTransactionError::Abort(
-                        Error::ForeignKeyConstraint,
-                    ))
-                }
-            })?)
-            */
         self.local.as_ref().set(key.as_key(), value.as_bytes().unwrap())?;
         self.index.as_ref().set(key.as_key(), foreign_key.as_key())?;
 

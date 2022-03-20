@@ -21,10 +21,7 @@ impl nebari::Vault for LZ4Vault {
     type Error = lz4_flex::block::DecompressError;
 
     fn encrypt(&self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
-        println!("Before: {}", payload.len());
-        let res = lz4_flex::compress_prepend_size(payload);
-        println!("After: {}", res.len());
-        Ok(res)
+        Ok(lz4_flex::compress_prepend_size(payload))
     }
 
     fn decrypt(&self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
@@ -34,7 +31,6 @@ impl nebari::Vault for LZ4Vault {
 
 #[derive(Clone)]
 pub struct Database {
-    //inner: sled::Db,
     inner: Inner,
 }
 
@@ -66,21 +62,12 @@ impl Database {
     where
         P: AsRef<std::path::Path>,
     {
-        /*
-        Ok(Self {
-            inner: sled::Config::new()
-                .use_compression(true)
-                .path(path)
-                .open()?,
-        })
-        */
         let this = Self {
             inner: nebari::Config::default_for(path)
                 .vault(LZ4Vault)
                 .open()?,
         };
-
-        this.open_resource::<tf_models::activity::Record>()?.inner.compact()?;
+        this.compact()?;
         Ok(this)
     }
 
@@ -92,13 +79,19 @@ impl Database {
     }
     */
 
+    pub fn compact(&self) -> Result<()> {
+        for name in self.inner.tree_names()? {
+            self.inner.tree(nebari::tree::Unversioned::tree(name))?.compact()?;
+        }
+        Ok(())
+    }
+
+
     pub fn open_resource<R>(&self) -> Result<Tree<R::Key, R>>
     where
         R: Resource,
     {
-        //Ok(Tree::new(self.inner.open_tree(R::NAME)?))
-        let inner = self.inner.tree(nebari::tree::Unversioned::tree(R::NAME))?;
-        Ok(Tree::new(inner))
+        Ok(Tree::new(self.inner.tree(nebari::tree::Unversioned::tree(R::NAME))?))
     }
 
     fn open_index<R, F>(&self) -> Result<Tree<R::Key, F::Key>>
@@ -107,7 +100,7 @@ impl Database {
         F: Resource,
     {
         let name = format!("{}_{}_index", R::NAME, F::NAME);
-        //Ok(Tree::new(self.inner.open_tree(&name)?))
+
         Ok(Tree::new(self.inner.tree(nebari::tree::Unversioned::tree(name))?))
     }
 

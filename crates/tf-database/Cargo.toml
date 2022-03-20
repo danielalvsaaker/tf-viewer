@@ -7,8 +7,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sled = { git = "https://github.com/spacejam/sled", features = ["compression"] }
-#sled = { version = "0.34", features = ["compression"] }
 serde = { version = "1", features = ["derive"] }
 pot = "1"
 tf-models = { path = "../tf-models" }

@@ -9,3 +9,8 @@ pub struct User {
     pub heartrate_rest: u8,
     pub heartrate_max: u8,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct Password<'a> {
+    pub password: std::borrow::Cow<'a, str>,
+}

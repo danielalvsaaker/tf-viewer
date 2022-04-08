@@ -7,7 +7,7 @@ pub mod user;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 struct Id<const L: usize> {
     inner: [u8; L],
 }
@@ -17,6 +17,10 @@ impl<const L: usize> Id<L> {
 
     pub fn as_bytes(&self) -> [u8; L] {
         self.inner
+    }
+
+    pub fn as_str(&self) -> &str {
+        std::str::from_utf8(&self.inner).unwrap()
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, InvalidLengthError> {
@@ -69,7 +73,7 @@ impl std::error::Error for InvalidLengthError {}
 
 macro_rules! declare_id {
     ($name:ident, $length:expr) => {
-        #[derive(Serialize, Deserialize, Clone, Copy)]
+        #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
         pub struct $name(Id<$length>);
 
         impl $name {
@@ -77,6 +81,10 @@ macro_rules! declare_id {
 
             pub fn as_bytes(&self) -> [u8; Self::LENGTH] {
                 self.0.as_bytes()
+            }
+
+            pub fn as_str(&self) -> &str {
+                self.0.as_str()
             }
 
             pub fn from_bytes(bytes: &[u8]) -> Result<Self, InvalidLengthError> {

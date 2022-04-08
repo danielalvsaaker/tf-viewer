@@ -1,5 +1,5 @@
-use async_graphql::{async_trait, Context, Guard, Result, Error, ErrorExtensions};
-use oxide_auth::primitives::{scope::Scope, grant::Grant};
+use async_graphql::{async_trait, Context, Error, ErrorExtensions, Guard, Result};
+use oxide_auth::primitives::{grant::Grant, scope::Scope};
 use tf_auth::scopes;
 
 pub struct OAuthGuard {
@@ -19,7 +19,6 @@ impl OAuthGuard {
 
 #[async_trait::async_trait]
 impl Guard for OAuthGuard {
-    /*
     async fn check(&self, ctx: &Context<'_>) -> Result<()> {
         let grant = ctx.data_unchecked::<Grant>();
 
@@ -27,10 +26,5 @@ impl Guard for OAuthGuard {
             true => Ok(()),
             false => Err(Error::new("Invalid scope").extend_with(|_, e| e.set("code", 401))),
         }
-    }
-    */
-
-    async fn check(&self, ctx: &Context<'_>) -> Result<()> {
-        Ok(())
     }
 }

@@ -1,9 +1,9 @@
 use async_graphql::*;
 
 use super::{OAuthGuard, UserRoot};
-use tf_auth::scopes::{Read, self};
-use tf_database::{Database, query::GearQuery};
-use tf_models::{gear::Gear, GearId, user::User};
+use tf_auth::scopes::{self, Read};
+use tf_database::{query::GearQuery, Database};
+use tf_models::{gear::Gear, user::User, GearId};
 
 pub(super) struct GearRoot {
     pub(super) inner: GearQuery,
@@ -17,19 +17,24 @@ impl GearRoot {
 
     #[graphql(flatten)]
     async fn gear(&self, ctx: &Context<'_>) -> Result<Gear> {
-        Ok(ctx.data_unchecked::<Database>()
-           .root::<Gear>()?
-           .get(&self.inner)?
-           .unwrap())
+        let db = ctx.data_unchecked::<Database>().clone();
+        let inner = self.inner;
+
+        tokio::task::spawn_blocking(move || Ok(db.root::<Gear>()?.get(&inner)?.unwrap())).await?
     }
 
     #[graphql(guard = "OAuthGuard::new(Read(scopes::User))")]
     async fn owner(&self, ctx: &Context<'_>) -> Result<Option<UserRoot>> {
-        Ok(ctx
-            .data_unchecked::<Database>()
-            .root::<Gear>()?
-            .traverse::<User>()?
-            .get_foreign(&self.inner)?
-            .map(|inner| UserRoot { inner }))
+        let db = ctx.data_unchecked::<Database>().clone();
+        let inner = self.inner;
+
+        tokio::task::spawn_blocking(move || {
+            Ok(db
+                .root::<Gear>()?
+                .traverse::<User>()?
+                .get_foreign(&inner)?
+                .map(|inner| UserRoot { inner }))
+        })
+        .await?
     }
 }

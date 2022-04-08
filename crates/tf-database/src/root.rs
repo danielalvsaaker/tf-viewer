@@ -17,8 +17,8 @@ where
 {
     pub fn traverse<R: Resource>(&self) -> Result<Root<'a, R, T::Collection>>
     where
-        T: Traverse<R>,
-        Database: OpenCollection<T::Collection>,
+        T: Traverse<'a, R>,
+        Database: OpenCollection<'a, T::Collection>,
     {
         let collection: T::Collection = OpenCollection::open_collection(self._db)?;
 
@@ -38,15 +38,15 @@ impl<T, C> std::ops::Deref for Root<'_, T, C> {
     }
 }
 
-impl<'a, T, B> Root<'a, T, Relation<T::Key, T, B::Key, B>>
+impl<'a, T, B> Root<'a, T, Relation<'a, T::Key, T, B::Key, B>>
 where
     B: Resource,
     T: Resource,
 {
     pub fn traverse<R: Resource>(&self, key: &'a T::Key) -> Result<Root<'a, R, T::Collection>>
     where
-        T: Traverse<R>,
-        Database: OpenCollection<T::Collection>,
+        T: Traverse<'a, R>,
+        Database: OpenCollection<'a, T::Collection>,
     {
         let collection: T::Collection = self._db.open_collection()?;
 

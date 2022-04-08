@@ -34,25 +34,25 @@ pub struct Database {
     inner: Inner,
 }
 
-pub trait OpenCollection<C> {
-    fn open_collection(&self) -> Result<C>;
+pub trait OpenCollection<'a, C> {
+    fn open_collection(&'a self) -> Result<C>;
 }
 
-impl<R> OpenCollection<Tree<R::Key, R>> for Database
+impl<'a, R> OpenCollection<'a, Tree<R::Key, R>> for Database
 where
     R: Resource,
 {
-    fn open_collection(&self) -> Result<Tree<R::Key, R>> {
+    fn open_collection(&'a self) -> Result<Tree<R::Key, R>> {
         self.open_resource()
     }
 }
 
-impl<R, S> OpenCollection<Relation<R::Key, R, S::Key, S>> for Database
+impl<'a, R, S> OpenCollection<'a, Relation<'a, R::Key, R, S::Key, S>> for Database
 where
     R: Resource,
     S: Resource,
 {
-    fn open_collection(&self) -> Result<Relation<R::Key, R, S::Key, S>> {
+    fn open_collection(&'a self) -> Result<Relation<'a, R::Key, R, S::Key, S>> {
         self.open_relation()
     }
 }
@@ -62,36 +62,27 @@ impl Database {
     where
         P: AsRef<std::path::Path>,
     {
-        let this = Self {
-            inner: nebari::Config::default_for(path)
-                .vault(LZ4Vault)
-                .open()?,
-        };
-        this.compact()?;
-        Ok(this)
-    }
-
-    /*
-    pub fn create_temporary() -> Result<Self> {
         Ok(Self {
-            inner: sled::Config::new().temporary(true).open()?,
+            inner: nebari::Config::default_for(path).vault(LZ4Vault).open()?,
         })
     }
-    */
 
     pub fn compact(&self) -> Result<()> {
         for name in self.inner.tree_names()? {
-            self.inner.tree(nebari::tree::Unversioned::tree(name))?.compact()?;
+            self.inner
+                .tree(nebari::tree::Unversioned::tree(name))?
+                .compact()?;
         }
         Ok(())
     }
-
 
     pub fn open_resource<R>(&self) -> Result<Tree<R::Key, R>>
     where
         R: Resource,
     {
-        Ok(Tree::new(self.inner.tree(nebari::tree::Unversioned::tree(R::NAME))?))
+        Ok(Tree::new(
+            self.inner.tree(nebari::tree::Unversioned::tree(R::NAME))?,
+        ))
     }
 
     fn open_index<R, F>(&self) -> Result<Tree<R::Key, F::Key>>
@@ -101,15 +92,18 @@ impl Database {
     {
         let name = format!("{}_{}_index", R::NAME, F::NAME);
 
-        Ok(Tree::new(self.inner.tree(nebari::tree::Unversioned::tree(name))?))
+        Ok(Tree::new(
+            self.inner.tree(nebari::tree::Unversioned::tree(name))?,
+        ))
     }
 
-    pub fn open_relation<R, F>(&self) -> Result<Relation<R::Key, R, F::Key, F>>
+    pub fn open_relation<R, F>(&self) -> Result<Relation<'_, R::Key, R, F::Key, F>>
     where
         R: Resource,
         F: Resource,
     {
         Ok(Relation {
+            root: &self.inner,
             local: self.open_resource()?,
             index: self.open_index::<R, F>()?,
             foreign: self.open_resource()?,

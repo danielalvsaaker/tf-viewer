@@ -6,17 +6,9 @@ edition = "2021"
 include = ["src/**/*", "LICENSE", "README.md"]
 
 [dependencies]
-oxide-auth = "0.5"
-
-# error handling
-thiserror = "1.0"
-bytes = "*"
-
+async-graphql = "3.0"
 tf-models = { path = "../tf-models", features = ["graphql"] }
 tf-database = { path = "../tf-database" }
 tf-auth = { path = "../tf-auth" }
-
-nanoid = "*"
-
-async-graphql = { version = "*" }
-async-graphql-axum = "*"
+tokio = { version = "1", features = ["rt-multi-thread"] }
+oxide-auth = "0.5"

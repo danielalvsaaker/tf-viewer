@@ -21,42 +21,47 @@ impl ActivityRoot {
     }
 
     async fn session(&self, ctx: &Context<'_>) -> Result<Option<Session>> {
-        Ok(ctx.data_unchecked::<Database>()
-           .root::<Session>()?
-           .get(&self.inner)?
-        )
+        let db = ctx.data_unchecked::<Database>();
+
+        tokio::task::block_in_place(move || Ok(db.root::<Session>()?.get(&self.inner)?))
     }
 
     async fn record(&self, ctx: &Context<'_>) -> Result<Option<Record>> {
-        Ok(ctx.data_unchecked::<Database>()
-            .root::<Record>()?
-            .get(&self.inner)?)
+        let db = ctx.data_unchecked::<Database>().clone();
+        let inner = self.inner;
+
+        tokio::task::spawn_blocking(move || Ok(db.root::<Record>()?.get(&inner)?)).await?
     }
 
     async fn lap(&self, ctx: &Context<'_>) -> Result<Option<Vec<Lap>>> {
-        Ok(ctx.data_unchecked::<Database>()
-           .root::<Vec<Lap>>()?
-           .get(&self.inner)?
-        )
+        let db = ctx.data_unchecked::<Database>();
+
+        tokio::task::block_in_place(move || Ok(db.root::<Vec<Lap>>()?.get(&self.inner)?))
     }
 
     #[graphql(guard = "OAuthGuard::new(Read(scopes::Gear))")]
     async fn gear(&self, ctx: &Context<'_>) -> Result<Option<GearRoot>> {
-        Ok(ctx
-            .data_unchecked::<Database>()
-            .root::<Session>()?
-            .traverse::<Gear>()?
-            .get_foreign(&self.inner)?
-            .map(|inner| GearRoot { inner }))
+        let db = ctx.data_unchecked::<Database>();
+
+        tokio::task::block_in_place(move || {
+            Ok(db
+                .root::<Session>()?
+                .traverse::<Gear>()?
+                .get_foreign(&self.inner)?
+                .map(|inner| GearRoot { inner }))
+        })
     }
 
     #[graphql(guard = "OAuthGuard::new(Read(scopes::User))")]
     async fn owner(&self, ctx: &Context<'_>) -> Result<Option<UserRoot>> {
-        Ok(ctx
-            .data_unchecked::<Database>()
-            .root::<Session>()?
-            .traverse::<User>()?
-            .get_foreign(&self.inner)?
-            .map(|inner| UserRoot { inner }))
+        let db = ctx.data_unchecked::<Database>();
+
+        tokio::task::block_in_place(move || {
+            Ok(db
+                .root::<Session>()?
+                .traverse::<User>()?
+                .get_foreign(&self.inner)?
+                .map(|inner| UserRoot { inner }))
+        })
     }
 }

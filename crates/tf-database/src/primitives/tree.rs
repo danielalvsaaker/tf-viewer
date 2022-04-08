@@ -79,29 +79,27 @@ where
         Ok(output.into_iter())
     }
 
-    pub fn keys<L: Key>(&self, key: &L, skip: usize, take: usize) -> Result<impl Iterator<Item = K>> {
-        fn next_byte_sequence(start: &[u8]) -> Option<Vec<u8>> {
-            let mut end = start.to_vec();
-            // Modify the last byte by adding one. If it would wrap, we proceed to the
-            // next byte.
-            while let Some(last_byte) = end.pop() {
-                if let Some(next) = last_byte.checked_add(1) {
-                    end.push(next);
-                    return Some(end);
-                }
-            }
-
-            None
-        }
-
+    pub fn keys<L: Key>(
+        &self,
+        key: &L,
+        skip: usize,
+        take: usize,
+    ) -> Result<impl Iterator<Item = K>> {
         let key = key.as_prefix().to_vec();
-        let next = next_byte_sequence(&key).map(|x| x.to_vec());
+        let next = super::key::next_byte_sequence(&key).map(|x| x.to_vec());
+
         let range = if let Some(ref next) = next {
-            (std::ops::Bound::Included(key.as_slice()), std::ops::Bound::Excluded(next.as_slice()))
+            (
+                std::ops::Bound::Included(key.as_slice()),
+                std::ops::Bound::Excluded(next.as_slice()),
+            )
         } else {
-            (std::ops::Bound::Included(key.as_slice()), std::ops::Bound::Unbounded)
+            (
+                std::ops::Bound::Included(key.as_slice()),
+                std::ops::Bound::Unbounded,
+            )
         };
-        
+
         let mut output = Vec::with_capacity(take);
         let mut keys_scanned = 0;
 
@@ -111,7 +109,7 @@ where
             |_, _, _| nebari::tree::ScanEvaluation::ReadData,
             |key, _| {
                 if keys_scanned > skip {
-                    output.push(K::from_bytes(&key).unwrap());
+                    output.push(K::from_bytes(key));
                 }
 
                 keys_scanned += 1;
@@ -124,7 +122,7 @@ where
             |_, _, _| unreachable!(),
         )?;
 
-        Ok(output.into_iter())
+        Ok(output.into_iter().flatten())
     }
 
     /*

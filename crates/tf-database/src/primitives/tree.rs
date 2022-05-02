@@ -63,7 +63,7 @@ where
             |_, _, _| nebari::tree::ScanEvaluation::ReadData,
             |key, _| {
                 if keys_scanned >= skip {
-                    output.push(K::from_bytes(&key).unwrap());
+                    output.push(K::from_bytes(key).unwrap());
                 }
 
                 keys_scanned += 1;

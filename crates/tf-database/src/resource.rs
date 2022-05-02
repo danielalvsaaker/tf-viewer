@@ -1,6 +1,6 @@
 use crate::{
     primitives::{Key, Value},
-    query::{ActivityQuery, ClientQuery, GearQuery, UserQuery},
+    query::{ActivityQuery, GearQuery, UserQuery},
 };
 use tf_models::{
     activity::{Lap, Record, Session},

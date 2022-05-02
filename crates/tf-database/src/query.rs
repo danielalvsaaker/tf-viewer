@@ -31,7 +31,7 @@ impl Key for ActivityQuery {
     }
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ClientQuery {
     pub user_id: UserId,
     pub id: ClientId,
@@ -60,7 +60,7 @@ impl Key for ClientQuery {
     }
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Clone, Copy)]
 pub struct GearQuery {
     pub user_id: UserId,
     pub id: GearId,
@@ -92,6 +92,12 @@ impl Key for GearQuery {
 #[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct UserQuery {
     pub user_id: UserId,
+}
+
+impl std::fmt::Display for UserQuery {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.user_id.fmt(f)
+    }
 }
 
 impl Key for UserQuery {

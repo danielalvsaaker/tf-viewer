@@ -5,13 +5,13 @@ pub mod resource;
 pub mod root;
 
 use error::Result;
-use query::{ActivityQuery, ClientQuery, GearQuery, UserQuery};
+use query::{ActivityQuery, GearQuery, UserQuery};
 use resource::Resource;
 use root::Root;
 
 #[derive(Clone)]
 pub struct Database {
-    _db: primitives::Database,
+    db: primitives::Database,
 }
 
 impl Database {
@@ -20,12 +20,12 @@ impl Database {
         P: AsRef<std::path::Path>,
     {
         Ok(Self {
-            _db: primitives::Database::open(path)?,
+            db: primitives::Database::open(path)?,
         })
     }
 
     pub fn compact(&self) -> Result<()> {
-        Ok(self._db.compact()?)
+        self.db.compact()
     }
 
     pub fn root<R>(&self) -> Result<Root<'_, R, primitives::Tree<R::Key, R>>>
@@ -34,46 +34,42 @@ impl Database {
     {
         Ok(Root {
             _resource: Default::default(),
-            _db: &self._db,
-            collection: self._db.open_resource()?,
+            db: &self.db,
+            collection: self.db.open_resource()?,
         })
     }
 }
 
-use tf_models::{
-    activity::*,
-    gear::Gear,
-    user::{Password, User},
-};
+use tf_models::{activity::*, gear::Gear, user::User};
 
-pub trait Traverse<'a, T: Resource> {
+pub trait Traverse<T: Resource> {
     type Collection;
 }
 
-impl<'a> Traverse<'a, Gear> for Session {
-    type Collection = primitives::Relation<'a, ActivityQuery, Session, GearQuery, Gear>;
+impl Traverse<Gear> for Session {
+    type Collection = primitives::Relation<ActivityQuery, Session, GearQuery, Gear>;
 }
 
-impl<'a> Traverse<'a, User> for Session {
-    type Collection = primitives::Relation<'a, ActivityQuery, Session, UserQuery, User>;
+impl Traverse<User> for Session {
+    type Collection = primitives::Relation<ActivityQuery, Session, UserQuery, User>;
 }
 
-impl<'a> Traverse<'a, Session> for User {
-    type Collection = primitives::Relation<'a, ActivityQuery, Session, UserQuery, User>;
+impl Traverse<Session> for User {
+    type Collection = primitives::Relation<ActivityQuery, Session, UserQuery, User>;
 }
 
-impl<'a> Traverse<'a, Record> for User {
-    type Collection = primitives::Relation<'a, ActivityQuery, Record, UserQuery, User>;
+impl Traverse<Record> for User {
+    type Collection = primitives::Relation<ActivityQuery, Record, UserQuery, User>;
 }
 
-impl<'a> Traverse<'a, Vec<Lap>> for User {
-    type Collection = primitives::Relation<'a, ActivityQuery, Vec<Lap>, UserQuery, User>;
+impl Traverse<Vec<Lap>> for User {
+    type Collection = primitives::Relation<ActivityQuery, Vec<Lap>, UserQuery, User>;
 }
 
-impl<'a> Traverse<'a, Gear> for User {
-    type Collection = primitives::Relation<'a, GearQuery, Gear, UserQuery, User>;
+impl Traverse<Gear> for User {
+    type Collection = primitives::Relation<GearQuery, Gear, UserQuery, User>;
 }
 
-impl<'a> Traverse<'a, User> for Gear {
-    type Collection = primitives::Relation<'a, GearQuery, Gear, UserQuery, User>;
+impl Traverse<User> for Gear {
+    type Collection = primitives::Relation<GearQuery, Gear, UserQuery, User>;
 }

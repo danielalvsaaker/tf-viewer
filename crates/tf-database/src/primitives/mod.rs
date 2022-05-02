@@ -1,9 +1,11 @@
+mod index;
 mod relation;
 mod tree;
 
 mod key;
 mod value;
 
+pub use index::Index;
 pub use key::Key;
 pub use relation::Relation;
 pub use tree::Tree;
@@ -25,7 +27,7 @@ impl nebari::Vault for LZ4Vault {
     }
 
     fn decrypt(&self, payload: &[u8]) -> Result<Vec<u8>, Self::Error> {
-        Ok(lz4_flex::decompress_size_prepended(payload)?)
+        lz4_flex::decompress_size_prepended(payload)
     }
 }
 
@@ -34,26 +36,36 @@ pub struct Database {
     inner: Inner,
 }
 
-pub trait OpenCollection<'a, C> {
-    fn open_collection(&'a self) -> Result<C>;
+pub trait OpenCollection<C> {
+    fn open_collection(&self) -> Result<C>;
 }
 
-impl<'a, R> OpenCollection<'a, Tree<R::Key, R>> for Database
+impl<R> OpenCollection<Tree<R::Key, R>> for Database
 where
     R: Resource,
 {
-    fn open_collection(&'a self) -> Result<Tree<R::Key, R>> {
+    fn open_collection(&self) -> Result<Tree<R::Key, R>> {
         self.open_resource()
     }
 }
 
-impl<'a, R, S> OpenCollection<'a, Relation<'a, R::Key, R, S::Key, S>> for Database
+impl<L, F> OpenCollection<Relation<L::Key, L, F::Key, F>> for Database
 where
-    R: Resource,
-    S: Resource,
+    L: Resource,
+    F: Resource,
 {
-    fn open_collection(&'a self) -> Result<Relation<'a, R::Key, R, S::Key, S>> {
+    fn open_collection(&self) -> Result<Relation<L::Key, L, F::Key, F>> {
         self.open_relation()
+    }
+}
+
+impl<L, F> OpenCollection<Index<L::Key, L, F::Key, F>> for Database
+where
+    L: Resource,
+    F: Resource,
+{
+    fn open_collection(&self) -> Result<Index<L::Key, L, F::Key, F>> {
+        self.open_index()
     }
 }
 
@@ -85,28 +97,27 @@ impl Database {
         ))
     }
 
-    fn open_index<R, F>(&self) -> Result<Tree<R::Key, F::Key>>
+    fn open_index<L, F>(&self) -> Result<Index<L::Key, L, F::Key, F>>
     where
-        R: Resource,
+        L: Resource,
         F: Resource,
     {
-        let name = format!("{}_{}_index", R::NAME, F::NAME);
+        let name = format!("{}_{}_index", L::NAME, F::NAME);
 
-        Ok(Tree::new(
-            self.inner.tree(nebari::tree::Unversioned::tree(name))?,
+        Ok(Index::new(
+            Tree::new(self.inner.tree(nebari::tree::Unversioned::tree(name))?),
+            self.open_resource()?,
         ))
     }
 
-    pub fn open_relation<R, F>(&self) -> Result<Relation<'_, R::Key, R, F::Key, F>>
+    pub fn open_relation<L, F>(&self) -> Result<Relation<L::Key, L, F::Key, F>>
     where
-        R: Resource,
+        L: Resource,
         F: Resource,
     {
         Ok(Relation {
-            root: &self.inner,
             local: self.open_resource()?,
-            index: self.open_index::<R, F>()?,
-            foreign: self.open_resource()?,
+            index: self.open_index::<L, F>()?,
         })
     }
 }

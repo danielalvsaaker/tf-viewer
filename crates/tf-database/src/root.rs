@@ -5,57 +5,63 @@ use crate::{
     Traverse,
 };
 
-pub struct Root<'a, T, C> {
-    pub(super) _resource: std::marker::PhantomData<T>,
-    pub(super) _db: &'a Database,
-    pub(super) collection: C,
+pub struct Root<'a, Resource, Collection> {
+    pub(super) db: &'a Database,
+    pub(super) collection: Collection,
+    pub(super) _resource: std::marker::PhantomData<Resource>,
 }
 
-impl<'a, T> Root<'a, T, Tree<T::Key, T>>
-where
-    T: Resource,
-{
-    pub fn traverse<R: Resource>(&self) -> Result<Root<'a, R, T::Collection>>
-    where
-        T: Traverse<'a, R>,
-        Database: OpenCollection<'a, T::Collection>,
-    {
-        let collection: T::Collection = OpenCollection::open_collection(self._db)?;
-
-        Ok(Root {
-            _resource: Default::default(),
-            _db: self._db,
-            collection,
-        })
-    }
-}
-
-impl<T, C> std::ops::Deref for Root<'_, T, C> {
-    type Target = C;
+impl<Resource, Collection> std::ops::Deref for Root<'_, Resource, Collection> {
+    type Target = Collection;
 
     fn deref(&self) -> &Self::Target {
         &self.collection
     }
 }
 
-impl<'a, T, B> Root<'a, T, Relation<'a, T::Key, T, B::Key, B>>
+impl<'a, Current> Root<'a, Current, Tree<Current::Key, Current>>
 where
-    B: Resource,
-    T: Resource,
+    Current: Resource,
 {
-    pub fn traverse<R: Resource>(&self, key: &'a T::Key) -> Result<Root<'a, R, T::Collection>>
+    pub fn traverse<Target: Resource>(
+        &self,
+    ) -> Result<Root<'a, Target, <Current as Traverse<Target>>::Collection>>
     where
-        T: Traverse<'a, R>,
-        Database: OpenCollection<'a, T::Collection>,
+        Current: Traverse<Target>,
+        Database: OpenCollection<Current::Collection>,
     {
-        let collection: T::Collection = self._db.open_collection()?;
+        let collection: <Current as Traverse<Target>>::Collection = self.db.open_collection()?;
+
+        Ok(Root {
+            db: self.db,
+            collection,
+            _resource: Default::default(),
+        })
+    }
+}
+
+impl<'a, Current, Previous>
+    Root<'a, Current, Relation<Current::Key, Current, Previous::Key, Previous>>
+where
+    Current: Resource,
+    Previous: Resource,
+{
+    pub fn traverse<Target: Resource>(
+        &self,
+        key: &Current::Key,
+    ) -> Result<Root<'a, Target, <Current as Traverse<Target>>::Collection>>
+    where
+        Current: Traverse<Target>,
+        Database: OpenCollection<Current::Collection>,
+    {
+        let collection: <Current as Traverse<Target>>::Collection = self.db.open_collection()?;
 
         self.collection
             .contains_key(key)?
             .then(|| Root {
-                _resource: Default::default(),
-                _db: self._db,
+                db: self.db,
                 collection,
+                _resource: Default::default(),
             })
             .ok_or(Error::ForeignKeyConstraint)
     }

@@ -11,5 +11,5 @@ pub fn routes() -> Router {
 async fn get_signout(mut session: crate::session::Session) -> impl IntoResponse {
     session.forget().await;
 
-    Redirect::to("/oauth/signin".parse().unwrap())
+    Redirect::to("/oauth/signin")
 }

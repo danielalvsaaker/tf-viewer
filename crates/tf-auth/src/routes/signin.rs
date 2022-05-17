@@ -1,10 +1,17 @@
 use super::{Callback, UserForm};
-use crate::error::Result;
-use crate::templates::SignIn;
+use crate::{
+    session::Session,
+    error::Result,
+    database::{
+        Database, resources::{User, Username},
+    },
+    templates::SignIn,
+};
 
+use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use axum::{
     extract::{Extension, Form, Query},
-    http::{StatusCode, Uri},
+    http::StatusCode,
     response::{IntoResponse, Redirect},
     routing::get,
     Router,
@@ -15,43 +22,56 @@ pub fn routes() -> Router {
 }
 
 async fn get_signin(query: Option<Query<Callback<'_>>>) -> impl IntoResponse {
-    let query = query.as_ref().map(|x| x.as_str()).unwrap_or_default();
+    let query = &query
+        .as_ref()
+        .map(|Query(x)| serde_urlencoded::to_string(x).unwrap())
+        .unwrap_or_default();
     SignIn { query }.into_response()
 }
 
 async fn post_signin(
-    session: crate::session::Session,
-    Extension(_db): Extension<crate::database::Database>,
+    session: Session,
+    Extension(db): Extension<Database>,
     query: Option<Query<Callback<'_>>>,
     Form(user): Form<UserForm>,
 ) -> Result<impl IntoResponse> {
     let query = query.as_ref().map(|x| x.as_str());
-    /*
-    let authorized = db.get(&user.username)?
-        .as_deref()
-        .map(PasswordHash::new)
-        .transpose()?
+
+    let hash = db
+        .root::<Username>()?
+        .traverse::<User>()?
+        .get(&user.username)?
+        .map(|x| x.password)
+        .unwrap_or_default();
+
+    let authorized = PasswordHash::new(&hash)
         .map(|x| {
             Argon2::default()
-             .verify_password(user.password.as_bytes(), &x)
-             .is_ok()
+                .verify_password(user.password.as_bytes(), &x)
+                .is_ok()
         })
         .unwrap_or_default();
-        */
 
-    let cookie = if true {
-        session.remember(user.username).await
+    let cookie = if authorized {
+        let user_id = db
+            .root::<Username>()?
+            .traverse::<User>()?
+            .key(&user.username)?
+            .unwrap();
+        session.remember(user_id).await
     } else {
         return Ok((
             StatusCode::UNAUTHORIZED,
-            SignIn { query: query.unwrap_or_default() }
+            SignIn {
+                query: query.unwrap_or_default(),
+            },
         )
             .into_response());
     };
 
     if let Some(query) = query {
-        Ok((cookie, Redirect::to(query.parse().unwrap_or_default())).into_response())
+        Ok((cookie, Redirect::to(query)).into_response())
     } else {
-        Ok((cookie, Redirect::to(Uri::from_static("/oauth/"))).into_response())
+        Ok((cookie, Redirect::to("/oauth/")).into_response())
     }
 }

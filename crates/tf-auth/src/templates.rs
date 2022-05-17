@@ -2,6 +2,7 @@ use askama::Template;
 
 use oxide_auth::endpoint::WebRequest;
 use std::borrow::Cow;
+use tf_database::query::UserQuery;
 
 #[derive(Template)]
 #[template(path = "signin.html")]
@@ -20,15 +21,19 @@ pub struct SignUp<'a> {
 pub struct Authorize<'a> {
     pub query: String,
     pub client_id: String,
-    pub user_id: &'a str,
+    pub user_id: &'a UserQuery,
     pub scopes: String,
 }
+
+#[derive(Template)]
+#[template(path = "client.html")]
+pub struct Client;
 
 impl<'a> Authorize<'a> {
     pub fn new(
         req: &mut oxide_auth_axum::OAuthRequest,
         solicitation: oxide_auth::endpoint::Solicitation<'a>,
-        user_id: &'a str,
+        user_id: &'a UserQuery,
     ) -> Self {
         macro_rules! to_string {
             ($query:expr) => {
@@ -57,9 +62,9 @@ impl<'a> Authorize<'a> {
         let query = serde_urlencoded::to_string(extra).unwrap();
 
         Self {
-            query: query,
+            query,
             client_id: grant.client_id.to_owned(),
-            user_id: user_id,
+            user_id,
             scopes: grant.scope.iter().collect::<Vec<_>>().join(", "),
         }
     }

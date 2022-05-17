@@ -1,11 +1,8 @@
 use super::Callback;
-use crate::{
-    templates::Authorize,
-    Consent, State,
-};
+use crate::{database::Database, error::Result, templates::Authorize, Consent, State, session::Session};
+use askama::Template;
 use axum::{
     extract::{Extension, OriginalUri, Query},
-    http::Uri,
     response::{IntoResponse, Redirect},
     routing::{get, post},
     Router,
@@ -14,8 +11,8 @@ use oxide_auth::{
     endpoint::{OwnerConsent, QueryParameter, Solicitation},
     frontends::simple::endpoint::FnSolicitor,
 };
-use askama::Template;
 use oxide_auth_axum::{OAuthRequest, OAuthResponse, WebError};
+use tf_database::primitives::Key;
 
 pub fn routes() -> Router {
     Router::new()
@@ -27,9 +24,10 @@ pub fn routes() -> Router {
 async fn get_authorize(
     req: OAuthRequest,
     Extension(state): Extension<State>,
-    session: crate::session::Session,
+    Extension(db): Extension<Database>,
+    session: Session,
     OriginalUri(uri): OriginalUri,
-) -> Result<impl IntoResponse, WebError> {
+) -> Result<impl IntoResponse> {
     if session.id().is_none() {
         let callback =
             Callback::from_str(uri.path_and_query().map(|x| x.as_str()).unwrap_or_default());
@@ -38,16 +36,16 @@ async fn get_authorize(
             "/oauth/signin?{}",
             serde_urlencoded::to_string(&callback).unwrap()
         );
-        return Ok(Redirect::to(uri.parse().unwrap_or_default()).into_response());
+        return Ok(Redirect::to(&uri).into_response());
     }
 
-    let username = session.id().unwrap();
+    let id = session.id().unwrap();
 
-    state
-        .endpoint()
+    Ok(state
+        .endpoint(db)
         .with_solicitor(FnSolicitor(
             move |req: &mut OAuthRequest, pre_grant: Solicitation| {
-                let body = Authorize::new(req, pre_grant, &username);
+                let body = Authorize::new(req, pre_grant, &id);
 
                 match body.render() {
                     Ok(inner) => OwnerConsent::InProgress(
@@ -56,42 +54,46 @@ async fn get_authorize(
                             .unwrap()
                             .body(&inner),
                     ),
-                    Err(inner) => OwnerConsent::Error(WebError::InternalError(Some(inner.to_string()))),
+                    Err(inner) => {
+                        OwnerConsent::Error(WebError::InternalError(Some(inner.to_string())))
+                    }
                 }
             },
         ))
         .authorization_flow()
         .execute(req)
-        .map(IntoResponse::into_response)
+        .map(IntoResponse::into_response)?)
 }
 
 async fn post_authorize(
     req: OAuthRequest,
     Extension(state): Extension<State>,
+    Extension(db): Extension<Database>,
     Query(consent): Query<Consent>,
-    session: crate::session::Session,
-) -> Result<impl IntoResponse, WebError> {
-    let username = match session.id() {
+    session: Session,
+) -> Result<impl IntoResponse> {
+    let user_id = match session.id() {
         Some(username) => username,
-        _ => return Ok(Redirect::to(Uri::from_static("/oauth/signin")).into_response()),
+        _ => return Ok(Redirect::to("/oauth/signin").into_response()),
     };
 
-    state
-        .endpoint()
+    Ok(state
+        .endpoint(db)
         .with_solicitor(FnSolicitor(
             move |_: &mut OAuthRequest, _: Solicitation| match consent {
-                Consent::Allow => OwnerConsent::Authorized(username.to_owned()),
+                Consent::Allow => OwnerConsent::Authorized(user_id.as_string()),
                 Consent::Deny => OwnerConsent::Denied,
             },
         ))
         .authorization_flow()
         .execute(req)
-        .map(IntoResponse::into_response)
+        .map(IntoResponse::into_response)?)
 }
 
 async fn token(
     req: OAuthRequest,
     Extension(state): Extension<State>,
+    Extension(db): Extension<Database>,
 ) -> Result<OAuthResponse, WebError> {
     let grant_type = req
         .body()
@@ -99,14 +101,15 @@ async fn token(
         .unwrap_or_default();
 
     match &*grant_type {
-        "refresh_token" => refresh(req, Extension(state)).await,
-        _ => state.endpoint().access_token_flow().execute(req),
+        "refresh_token" => refresh(req, Extension(state), Extension(db)).await,
+        _ => state.endpoint(db).access_token_flow().execute(req),
     }
 }
 
 async fn refresh(
     req: OAuthRequest,
     Extension(state): Extension<State>,
+    Extension(db): Extension<Database>,
 ) -> Result<OAuthResponse, WebError> {
-    state.endpoint().refresh_flow().execute(req)
+    state.endpoint(db).refresh_flow().execute(req)
 }

@@ -8,7 +8,7 @@ use oxide_auth::{
     primitives::{prelude::*, scope::Scope},
 };
 use oxide_auth_axum::{OAuthRequest, OAuthResponse, WebError};
-use serde::{Deserialize};
+use serde::Deserialize;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 pub mod database;
@@ -90,10 +90,13 @@ pub mod scopes {
 
         async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
             let Extension(state) = Extension::<State>::from_request(req).await.unwrap();
+            let Extension(db) = Extension::<super::Database>::from_request(req)
+                .await
+                .unwrap();
             let req = OAuthResource::from_request(req).await.unwrap();
 
             let auth = state
-                .endpoint()
+                .endpoint(db)
                 .with_scopes(&[S::SCOPE.parse().unwrap()])
                 .resource_flow()
                 .execute(req.into());
@@ -115,13 +118,12 @@ use database::Database;
 pub type State = Arc<InnerState>;
 
 pub struct InnerState {
-    registrar: Database,
     authorizer: Mutex<AuthMap<RandomGenerator>>,
     issuer: Mutex<TokenMap<RandomGenerator>>,
 }
 
-pub struct AuthEndpoint<'a, E, S, C> {
-    registrar: &'a Database,
+pub struct AuthEndpoint<'a, R, E, S, C> {
+    registrar: R,
     authorizer: MutexGuard<'a, AuthMap<RandomGenerator>>,
     issuer: MutexGuard<'a, TokenMap<RandomGenerator>>,
     extension: E,
@@ -129,8 +131,9 @@ pub struct AuthEndpoint<'a, E, S, C> {
     scopes: C,
 }
 
-impl<'a, E, S, C> Endpoint<OAuthRequest> for AuthEndpoint<'a, E, S, C>
+impl<'a, R, E, S, C> Endpoint<OAuthRequest> for AuthEndpoint<'a, R, E, S, C>
 where
+    R: Registrar,
     E: Extension,
     S: OwnerSolicitor<OAuthRequest>,
     C: Scopes<OAuthRequest>,
@@ -178,10 +181,15 @@ where
     }
 }
 
+impl Default for InnerState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InnerState {
-    pub fn new(database: &Database) -> Self {
+    pub fn new() -> Self {
         Self {
-            registrar: database.clone(),
             // Authorization tokens are 16 byte random keys to a memory hash map.
             authorizer: Mutex::new(AuthMap::new(RandomGenerator::new(16))),
             // Bearer tokens are also random generated but 256-bit tokens, since they live longer
@@ -194,9 +202,12 @@ impl InnerState {
         }
     }
 
-    pub fn endpoint(&self) -> AuthEndpoint<'_, (), Vacant, Vacant> {
+    pub fn endpoint<R>(&self, registrar: R) -> AuthEndpoint<'_, R, (), Vacant, Vacant>
+    where
+        R: Registrar,
+    {
         AuthEndpoint {
-            registrar: &self.registrar,
+            registrar,
             authorizer: self.authorizer.lock().unwrap(),
             issuer: self.issuer.lock().unwrap(),
             extension: (),
@@ -206,13 +217,14 @@ impl InnerState {
     }
 }
 
-impl<'a, E: 'a, O: 'a, C: 'a> AuthEndpoint<'a, E, O, C>
+impl<'a, R: 'a, E: 'a, O: 'a, C: 'a> AuthEndpoint<'a, R, E, O, C>
 where
+    R: Registrar,
     E: Extension,
     O: OwnerSolicitor<OAuthRequest>,
     C: Scopes<OAuthRequest>,
 {
-    pub fn with_scopes(self, scopes: &'a [Scope]) -> AuthEndpoint<'a, E, O, &'a [Scope]> {
+    pub fn with_scopes(self, scopes: &'a [Scope]) -> AuthEndpoint<'a, R, E, O, &'a [Scope]> {
         AuthEndpoint {
             registrar: self.registrar,
             authorizer: self.authorizer,
@@ -223,7 +235,7 @@ where
         }
     }
 
-    pub fn with_solicitor<S>(self, solicitor: S) -> AuthEndpoint<'a, AddonList, S, C>
+    pub fn with_solicitor<S>(self, solicitor: S) -> AuthEndpoint<'a, R, AddonList, S, C>
     where
         S: OwnerSolicitor<OAuthRequest>,
     {

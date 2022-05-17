@@ -5,6 +5,7 @@ use axum::{
     headers::Cookie,
     http::{header::SET_COOKIE, HeaderMap, HeaderValue, StatusCode},
 };
+use tf_database::query::UserQuery;
 
 const COOKIE_NAME: &str = "tf_session";
 
@@ -14,9 +15,9 @@ pub struct Session {
 }
 
 impl Session {
-    pub async fn remember(&self, user_id: String) -> HeaderMap {
+    pub async fn remember(&self, user: UserQuery) -> HeaderMap {
         let mut session = CookieSession::new();
-        session.insert("id", user_id).unwrap();
+        session.insert("id", user).unwrap();
         let cookie = self.store.store_session(session).await.unwrap().unwrap();
         [(
             SET_COOKIE,
@@ -26,13 +27,13 @@ impl Session {
         .collect()
     }
 
-    pub fn id(&self) -> Option<String> {
+    pub fn id(&self) -> Option<UserQuery> {
         self.session.as_ref().and_then(|s| s.get("id"))
     }
 
     pub async fn forget(&mut self) {
         if let Some(session) = self.session.take() {
-            self.store.destroy_session(session).await;
+            self.store.destroy_session(session).await.unwrap();
         }
     }
 }

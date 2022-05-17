@@ -14,14 +14,14 @@ pub struct Thumbnail {
 
 impl Thumbnail {
     fn new(record: Record) -> Option<Self> {
-        let data = Self::generate_thumb(record).map(Bytes::from)?;
+        let data = Self::generate(record).map(Bytes::from)?;
         let crc = crc32fast::hash(&data);
 
         Some(Self { data, crc })
     }
 
-    fn generate_thumb(record: Record) -> Option<Vec<u8>> {
-        if record.lon.is_empty() {
+    fn generate(record: Record) -> Option<Vec<u8>> {
+        if record.lon.is_empty() || record.lat.is_empty() {
             return None;
         }
 

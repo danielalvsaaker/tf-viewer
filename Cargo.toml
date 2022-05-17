@@ -12,25 +12,26 @@ members = [
     "crates/tf-auth",
     "crates/tf-database",
     "crates/tf-graphql",
+    "crates/tf-models",
     "crates/tf-parse",
 ]
 
 [dependencies]
 # web server etc.
-axum = { version = "0.4" }
-tower-http = { version = "0.2", features = ["cors", "compression-full"] }
+axum = { version = "0.5" }
+tower-http = { version = "0.3", features = ["cors", "compression-full"] }
+tower = { version = "0.4", features = ["limit"] }
 tokio = { version = "1", features = ["full", "macros", "rt-multi-thread"] }
 serde = { version = "1", features = ["derive"] }
 
-mimalloc = { version = "*", default-features = false }
-tikv-jemallocator = "0.4"
+tikv-jemallocator = { version = "0.4", features = ["background_threads"] }
 
 oxide-auth = "0.5"
 oxide-auth-axum = "0.1"
 
 # error handling
 thiserror = "1.0"
-bytes = "*"
+bytes = "1.1"
 
 tf-models = { path = "crates/tf-models", features = ["graphql"] }
 tf-database = { path = "crates/tf-database" }
@@ -38,18 +39,20 @@ tf-auth = { path = "crates/tf-auth" }
 tf-parse = { path = "crates/tf-parse" }
 tf-graphql = { path = "crates/tf-graphql" }
 
-nanoid = "*"
+nanoid = "0.4"
 moka = { version = "0.7", features = ["future"] }
-staticmap = "*"
-crc32fast = "*"
-rayon = "*"
+staticmap = "0.4"
+crc32fast = "1.3"
+rayon = "1.5"
 
-async-graphql = { version = "*" }
-async-graphql-axum = "*"
+async-graphql = "4.0"
+async-graphql-axum = "4.0"
 
 [patch.crates-io]
 chrono = { git = "https://github.com/chronotope/chrono", default-features = false }
-oxide-auth = { path = "/home/daniel/oxide-auth/oxide-auth" }
+oxide-auth = { git = "https://github.com/HeroicKatora/oxide-auth" }
+askama = { git = "https://github.com/djc/askama" }
+askama_axum = { git = "https://github.com/djc/askama" }
 
 [profile.dev]
 debug = 0

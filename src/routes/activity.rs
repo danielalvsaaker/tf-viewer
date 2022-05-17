@@ -6,17 +6,20 @@ use axum::{
     extract::{Extension, Path, TypedHeader},
     headers::{ContentType, ETag, HeaderMapExt, IfNoneMatch},
     http::{self, HeaderMap, HeaderValue, StatusCode},
-    response::{Headers, IntoResponse},
+    response::{IntoResponse, Json},
     routing::{get, post},
     Router,
 };
 use std::str::FromStr;
 use tf_auth::scopes::{Activity, Grant, Read, Write};
 use tf_database::{
-    Database, primitives::Key, query::{ActivityQuery, UserQuery},
+    primitives::Key,
+    query::{ActivityQuery, UserQuery},
+    Database,
 };
 use tf_models::{
-    user::User, activity::{Session, Record, Lap},
+    activity::{Lap, Record, Session},
+    user::User,
 };
 
 pub fn router() -> Router {
@@ -60,23 +63,38 @@ async fn get_activity_thumbnail(
 }
 
 async fn post_activity_index(
-    //_grant: Grant<Write<Activity>>,
+    grant: Grant<Write<Activity>>,
     Extension(db): Extension<Database>,
     Path(query): Path<UserQuery>,
     file: bytes::Bytes,
 ) -> Result<impl IntoResponse> {
+    let task = async move {
+        let (send, recv) = tokio::sync::oneshot::channel();
 
-    let parsed = tf_parse::parse(query.user_id, &file)?;
+        rayon::spawn(move || {
+            let _ = send.send(tf_parse::parse(query.user_id, &file));
+        });
+
+        recv.await
+    };
+
+    let parsed = task.await.unwrap().unwrap();
+    let root = db.root::<tf_models::user::User>()?;
 
     let activity_query = ActivityQuery {
         user_id: query.user_id,
         id: parsed.id,
     };
 
-    let root = db
-        .root()?;
-
-    root.insert(&query, &tf_models::user::User { heartrate_rest: 50, heartrate_max: 205, name: "daniel".into(), })?;
+    if !root.contains_key(&query)? {
+        root.insert(
+            &query,
+            &tf_models::user::User {
+                name: query.user_id.as_str().into(),
+                ..Default::default()
+            },
+        )?;
+    }
 
     root.traverse::<Session>()?
         .insert(&activity_query, &parsed.session, &query)?;
@@ -87,10 +105,5 @@ async fn post_activity_index(
     root.traverse::<Vec<Lap>>()?
         .insert(&activity_query, &parsed.lap, &query)?;
 
-    let url = format!("/user/{}/activity/{}", activity_query.user_id, activity_query.id,);
-
-    Ok(Headers(vec![(
-        http::header::LOCATION,
-        HeaderValue::from_str(&url).unwrap(),
-    )]))
+    Ok(Json(activity_query))
 }

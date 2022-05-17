@@ -33,6 +33,14 @@ impl<const L: usize> Id<L> {
     }
 }
 
+impl<const L: usize> std::str::FromStr for Id<L> {
+    type Err = InvalidLengthError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::from_bytes(s.as_bytes())
+    }
+}
+
 impl<const L: usize> Serialize for Id<L> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -95,6 +103,14 @@ macro_rules! declare_id {
         impl ::std::fmt::Display for $name {
             fn fmt(&self, f: &mut ::std::fmt::Formatter) -> std::fmt::Result {
                 f.write_str(::std::str::from_utf8(&self.as_bytes()).unwrap_or_default())
+            }
+        }
+
+        impl ::std::str::FromStr for $name {
+            type Err = InvalidLengthError;
+
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                Self::from_bytes(s.as_bytes())
             }
         }
     };

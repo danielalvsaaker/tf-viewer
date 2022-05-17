@@ -6,7 +6,7 @@ edition = "2021"
 include = ["src/**/*", "LICENSE", "README.md"]
 
 [dependencies]
-async-graphql = "3.0"
+async-graphql = "4.0"
 tf-models = { path = "../tf-models", features = ["graphql"] }
 tf-database = { path = "../tf-database" }
 tf-auth = { path = "../tf-auth" }

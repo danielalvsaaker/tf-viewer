@@ -76,4 +76,26 @@ impl QueryRoot {
         })
         .await?
     }
+
+    #[graphql(guard = "OAuthGuard::new(Read(scopes::Activity))")]
+    async fn activities(
+        &self,
+        ctx: &Context<'_>,
+        user: UserId,
+        #[graphql(default = 0)] skip: usize,
+        #[graphql(default = 10)] take: usize,
+    ) -> Result<Vec<ActivityRoot>> {
+        let db = ctx.data_unchecked::<Database>().clone();
+        let query = UserQuery { user_id: user };
+
+        tokio::task::spawn_blocking(move || {
+            Ok(db
+                .root::<User>()?
+                .traverse::<Session>()?
+                .keys(&query, skip, take)?
+                .map(|inner| ActivityRoot { inner })
+                .collect())
+        })
+        .await?
+    }
 }

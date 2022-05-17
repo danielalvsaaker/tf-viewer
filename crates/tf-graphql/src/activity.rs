@@ -21,9 +21,10 @@ impl ActivityRoot {
     }
 
     async fn session(&self, ctx: &Context<'_>) -> Result<Option<Session>> {
-        let db = ctx.data_unchecked::<Database>();
+        let db = ctx.data_unchecked::<Database>().clone();
+        let inner = self.inner;
 
-        tokio::task::block_in_place(move || Ok(db.root::<Session>()?.get(&self.inner)?))
+        tokio::task::spawn_blocking(move || Ok(db.root::<Session>()?.get(&inner)?)).await?
     }
 
     async fn record(&self, ctx: &Context<'_>) -> Result<Option<Record>> {
@@ -34,34 +35,39 @@ impl ActivityRoot {
     }
 
     async fn lap(&self, ctx: &Context<'_>) -> Result<Option<Vec<Lap>>> {
-        let db = ctx.data_unchecked::<Database>();
+        let db = ctx.data_unchecked::<Database>().clone();
+        let inner = self.inner;
 
-        tokio::task::block_in_place(move || Ok(db.root::<Vec<Lap>>()?.get(&self.inner)?))
+        tokio::task::spawn_blocking(move || Ok(db.root::<Vec<Lap>>()?.get(&inner)?)).await?
     }
 
     #[graphql(guard = "OAuthGuard::new(Read(scopes::Gear))")]
     async fn gear(&self, ctx: &Context<'_>) -> Result<Option<GearRoot>> {
-        let db = ctx.data_unchecked::<Database>();
+        let db = ctx.data_unchecked::<Database>().clone();
+        let inner = self.inner;
 
-        tokio::task::block_in_place(move || {
+        tokio::task::spawn_blocking(move || {
             Ok(db
                 .root::<Session>()?
                 .traverse::<Gear>()?
-                .get_foreign(&self.inner)?
+                .get_foreign(&inner)?
                 .map(|inner| GearRoot { inner }))
         })
+        .await?
     }
 
     #[graphql(guard = "OAuthGuard::new(Read(scopes::User))")]
     async fn owner(&self, ctx: &Context<'_>) -> Result<Option<UserRoot>> {
-        let db = ctx.data_unchecked::<Database>();
+        let db = ctx.data_unchecked::<Database>().clone();
+        let inner = self.inner;
 
-        tokio::task::block_in_place(move || {
+        tokio::task::spawn_blocking(move || {
             Ok(db
                 .root::<Session>()?
                 .traverse::<User>()?
-                .get_foreign(&self.inner)?
+                .get_foreign(&inner)?
                 .map(|inner| UserRoot { inner }))
         })
+        .await?
     }
 }

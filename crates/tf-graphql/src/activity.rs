@@ -20,25 +20,26 @@ impl ActivityRoot {
         &self.inner.id
     }
 
-    async fn session(&self, ctx: &Context<'_>) -> Result<Option<Session>> {
+    async fn session(&self, ctx: &Context<'_>) -> Result<Session> {
         let db = ctx.data_unchecked::<Database>().clone();
         let inner = self.inner;
 
-        tokio::task::spawn_blocking(move || Ok(db.root::<Session>()?.get(&inner)?)).await?
+        tokio::task::spawn_blocking(move || Ok(db.root::<Session>()?.get(&inner)?.unwrap())).await?
     }
 
-    async fn record(&self, ctx: &Context<'_>) -> Result<Option<Record>> {
+    async fn record(&self, ctx: &Context<'_>) -> Result<Record> {
         let db = ctx.data_unchecked::<Database>().clone();
         let inner = self.inner;
 
-        tokio::task::spawn_blocking(move || Ok(db.root::<Record>()?.get(&inner)?)).await?
+        tokio::task::spawn_blocking(move || Ok(db.root::<Record>()?.get(&inner)?.unwrap())).await?
     }
 
-    async fn lap(&self, ctx: &Context<'_>) -> Result<Option<Vec<Lap>>> {
+    async fn lap(&self, ctx: &Context<'_>) -> Result<Vec<Lap>> {
         let db = ctx.data_unchecked::<Database>().clone();
         let inner = self.inner;
 
-        tokio::task::spawn_blocking(move || Ok(db.root::<Vec<Lap>>()?.get(&inner)?)).await?
+        tokio::task::spawn_blocking(move || Ok(db.root::<Vec<Lap>>()?.get(&inner)?.unwrap()))
+            .await?
     }
 
     #[graphql(guard = "OAuthGuard::new(Read(scopes::Gear))")]

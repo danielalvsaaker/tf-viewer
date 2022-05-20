@@ -96,11 +96,12 @@ where
             false,
             |_, _, _| nebari::tree::ScanEvaluation::ReadData,
             |key, _| {
+                keys_scanned += 1;
+
                 if keys_scanned > skip {
                     output.push(LK::from_bytes(key));
                 }
 
-                keys_scanned += 1;
                 if output.len() >= take {
                     nebari::tree::ScanEvaluation::Stop
                 } else {

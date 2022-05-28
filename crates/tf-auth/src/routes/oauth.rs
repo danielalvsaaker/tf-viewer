@@ -1,5 +1,7 @@
 use super::Callback;
-use crate::{database::Database, error::Result, templates::Authorize, Consent, State, session::Session};
+use crate::{
+    database::Database, error::Result, session::Session, templates::Authorize, Consent, State,
+};
 use askama::Template;
 use axum::{
     extract::{Extension, OriginalUri, Query},

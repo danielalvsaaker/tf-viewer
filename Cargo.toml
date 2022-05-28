@@ -24,7 +24,7 @@ tower = { version = "0.4", features = ["limit"] }
 tokio = { version = "1", features = ["full", "macros", "rt-multi-thread"] }
 serde = { version = "1", features = ["derive"] }
 
-tikv-jemallocator = { version = "0.4", features = ["background_threads"] }
+#tikv-jemallocator = { version = "0.4", features = ["background_threads"] }
 
 oxide-auth = "0.5"
 oxide-auth-axum = "0.1"

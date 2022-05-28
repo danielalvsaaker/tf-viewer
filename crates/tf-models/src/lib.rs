@@ -7,7 +7,7 @@ pub mod user;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Id<const L: usize> {
     inner: [u8; L],
 }
@@ -81,7 +81,7 @@ impl std::error::Error for InvalidLengthError {}
 
 macro_rules! declare_id {
     ($name:ident, $length:expr) => {
-        #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+        #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
         pub struct $name(Id<$length>);
 
         impl $name {

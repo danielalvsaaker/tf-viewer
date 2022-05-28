@@ -1,10 +1,11 @@
 use super::{Callback, UserForm};
 use crate::{
-    session::Session,
-    error::Result,
     database::{
-        Database, resources::{User, Username},
+        resources::{User, Username},
+        Database,
     },
+    error::Result,
+    session::Session,
     templates::SignIn,
 };
 

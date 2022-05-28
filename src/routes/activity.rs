@@ -5,7 +5,7 @@ use crate::{
 use axum::{
     extract::{Extension, Path, TypedHeader},
     headers::{ContentType, ETag, HeaderMapExt, IfNoneMatch},
-    http::{self, HeaderMap, HeaderValue, StatusCode},
+    http::{HeaderMap, StatusCode},
     response::{IntoResponse, Json},
     routing::{get, post},
     Router,
@@ -63,7 +63,7 @@ async fn get_activity_thumbnail(
 }
 
 async fn post_activity_index(
-    grant: Grant<Write<Activity>>,
+    _grant: Grant<Write<Activity>>,
     Extension(db): Extension<Database>,
     Path(query): Path<UserQuery>,
     file: bytes::Bytes,

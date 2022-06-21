@@ -53,13 +53,13 @@ where
         self.get(key).map(|x| x.is_some())
     }
 
-    pub fn iter(&self, skip: usize, take: usize) -> Result<impl Iterator<Item = K>> {
+    pub fn iter(&self, skip: usize, take: usize, reverse: bool) -> Result<impl Iterator<Item = K>> {
         let mut output = Vec::with_capacity(take);
         let mut keys_scanned = 0;
 
         self.inner.scan::<Error, _, _, _, _>(
             &(..),
-            false,
+            reverse,
             |_, _, _| nebari::tree::ScanEvaluation::ReadData,
             |key, _| {
                 if keys_scanned >= skip {
@@ -123,6 +123,10 @@ where
         )?;
 
         Ok(output.into_iter().flatten())
+    }
+
+    pub fn count(&self) -> Result<usize> {
+        Ok(self.inner.count() as usize)
     }
 
     /*

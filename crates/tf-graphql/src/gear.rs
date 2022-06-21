@@ -1,4 +1,4 @@
-use async_graphql::*;
+use async_graphql::{Context, Object, Result};
 
 use super::{OAuthGuard, UserRoot};
 use tf_auth::scopes::{self, Read};

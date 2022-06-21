@@ -22,9 +22,10 @@ impl Guard for OAuthGuard {
     async fn check(&self, ctx: &Context<'_>) -> Result<()> {
         let grant = ctx.data_unchecked::<Grant>();
 
-        match self.scope.allow_access(&grant.scope) {
-            true => Ok(()),
-            false => Err(Error::new("Invalid scope").extend_with(|_, e| e.set("code", 401))),
+        if self.scope.allow_access(&grant.scope) {
+            Ok(())
+        } else {
+            Err(Error::new("Invalid scope").extend_with(|_, e| e.set("code", 401)))
         }
     }
 }

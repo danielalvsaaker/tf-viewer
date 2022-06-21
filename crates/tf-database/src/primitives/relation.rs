@@ -34,8 +34,13 @@ where
         key: &L,
         skip: usize,
         take: usize,
+        reverse: bool,
     ) -> Result<impl Iterator<Item = LK>> {
-        self.index.keys(key, skip, take)
+        self.index.keys(key, skip, take, reverse)
+    }
+
+    pub fn count<L: Key>(&self, key: &L) -> Result<usize> {
+        self.index.count(key)
     }
 
     /*

@@ -72,6 +72,7 @@ where
         key: &L,
         skip: usize,
         take: usize,
+        reverse: bool,
     ) -> Result<impl Iterator<Item = LK>> {
         let key = key.as_prefix().to_vec();
         let next = super::key::next_byte_sequence(&key).map(|x| x.to_vec());
@@ -93,7 +94,7 @@ where
 
         self.index.as_ref().scan::<Error, _, _, _, _>(
             &range,
-            false,
+            reverse,
             |_, _, _| nebari::tree::ScanEvaluation::ReadData,
             |key, _| {
                 keys_scanned += 1;
@@ -112,5 +113,27 @@ where
         )?;
 
         Ok(output.into_iter().flatten())
+    }
+
+    pub fn count<L: Key>(&self, key: &L) -> Result<usize> {
+        let prefix = key.as_prefix();
+
+        let mut total = 0;
+
+        self.index.as_ref().scan::<Error, _, _, _, _>(
+            &(..),
+            false,
+            |_, _, _| nebari::tree::ScanEvaluation::ReadData,
+            |key, _| {
+                if key.starts_with(&prefix) {
+                    total += 1;
+                }
+
+                nebari::tree::ScanEvaluation::Skip
+            },
+            |_, _, _| unreachable!(),
+        )?;
+
+        Ok(total)
     }
 }

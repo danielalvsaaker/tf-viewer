@@ -1,7 +1,11 @@
-use super::{ActivityRoot, GearRoot, OAuthGuard};
+use super::{
+    connection::{Connection, PageInfo},
+    ActivityRoot, GearRoot, OAuthGuard,
+};
 use async_graphql::{Context, Object, Result};
 use tf_auth::scopes::{self, Read};
 use tf_database::{
+    error::Error,
     query::{ActivityQuery, UserQuery},
     Database,
 };
@@ -31,19 +35,33 @@ impl UserRoot {
         ctx: &Context<'_>,
         #[graphql(default = 0)] skip: usize,
         #[graphql(default = 10)] take: usize,
-    ) -> Result<Vec<ActivityRoot>> {
+        #[graphql(default)] reverse: bool,
+    ) -> Result<Connection<ActivityRoot>> {
         let db = ctx.data_unchecked::<Database>().clone();
         let inner = self.inner;
 
-        tokio::task::spawn_blocking(move || {
-            Ok(db
-                .root::<User>()?
-                .traverse::<Session>()?
-                .keys(&inner, skip, take)?
+        let (edges, total_count) = tokio::task::spawn_blocking(move || {
+            let collection = db.root::<User>()?.traverse::<Session>()?;
+
+            let edges = collection
+                .keys(&inner, skip, take, reverse)?
                 .map(|inner| ActivityRoot { inner })
-                .collect())
+                .collect();
+
+            let total_count = collection.count(&inner)?;
+
+            Ok::<_, Error>((edges, total_count))
         })
-        .await?
+        .await??;
+
+        Ok(Connection {
+            edges,
+            total_count,
+            page_info: PageInfo {
+                has_previous_page: skip.checked_sub(take).is_some(),
+                has_next_page: (skip + take) < total_count,
+            },
+        })
     }
 
     #[graphql(guard = "OAuthGuard::new(Read(scopes::Activity))")]
@@ -74,18 +92,32 @@ impl UserRoot {
         ctx: &Context<'_>,
         #[graphql(default = 0)] skip: usize,
         #[graphql(default = 10)] take: usize,
-    ) -> Result<Vec<GearRoot>> {
+        #[graphql(default)] reverse: bool,
+    ) -> Result<Connection<GearRoot>> {
         let db = ctx.data_unchecked::<Database>().clone();
         let inner = self.inner;
 
-        tokio::task::spawn_blocking(move || {
-            Ok(db
-                .root::<User>()?
-                .traverse::<Gear>()?
-                .keys(&inner, skip, take)?
+        let (edges, total_count) = tokio::task::spawn_blocking(move || {
+            let collection = db.root::<User>()?.traverse::<Gear>()?;
+
+            let edges = collection
+                .keys(&inner, skip, take, reverse)?
                 .map(|inner| GearRoot { inner })
-                .collect())
+                .collect();
+
+            let total_count = collection.count(&inner)?;
+
+            Ok::<_, Error>((edges, total_count))
         })
-        .await?
+        .await??;
+
+        Ok(Connection {
+            edges,
+            total_count,
+            page_info: PageInfo {
+                has_previous_page: (skip - take) > 0,
+                has_next_page: (skip + take) < total_count,
+            },
+        })
     }
 }

@@ -30,7 +30,7 @@ impl UserRoot {
     }
 
     #[graphql(guard = "OAuthGuard::new(Read(scopes::Activity))")]
-    async fn activities(
+    pub(super) async fn activities(
         &self,
         ctx: &Context<'_>,
         #[graphql(default = 0)] skip: usize,

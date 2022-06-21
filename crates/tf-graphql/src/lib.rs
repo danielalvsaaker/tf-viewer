@@ -95,4 +95,20 @@ impl QueryRoot {
         })
         .await?
     }
+
+    #[graphql(guard = "OAuthGuard::new(Read(scopes::Activity))")]
+    async fn activities(
+        &self,
+        ctx: &Context<'_>,
+        user: UserId,
+        #[graphql(default = 0)] skip: usize,
+        #[graphql(default = 10)] take: usize,
+        #[graphql(default)] reverse: bool,
+    ) -> Result<Connection<ActivityRoot>> {
+        let inner = UserQuery { user_id: user };
+
+        UserRoot { inner }
+            .activities(ctx, skip, take, reverse)
+            .await
+    }
 }

@@ -55,17 +55,20 @@ async fn main() -> std::io::Result<()> {
     .data(database.clone())
     .finish();
 
-    let router = Router::new()
-        .route("/", get(graphql_playground).post(graphql_handler))
-        .nest("/oauth", tf_auth::routes())
-        .nest("/user/:user_id/activity", routes::activity::router())
+    let middleware = tower::ServiceBuilder::new()
         .layer(Extension(schema))
         .layer(Extension(auth_db))
         .layer(Extension(database))
         .layer(Extension(state))
         .layer(Extension(cache))
-        .layer(CorsLayer::permissive())
-        .layer(CompressionLayer::new());
+        .layer(CompressionLayer::new())
+        .layer(CorsLayer::permissive());
+
+    let router = Router::new()
+        .route("/", get(graphql_playground).post(graphql_handler))
+        .nest("/oauth", tf_auth::routes())
+        .nest("/user/:user_id/activity", routes::activity::router())
+        .layer(middleware);
 
     Server::bind(&([127, 0, 0, 1], 8777).into())
         .serve(router.into_make_service())

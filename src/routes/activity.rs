@@ -78,32 +78,37 @@ async fn post_activity_index(
         recv.await
     };
 
-    let parsed = task.await.unwrap().unwrap();
-    let root = db.root::<tf_models::user::User>()?;
+    let parsed = task.await.unwrap()?;
 
     let activity_query = ActivityQuery {
         user_id: query.user_id,
         id: parsed.id,
     };
 
-    if !root.contains_key(&query)? {
-        root.insert(
-            &query,
-            &tf_models::user::User {
-                name: query.user_id.as_str().into(),
-                ..Default::default()
-            },
-        )?;
-    }
+    tokio::task::spawn_blocking(move || {
+        let root = db.root::<tf_models::user::User>()?;
 
-    root.traverse::<Session>()?
-        .insert(&activity_query, &parsed.session, &query)?;
+        if !root.contains_key(&query)? {
+            root.insert(
+                &query,
+                &tf_models::user::User {
+                    name: query.user_id.as_str().into(),
+                    ..Default::default()
+                },
+            )?;
+        }
 
-    root.traverse::<Record>()?
-        .insert(&activity_query, &parsed.record, &query)?;
+        root.traverse::<Session>()?
+            .insert(&activity_query, &parsed.session, &query)?;
 
-    root.traverse::<Vec<Lap>>()?
-        .insert(&activity_query, &parsed.lap, &query)?;
+        root.traverse::<Record>()?
+            .insert(&activity_query, &parsed.record, &query)?;
+
+        root.traverse::<Vec<Lap>>()?
+            .insert(&activity_query, &parsed.lap, &query)?;
+
+        Ok::<_, tf_database::error::Error>(())
+    }).await;
 
     Ok(Json(activity_query))
 }

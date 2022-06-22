@@ -129,51 +129,49 @@ where
         Ok(self.inner.count() as usize)
     }
 
-    /*
-    pub fn values<L: Key>(&self, key: &L) -> Result<impl Iterator<Item = V>> {
-        Ok(self
-            .inner
-            .scan_prefix(key.as_prefix())
-            .values()
-            .rev()
-            .flatten()
-            .flat_map(|x| V::from_bytes(&x)))
-    }
-
     pub fn prev(&self, key: &K) -> Result<Option<K>> {
-        let set: std::collections::BTreeSet<_> = self
-            .inner
-            .scan_prefix(key.as_prefix())
-            .keys()
-            .flatten()
-            .collect();
+        let mut output = Ok(None);
 
-        set.range::<[u8], _>((
-            std::ops::Bound::Unbounded,
-            std::ops::Bound::Excluded(key.as_key().as_slice()),
-        ))
-        .next_back()
-        .map(AsRef::as_ref)
-        .map(K::from_bytes)
-        .transpose()
+        self.inner.scan::<Error, _, _, _, _>(
+            &(
+                std::ops::Bound::Unbounded,
+                std::ops::Bound::Excluded(key.as_key().as_slice()),
+            ),
+            false,
+            |_, _, _| nebari::tree::ScanEvaluation::ReadData,
+            |k, _| {
+                if k.starts_with(&key.as_prefix()) {
+                    output = Some(K::from_bytes(k)).transpose();
+                }
+
+                nebari::tree::ScanEvaluation::Stop
+            },
+            |_, _, _| unreachable!(),
+        )?;
+
+        output
     }
 
     pub fn next(&self, key: &K) -> Result<Option<K>> {
-        let set: std::collections::BTreeSet<_> = self
-            .inner
-            .scan_prefix(key.as_prefix())
-            .keys()
-            .flatten()
-            .collect();
+        let mut output = Ok(None);
 
-        set.range::<[u8], _>((
-            std::ops::Bound::Excluded(key.as_key().as_slice()),
-            std::ops::Bound::Unbounded,
-        ))
-        .next()
-        .map(AsRef::as_ref)
-        .map(K::from_bytes)
-        .transpose()
+        self.inner.scan::<Error, _, _, _, _>(
+            &(
+                std::ops::Bound::Excluded(key.as_key().as_slice()),
+                std::ops::Bound::Unbounded,
+            ),
+            true,
+            |_, _, _| nebari::tree::ScanEvaluation::ReadData,
+            |k, _| {
+                if k.starts_with(&key.as_prefix()) {
+                    output = Some(K::from_bytes(k)).transpose();
+                }
+
+                nebari::tree::ScanEvaluation::Stop
+            },
+            |_, _, _| unreachable!(),
+        )?;
+
+        output
     }
-    */
 }

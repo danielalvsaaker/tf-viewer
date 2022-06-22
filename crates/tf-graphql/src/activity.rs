@@ -20,6 +20,32 @@ impl ActivityRoot {
         &self.inner.id
     }
 
+    async fn prev(&self, ctx: &Context<'_>) -> Result<Option<Self>> {
+        let db = ctx.data_unchecked::<Database>().clone();
+        let inner = self.inner;
+
+        tokio::task::spawn_blocking(move || {
+            Ok(db
+                .root::<Session>()?
+                .prev(&inner)?
+                .map(|inner| Self { inner }))
+        })
+        .await?
+    }
+
+    async fn next(&self, ctx: &Context<'_>) -> Result<Option<Self>> {
+        let db = ctx.data_unchecked::<Database>().clone();
+        let inner = self.inner;
+
+        tokio::task::spawn_blocking(move || {
+            Ok(db
+                .root::<Session>()?
+                .next(&inner)?
+                .map(|inner| Self { inner }))
+        })
+        .await?
+    }
+
     async fn session(&self, ctx: &Context<'_>) -> Result<Session> {
         let db = ctx.data_unchecked::<Database>().clone();
         let inner = self.inner;

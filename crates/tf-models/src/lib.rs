@@ -129,7 +129,9 @@ pub mod types;
 pub mod types {
     pub use std::time::Duration;
     pub use uom::si::{
-        f32::AngularVelocity, f64::{Length as LengthF64, Velocity}, u16::Power,
-        u32::{Length as LengthU32, Energy},
+        f32::AngularVelocity,
+        f64::{Length as LengthF64, Velocity},
+        u16::Power,
+        u32::{Energy, Length as LengthU32},
     };
 }

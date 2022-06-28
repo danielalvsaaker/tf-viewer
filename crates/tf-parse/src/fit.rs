@@ -11,18 +11,12 @@ use crate::error::{Error, Result};
 use chrono::{offset::Local, DateTime};
 use tf_models::{
     activity::{Lap, Record, Session},
+    types::{AngularVelocity, Energy, LengthF64, LengthU32, Power, Velocity},
     Activity, ActivityId, Sport, UserId,
 };
 
 use uom::si::{
-    angular_velocity::revolution_per_minute,
-    energy::kilocalorie,
-    f32::AngularVelocity,
-    f64::{Length as Length_f64, Velocity},
-    length::meter,
-    power::watt,
-    u16::{Energy, Power},
-    u32::Length as Length_u32,
+    angular_velocity::revolution_per_minute, energy::kilocalorie, length::meter, power::watt,
     velocity::meter_per_second,
 };
 
@@ -218,26 +212,27 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) -> Result<()> {
         .get("total_ascent")
         .and_then(map_uint16)
         .map(u32::from)
-        .map(Length_u32::new::<meter>)
+        .map(LengthU32::new::<meter>)
         .map(Into::into);
 
     session.descent = field_map
         .get("total_descent")
         .and_then(map_uint16)
         .map(u32::from)
-        .map(Length_u32::new::<meter>)
+        .map(LengthU32::new::<meter>)
         .map(Into::into);
 
     session.calories = field_map
         .get("total_calories")
         .and_then(map_uint16)
+        .map(Into::into)
         .map(Energy::new::<kilocalorie>)
         .map(Into::into);
 
     session.distance = field_map
         .get("total_distance")
         .and_then(map_float64)
-        .map(Length_f64::new::<meter>)
+        .map(LengthF64::new::<meter>)
         .map(Into::into);
 
     session.duration = field_map
@@ -281,7 +276,7 @@ fn parse_record(fields: &[FitDataField], record: &mut Record) {
         field_map
             .get("distance")
             .and_then(map_float64)
-            .map(Length_f64::new::<meter>)
+            .map(LengthF64::new::<meter>)
             .map(Into::into),
     );
 
@@ -289,7 +284,7 @@ fn parse_record(fields: &[FitDataField], record: &mut Record) {
         field_map
             .get("enhanced_altitude")
             .and_then(map_float64)
-            .map(Length_f64::new::<meter>)
+            .map(LengthF64::new::<meter>)
             .map(Into::into),
     );
 
@@ -414,26 +409,27 @@ fn parse_lap(fields: &[FitDataField], lap: &mut Lap) {
         .get("total_ascent")
         .and_then(map_uint16)
         .map(u32::from)
-        .map(Length_u32::new::<meter>)
+        .map(LengthU32::new::<meter>)
         .map(Into::into);
 
     lap.descent = field_map
         .get("total_descent")
         .and_then(map_uint16)
         .map(u32::from)
-        .map(Length_u32::new::<meter>)
+        .map(LengthU32::new::<meter>)
         .map(Into::into);
 
     lap.calories = field_map
         .get("total_calories")
         .and_then(map_uint16)
+        .map(Into::into)
         .map(Energy::new::<kilocalorie>)
         .map(Into::into);
 
     lap.distance = field_map
         .get("total_distance")
         .and_then(map_float64)
-        .map(Length_f64::new::<meter>)
+        .map(LengthF64::new::<meter>)
         .map(Into::into);
 
     lap.duration = field_map

@@ -16,21 +16,41 @@ impl<T> AsRef<T> for Unit<T> {
     }
 }
 
-pub type Velocity = Unit<uom::si::f64::Velocity>;
-pub type Power = Unit<uom::si::u16::Power>;
-pub type LengthU32 = Unit<uom::si::u32::Length>;
-pub type LengthF64 = Unit<uom::si::f64::Length>;
-pub type Duration = Unit<std::time::Duration>;
-pub type AngularVelocity = Unit<uom::si::f32::AngularVelocity>;
-pub type Energy = Unit<uom::si::u16::Energy>;
+macro_rules! wrap_unit {
+    ($name:ident, $storage_unit:ident, $unit:ident) => {
+        wrap_unit!($name, $storage_unit, $unit, $name);
+    };
 
-async_graphql::scalar!(Velocity);
-async_graphql::scalar!(Power);
-async_graphql::scalar!(LengthU32);
-async_graphql::scalar!(LengthF64);
+    ($name:ident, $storage_unit:ident, $unit:ident, $custom_name:ident) => {
+        pub type $custom_name = Unit<::uom::si::$storage_unit::$name>;
+        ::async_graphql::scalar!($custom_name);
+
+        impl $custom_name {
+            pub fn new<N>(v: ::uom::si::$storage_unit::V) -> Self
+            where
+                N: ::uom::si::$unit::Unit
+                    + ::uom::Conversion<
+                        ::uom::si::$storage_unit::V,
+                        T = <::uom::si::$storage_unit::V as ::uom::Conversion<
+                            ::uom::si::$storage_unit::V,
+                        >>::T,
+                    >,
+            {
+                Self(::uom::si::$storage_unit::$name::new::<N>(v))
+            }
+        }
+    };
+}
+
+wrap_unit!(Velocity, f64, velocity);
+wrap_unit!(Power, u16, power);
+wrap_unit!(Length, u32, length, LengthU32);
+wrap_unit!(Length, f64, length, LengthF64);
+wrap_unit!(AngularVelocity, f32, angular_velocity);
+wrap_unit!(Energy, u32, energy);
+pub type Duration = Unit<std::time::Duration>;
+
 async_graphql::scalar!(Duration);
 async_graphql::scalar!(ActivityId);
 async_graphql::scalar!(GearId);
 async_graphql::scalar!(UserId);
-async_graphql::scalar!(AngularVelocity);
-async_graphql::scalar!(Energy);

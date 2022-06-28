@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
-uom = { version = "0.32", default-features = false, features = ["si", "use_serde", "u8", "u16", "u32", "f64"] }
+uom = { version = "0.32", default-features = false, features = ["si", "use_serde", "u16", "u32", "f32", "f64"] }
 chrono = { version = "0.4", features = ["serde"] }
 
 async-graphql = { version = "4.0", features = ["chrono"], optional = true }

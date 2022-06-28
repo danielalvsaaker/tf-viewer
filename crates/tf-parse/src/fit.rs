@@ -17,12 +17,12 @@ use tf_models::{
 use uom::si::{
     angular_velocity::revolution_per_minute,
     energy::kilocalorie,
+    f32::AngularVelocity,
     f64::{Length as Length_f64, Velocity},
     length::meter,
     power::watt,
     u16::{Energy, Power},
     u32::Length as Length_u32,
-    u8::AngularVelocity,
     velocity::meter_per_second,
 };
 
@@ -145,12 +145,14 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) -> Result<()> {
     session.cadence_avg = field_map
         .get("avg_cadence")
         .and_then(map_uint8)
+        .map(Into::into)
         .map(AngularVelocity::new::<revolution_per_minute>)
         .map(Into::into);
 
     session.cadence_max = field_map
         .get("max_cadence")
         .and_then(map_uint8)
+        .map(Into::into)
         .map(AngularVelocity::new::<revolution_per_minute>)
         .map(Into::into);
 
@@ -270,6 +272,7 @@ fn parse_record(fields: &[FitDataField], record: &mut Record) {
         field_map
             .get("cadence")
             .and_then(map_uint8)
+            .map(Into::into)
             .map(AngularVelocity::new::<revolution_per_minute>)
             .map(Into::into),
     );
@@ -344,12 +347,14 @@ fn parse_lap(fields: &[FitDataField], lap: &mut Lap) {
     lap.cadence_avg = field_map
         .get("avg_cadence")
         .and_then(map_uint8)
+        .map(Into::into)
         .map(AngularVelocity::new::<revolution_per_minute>)
         .map(Into::into);
 
     lap.cadence_max = field_map
         .get("max_cadence")
         .and_then(map_uint8)
+        .map(Into::into)
         .map(AngularVelocity::new::<revolution_per_minute>)
         .map(Into::into);
 

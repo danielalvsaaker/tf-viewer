@@ -21,6 +21,8 @@ pub type Power = Unit<uom::si::u16::Power>;
 pub type LengthU32 = Unit<uom::si::u32::Length>;
 pub type LengthF64 = Unit<uom::si::f64::Length>;
 pub type Duration = Unit<std::time::Duration>;
+pub type AngularVelocity = Unit<uom::si::u8::AngularVelocity>;
+pub type Energy = Unit<uom::si::u16::Energy>;
 
 async_graphql::scalar!(Velocity);
 async_graphql::scalar!(Power);
@@ -30,3 +32,5 @@ async_graphql::scalar!(Duration);
 async_graphql::scalar!(ActivityId);
 async_graphql::scalar!(GearId);
 async_graphql::scalar!(UserId);
+async_graphql::scalar!(AngularVelocity);
+async_graphql::scalar!(Energy);

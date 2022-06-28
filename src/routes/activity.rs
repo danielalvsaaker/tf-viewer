@@ -108,7 +108,8 @@ async fn post_activity_index(
             .insert(&activity_query, &parsed.lap, &query)?;
 
         Ok::<_, tf_database::error::Error>(())
-    }).await;
+    })
+    .await??;
 
     Ok(Json(activity_query))
 }

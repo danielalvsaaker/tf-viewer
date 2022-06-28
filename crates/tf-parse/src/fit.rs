@@ -15,11 +15,14 @@ use tf_models::{
 };
 
 use uom::si::{
+    angular_velocity::revolution_per_minute,
+    energy::kilocalorie,
     f64::{Length as Length_f64, Velocity},
     length::meter,
     power::watt,
-    u16::Power,
+    u16::{Energy, Power},
     u32::Length as Length_u32,
+    u8::AngularVelocity,
     velocity::meter_per_second,
 };
 
@@ -139,9 +142,17 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) -> Result<()> {
     let field_map: HashMap<&str, &fitparser::Value> =
         fields.iter().map(|x| (x.name(), x.value())).collect();
 
-    session.cadence_avg = field_map.get("avg_cadence").and_then(map_uint8);
+    session.cadence_avg = field_map
+        .get("avg_cadence")
+        .and_then(map_uint8)
+        .map(AngularVelocity::new::<revolution_per_minute>)
+        .map(Into::into);
 
-    session.cadence_max = field_map.get("max_cadence").and_then(map_uint8);
+    session.cadence_max = field_map
+        .get("max_cadence")
+        .and_then(map_uint8)
+        .map(AngularVelocity::new::<revolution_per_minute>)
+        .map(Into::into);
 
     session.heartrate_avg = field_map.get("avg_heart_rate").and_then(map_uint8);
 
@@ -215,7 +226,11 @@ fn parse_session(fields: &[FitDataField], session: &mut Session) -> Result<()> {
         .map(Length_u32::new::<meter>)
         .map(Into::into);
 
-    session.calories = field_map.get("total_calories").and_then(map_uint16);
+    session.calories = field_map
+        .get("total_calories")
+        .and_then(map_uint16)
+        .map(Energy::new::<kilocalorie>)
+        .map(Into::into);
 
     session.distance = field_map
         .get("total_distance")
@@ -251,9 +266,13 @@ fn parse_record(fields: &[FitDataField], record: &mut Record) {
     let field_map: HashMap<&str, &fitparser::Value> =
         fields.iter().map(|x| (x.name(), x.value())).collect();
 
-    record
-        .cadence
-        .push(field_map.get("cadence").and_then(map_uint8));
+    record.cadence.push(
+        field_map
+            .get("cadence")
+            .and_then(map_uint8)
+            .map(AngularVelocity::new::<revolution_per_minute>)
+            .map(Into::into),
+    );
 
     record.distance.push(
         field_map
@@ -322,9 +341,17 @@ fn parse_lap(fields: &[FitDataField], lap: &mut Lap) {
     let field_map: HashMap<&str, &fitparser::Value> =
         fields.iter().map(|x| (x.name(), x.value())).collect();
 
-    lap.cadence_avg = field_map.get("avg_cadence").and_then(map_uint8);
+    lap.cadence_avg = field_map
+        .get("avg_cadence")
+        .and_then(map_uint8)
+        .map(AngularVelocity::new::<revolution_per_minute>)
+        .map(Into::into);
 
-    lap.cadence_max = field_map.get("max_cadence").and_then(map_uint8);
+    lap.cadence_max = field_map
+        .get("max_cadence")
+        .and_then(map_uint8)
+        .map(AngularVelocity::new::<revolution_per_minute>)
+        .map(Into::into);
 
     lap.heartrate_avg = field_map.get("avg_heart_rate").and_then(map_uint8);
 
@@ -392,7 +419,11 @@ fn parse_lap(fields: &[FitDataField], lap: &mut Lap) {
         .map(Length_u32::new::<meter>)
         .map(Into::into);
 
-    lap.calories = field_map.get("total_calories").and_then(map_uint16);
+    lap.calories = field_map
+        .get("total_calories")
+        .and_then(map_uint16)
+        .map(Energy::new::<kilocalorie>)
+        .map(Into::into);
 
     lap.distance = field_map
         .get("total_distance")

@@ -20,6 +20,12 @@ pub enum Error {
     },
     #[error("Not found")]
     NotFound,
+
+    #[error("{source}")]
+    JoinError {
+        #[from]
+        source: tokio::task::JoinError,
+    },
 }
 
 impl IntoResponse for Error {

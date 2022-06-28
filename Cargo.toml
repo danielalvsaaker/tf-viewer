@@ -18,7 +18,7 @@ members = [
 
 [dependencies]
 # web server etc.
-axum = { version = "0.5" }
+axum = { version = "0.5", default-features = false }
 tower-http = { version = "0.3", features = ["cors", "compression-full"] }
 tower = { version = "0.4", features = ["limit"] }
 tokio = { version = "1", features = ["full", "macros", "rt-multi-thread"] }
@@ -49,7 +49,7 @@ async-graphql = "4.0"
 async-graphql-axum = "4.0"
 
 [patch.crates-io]
-chrono = { git = "https://github.com/chronotope/chrono", default-features = false }
+chrono = { git = "https://github.com/chronotope/chrono", rev = "b1d74aef688c27fccc" }
 oxide-auth = { git = "https://github.com/HeroicKatora/oxide-auth" }
 askama = { git = "https://github.com/djc/askama" }
 askama_axum = { git = "https://github.com/djc/askama" }

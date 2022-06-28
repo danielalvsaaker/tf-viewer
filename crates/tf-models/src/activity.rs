@@ -3,7 +3,7 @@ use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    types::{Duration, LengthF64, LengthU32, Power, Velocity},
+    types::{AngularVelocity, Duration, Energy, LengthF64, LengthU32, Power, Velocity},
     ActivityId, GearId, UserId,
 };
 
@@ -20,8 +20,8 @@ pub struct Activity {
 #[derive(Default, Clone, Copy, Serialize, Deserialize)]
 #[cfg_attr(feature = "graphql", derive(async_graphql::SimpleObject))]
 pub struct Session {
-    pub cadence_avg: Option<u8>,
-    pub cadence_max: Option<u8>,
+    pub cadence_avg: Option<AngularVelocity>,
+    pub cadence_max: Option<AngularVelocity>,
     pub heartrate_avg: Option<u8>,
     pub heartrate_max: Option<u8>,
     pub speed_avg: Option<Velocity>,
@@ -36,7 +36,7 @@ pub struct Session {
     pub sport: Sport,
     pub ascent: Option<LengthU32>,
     pub descent: Option<LengthU32>,
-    pub calories: Option<u16>,
+    pub calories: Option<Energy>,
     pub distance: Option<LengthF64>,
     pub duration: Duration,
     pub duration_active: Duration,
@@ -46,7 +46,7 @@ pub struct Session {
 #[derive(Default, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "graphql", derive(async_graphql::SimpleObject))]
 pub struct Record {
-    pub cadence: Vec<Option<u8>>,
+    pub cadence: Vec<Option<AngularVelocity>>,
     pub distance: Vec<Option<LengthF64>>,
     pub altitude: Vec<Option<LengthF64>>,
     pub speed: Vec<Option<Velocity>>,
@@ -61,8 +61,8 @@ pub struct Record {
 #[derive(Default, Serialize, Deserialize, Clone, Copy)]
 #[cfg_attr(feature = "graphql", derive(async_graphql::SimpleObject))]
 pub struct Lap {
-    pub cadence_avg: Option<u8>,
-    pub cadence_max: Option<u8>,
+    pub cadence_avg: Option<AngularVelocity>,
+    pub cadence_max: Option<AngularVelocity>,
     pub heartrate_avg: Option<u8>,
     pub heartrate_max: Option<u8>,
     pub speed_avg: Option<Velocity>,
@@ -75,7 +75,7 @@ pub struct Lap {
     pub lon_end: Option<f64>,
     pub ascent: Option<LengthU32>,
     pub descent: Option<LengthU32>,
-    pub calories: Option<u16>,
+    pub calories: Option<Energy>,
     pub distance: Option<LengthF64>,
     pub duration: Duration,
     pub duration_active: Duration,

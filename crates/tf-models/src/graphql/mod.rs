@@ -42,12 +42,12 @@ macro_rules! wrap_unit {
     };
 }
 
-wrap_unit!(Velocity, f64, velocity);
-wrap_unit!(Power, u16, power);
+wrap_unit!(AngularVelocity, f64, angular_velocity);
+wrap_unit!(Energy, u32, energy);
 wrap_unit!(Length, u32, length, LengthU32);
 wrap_unit!(Length, f64, length, LengthF64);
-wrap_unit!(AngularVelocity, f32, angular_velocity);
-wrap_unit!(Energy, u32, energy);
+wrap_unit!(Power, u16, power);
+wrap_unit!(Velocity, f64, velocity);
 pub type Duration = Unit<std::time::Duration>;
 
 async_graphql::scalar!(Duration);

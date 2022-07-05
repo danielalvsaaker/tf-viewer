@@ -2,19 +2,16 @@ mod cache;
 mod error;
 mod routes;
 
-/*
-use tikv_jemallocator::Jemalloc;
-
+#[cfg(all(target_env = "musl", target_pointer_width = "64"))]
 #[global_allocator]
-static GLOBAL: Jemalloc = Jemalloc;
-*/
+static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
     extract::Extension,
     response::{Html, IntoResponse},
-    routing::*,
+    routing::get,
     Router, Server,
 };
 use tower_http::{compression::CompressionLayer, cors::CorsLayer};
@@ -54,6 +51,8 @@ async fn main() -> std::io::Result<()> {
     )
     .data(database.clone())
     .finish();
+
+    database.compact().unwrap();
 
     let middleware = tower::ServiceBuilder::new()
         .layer(Extension(schema))

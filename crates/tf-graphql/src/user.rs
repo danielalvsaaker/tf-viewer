@@ -115,7 +115,7 @@ impl UserRoot {
             edges,
             total_count,
             page_info: PageInfo {
-                has_previous_page: (skip - take) > 0,
+                has_previous_page: skip.checked_sub(take).is_some(),
                 has_next_page: (skip + take) < total_count,
             },
         })

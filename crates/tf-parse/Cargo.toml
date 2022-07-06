@@ -11,4 +11,4 @@ tf-models = { path = "../tf-models" }
 chrono = { version = "0.4", default-features = false }
 fitparser = "0.5" 
 thiserror = "1"
-uom = { version = "0.32", default-features = false, features = ["si", "u16", "u32", "f64"] }
+uom = { version = "0.33", default-features = false, features = ["si", "u16", "u32", "f64"] }

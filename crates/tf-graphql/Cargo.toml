@@ -10,5 +10,6 @@ async-graphql = { version = "4.0", default-features = false }
 tf-models = { path = "../tf-models", features = ["graphql"] }
 tf-database = { path = "../tf-database" }
 tf-auth = { path = "../tf-auth" }
-tokio = { version = "1", features = ["rt-multi-thread"] }
 oxide-auth = "0.5"
+
+tokio = "*"

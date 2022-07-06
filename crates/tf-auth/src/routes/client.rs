@@ -4,12 +4,12 @@ use crate::templates;
 
 use axum::{
     extract::{Extension, Form},
-    response::{IntoResponse, Redirect},
+    response::{IntoResponse, Json, Redirect},
     routing::get,
     Router,
 };
 use oxide_auth::primitives::registrar::{Client, RegisteredUrl};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tf_database::{primitives::Key, query::ClientQuery};
 use tf_models::ClientId;
 
@@ -45,12 +45,15 @@ async fn post_client(
         _ => return Ok(Redirect::to("/oauth/signin").into_response()),
     };
 
-    let client_id = nanoid::nanoid!();
     let mut client_secret = None;
 
-    let query = ClientQuery {
-        user_id: username.user_id,
-        id: ClientId::from_bytes(client_id.as_bytes())?,
+    let client_id = {
+        let id = ClientId::from_bytes(nanoid::nanoid!().as_bytes())?;
+
+        ClientQuery {
+            user_id: username.user_id,
+            id,
+        }
     };
 
     let client = match client.r#type {
@@ -58,10 +61,10 @@ async fn post_client(
             let secret = nanoid::nanoid!(32);
 
             let client = Client::confidential(
-                &query.as_string(),
+                &client_id.as_string(),
                 RegisteredUrl::Semantic(client.redirect_uri.parse().unwrap()),
                 client.scopes.parse().unwrap(),
-                &secret.as_bytes(),
+                secret.as_bytes(),
             );
 
             client_secret = Some(secret);
@@ -69,13 +72,23 @@ async fn post_client(
             client
         }
         ClientType::Public => Client::public(
-            &query.as_string(),
+            &client_id.as_string(),
             RegisteredUrl::Semantic(client.redirect_uri.parse().unwrap()),
             client.scopes.parse().unwrap(),
         ),
     };
 
-    db.register_client(&query, client, &username)?;
+    db.register_client(&client_id, client, &username)?;
 
-    Ok(format!("client_id: {}, client_secret: {client_secret:#?}", query.as_string()).into_response())
+    #[derive(Serialize)]
+    struct Response {
+        client_id: ClientQuery,
+        client_secret: Option<String>,
+    }
+
+    Ok(Json(Response {
+        client_id,
+        client_secret,
+    })
+    .into_response())
 }

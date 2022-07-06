@@ -9,6 +9,7 @@ use axum::{
     Router,
 };
 use oxide_auth::primitives::registrar::{Client, RegisteredUrl};
+use serde::Deserialize;
 use tf_database::{primitives::Key, query::ClientQuery};
 use tf_models::ClientId;
 
@@ -20,10 +21,18 @@ async fn get_client() -> impl IntoResponse {
     templates::Client.into_response()
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum ClientType {
+    Public,
+    Confidential,
+}
+
+#[derive(Deserialize)]
 struct ClientForm {
     redirect_uri: String,
     scopes: String,
+    r#type: ClientType,
 }
 
 async fn post_client(
@@ -37,18 +46,36 @@ async fn post_client(
     };
 
     let client_id = nanoid::nanoid!();
+    let mut client_secret = None;
+
     let query = ClientQuery {
         user_id: username.user_id,
         id: ClientId::from_bytes(client_id.as_bytes())?,
     };
 
-    let client = Client::public(
-        &query.as_string(),
-        RegisteredUrl::Semantic(client.redirect_uri.parse().unwrap()),
-        client.scopes.parse().unwrap(),
-    );
+    let client = match client.r#type {
+        ClientType::Confidential => {
+            let secret = nanoid::nanoid!(32);
+
+            let client = Client::confidential(
+                &query.as_string(),
+                RegisteredUrl::Semantic(client.redirect_uri.parse().unwrap()),
+                client.scopes.parse().unwrap(),
+                &secret.as_bytes(),
+            );
+
+            client_secret = Some(secret);
+
+            client
+        }
+        ClientType::Public => Client::public(
+            &query.as_string(),
+            RegisteredUrl::Semantic(client.redirect_uri.parse().unwrap()),
+            client.scopes.parse().unwrap(),
+        ),
+    };
 
     db.register_client(&query, client, &username)?;
 
-    Ok(query.as_string().into_response())
+    Ok(format!("client_id: {}, client_secret: {client_secret:#?}", query.as_string()).into_response())
 }

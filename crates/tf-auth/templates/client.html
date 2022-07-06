@@ -1,14 +1,20 @@
 {% extends "base.html" %}
+{% block title %}Create client{% endblock %}
 {% block content %}
 <article class="grid">
-	<div>
-		<hgroup>
-    	<h1>Create new client</h1>
-		</hgroup>
-		<form method="post">
-    	<input type="url" name="redirect_uri" placeholder="Redirect URL" aria-label="Redirect URL" required>
+  <div>
+    <hgroup>
+      <h1>Create new client</h1>
+    </hgroup>
+    <form method="post">
+      <input type="url" name="redirect_uri" placeholder="Redirect URL" aria-label="Redirect URL" required>
       <input type="text" name="scopes" placeholder="Scopes" aria-label="Scopes" required>
-			<button type="submit" class="contrast">Sign in</button>
+      <label for="type">Client type</label>
+      <select name="type" id="type" required>
+	<option value="public" selected>Public</option>
+	<option value="confidential">Confidential</option>
+      </select>
+      <button type="submit" class="contrast">Sign in</button>
     </form>
   </div>
 </article>

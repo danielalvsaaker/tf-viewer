@@ -10,8 +10,8 @@ use tf_models::{
     ActivityId,
 };
 
-pub(super) struct ActivityRoot {
-    pub(super) inner: ActivityQuery,
+pub struct ActivityRoot {
+    pub inner: ActivityQuery,
 }
 
 #[Object(name = "Activity")]

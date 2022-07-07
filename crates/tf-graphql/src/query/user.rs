@@ -1,7 +1,5 @@
-use super::{
-    connection::{Connection, PageInfo},
-    ActivityRoot, GearRoot, OAuthGuard,
-};
+use super::{ActivityRoot, GearRoot, OAuthGuard};
+use crate::connection::{Connection, PageInfo};
 use async_graphql::{Context, Object, Result};
 use tf_auth::scopes::{self, Read};
 use tf_database::{
@@ -12,7 +10,7 @@ use tf_database::{
 use tf_models::{activity::Session, gear::Gear, user::User, ActivityId, UserId};
 
 pub struct UserRoot {
-    pub(super) inner: UserQuery,
+    pub inner: UserQuery,
 }
 
 #[Object(name = "User")]

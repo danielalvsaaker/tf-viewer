@@ -5,8 +5,8 @@ use tf_auth::scopes::{self, Read};
 use tf_database::{query::GearQuery, Database};
 use tf_models::{gear::Gear, user::User, GearId};
 
-pub(super) struct GearRoot {
-    pub(super) inner: GearQuery,
+pub struct GearRoot {
+    pub inner: GearQuery,
 }
 
 #[Object(name = "Gear")]

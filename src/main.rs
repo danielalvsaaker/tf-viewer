@@ -23,14 +23,14 @@ use tf_auth::scopes::Grant;
 use tf_graphql::Schema;
 
 async fn graphql_handler(
-    grant: Grant<()>,
+    Grant { grant, .. }: Grant<()>,
     Extension(schema): Extension<Schema>,
-    req: GraphQLRequest,
+    Extension(db): Extension<Database>,
+    request: GraphQLRequest,
 ) -> GraphQLResponse {
-    schema
-        .execute(req.into_inner().data(grant.grant))
-        .await
-        .into()
+    let request = request.into_inner().data(db).data(grant);
+
+    schema.execute(request).await.into()
 }
 
 async fn graphql_playground() -> impl IntoResponse {
@@ -44,13 +44,7 @@ async fn main() -> std::io::Result<()> {
 
     let state = Arc::new(tf_auth::InnerState::new());
     let cache = cache::ThumbnailCache::new();
-    let schema = Schema::build(
-        tf_graphql::QueryRoot,
-        async_graphql::EmptyMutation,
-        async_graphql::EmptySubscription,
-    )
-    .data(database.clone())
-    .finish();
+    let schema = Schema::default();
 
     database.compact().unwrap();
 

@@ -52,6 +52,5 @@ features = ["background_threads"]
 
 [patch.crates-io]
 chrono = { git = "https://github.com/chronotope/chrono", rev = "b1d74aef688c27fccc" }
-oxide-auth = { git = "https://github.com/HeroicKatora/oxide-auth" }
 askama = { git = "https://github.com/djc/askama" }
 askama_axum = { git = "https://github.com/djc/askama" }

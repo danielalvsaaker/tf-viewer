@@ -65,7 +65,7 @@ pub mod scopes {
         const SCOPE: &'static str = S::WRITE;
     }
 
-    pub struct Grant<S> {
+    pub struct Grant<S = ()> {
         pub grant: oxide_auth::primitives::grant::Grant,
         _type: std::marker::PhantomData<S>,
     }
@@ -217,12 +217,12 @@ impl InnerState {
     }
 }
 
-impl<'a, R: 'a, E: 'a, O: 'a, C: 'a> AuthEndpoint<'a, R, E, O, C>
+impl<'a, R, E, O, C> AuthEndpoint<'a, R, E, O, C>
 where
-    R: Registrar,
-    E: Extension,
-    O: OwnerSolicitor<OAuthRequest>,
-    C: Scopes<OAuthRequest>,
+    R: Registrar + 'a,
+    E: Extension + 'a,
+    O: OwnerSolicitor<OAuthRequest> + 'a,
+    C: Scopes<OAuthRequest> + 'a,
 {
     pub fn with_scopes(self, scopes: &'a [Scope]) -> AuthEndpoint<'a, R, E, O, &'a [Scope]> {
         AuthEndpoint {

@@ -16,14 +16,13 @@ use axum::{
 };
 use tower_http::{compression::CompressionLayer, cors::CorsLayer};
 
-use std::sync::Arc;
 use tf_database::Database;
 
-use tf_auth::scopes::Grant;
+use tf_auth::{scopes::Grant, State};
 use tf_graphql::Schema;
 
 async fn graphql_handler(
-    Grant { grant, .. }: Grant<()>,
+    Grant { grant, .. }: Grant,
     Extension(schema): Extension<Schema>,
     Extension(db): Extension<Database>,
     request: GraphQLRequest,
@@ -42,7 +41,7 @@ async fn main() -> std::io::Result<()> {
     let database = Database::open("db").unwrap();
     let auth_db = tf_auth::database::Database::open("db-auth").unwrap();
 
-    let state = Arc::new(tf_auth::InnerState::new());
+    let state = State::default();
     let cache = cache::ThumbnailCache::new();
     let schema = Schema::default();
 

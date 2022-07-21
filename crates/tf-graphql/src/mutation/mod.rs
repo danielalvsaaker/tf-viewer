@@ -1,7 +1,9 @@
 use async_graphql::MergedObject;
 
+mod activity;
 mod gear;
-use gear::GearRoot;
+
+use self::{activity::ActivityRoot, gear::GearRoot};
 
 #[derive(Default, MergedObject)]
-pub struct Mutation(GearRoot);
+pub struct Mutation(ActivityRoot, GearRoot);

@@ -87,6 +87,10 @@ macro_rules! declare_id {
         impl $name {
             pub const LENGTH: usize = Id::<$length>::LENGTH;
 
+            pub fn new() -> Self {
+                ::nanoid::nanoid!($length).parse().unwrap()
+            }
+
             pub fn as_bytes(&self) -> [u8; Self::LENGTH] {
                 self.0.as_bytes()
             }
@@ -97,6 +101,12 @@ macro_rules! declare_id {
 
             pub fn from_bytes(bytes: &[u8]) -> Result<Self, InvalidLengthError> {
                 Ok(Self(Id::from_bytes(bytes)?))
+            }
+        }
+
+        impl ::std::default::Default for $name {
+            fn default() -> Self {
+                Self::new()
             }
         }
 

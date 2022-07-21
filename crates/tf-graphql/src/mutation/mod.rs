@@ -1,4 +1,7 @@
-#[derive(Default)]
-pub struct Mutation;
+use async_graphql::MergedObject;
 
-impl Mutation {}
+mod gear;
+use gear::GearRoot;
+
+#[derive(Default, MergedObject)]
+pub struct Mutation(GearRoot);

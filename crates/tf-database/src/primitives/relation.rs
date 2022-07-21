@@ -104,9 +104,8 @@ where
         Ok(())
     }
 
-    pub fn remove(&self, key: &LK) -> Result<()> {
-        self.local.remove(key)?;
+    pub fn remove(&self, key: &LK) -> Result<Option<LV>> {
         self.index.remove(key)?;
-        Ok(())
+        self.local.remove(key)
     }
 }

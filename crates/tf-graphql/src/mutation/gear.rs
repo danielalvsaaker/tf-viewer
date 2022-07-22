@@ -1,20 +1,33 @@
 use crate::guard::OAuthGuard;
 use tf_auth::scopes::{self, Write};
-use tf_database::{
+use tf_database::Database;
+use tf_models::{
+    gear::Gear,
     query::{GearQuery, UserQuery},
-    Database,
+    user::User,
+    GearId,
 };
-use tf_models::{gear::Gear, user::User, GearId, UserId};
 
 use async_graphql::{Context, Object, Result, SimpleObject};
 
 #[derive(Default)]
 pub struct GearRoot;
 
+use crate::query;
+
 #[derive(SimpleObject)]
-struct MutateGearPayload {
-    #[graphql(flatten)]
-    gear: Gear,
+struct CreateGearPayload {
+    gear: query::gear::GearRoot,
+}
+
+#[derive(SimpleObject)]
+struct UpdateGearPayload {
+    gear: query::gear::GearRoot,
+}
+
+#[derive(SimpleObject)]
+struct DeleteGearPayload {
+    id: GearId,
 }
 
 #[Object]
@@ -23,22 +36,23 @@ impl GearRoot {
     async fn create_gear(
         &self,
         ctx: &Context<'_>,
-        user: UserId,
-        gear: Gear,
-    ) -> Result<MutateGearPayload> {
+        user: UserQuery,
+        input: Gear,
+    ) -> Result<CreateGearPayload> {
         let db = ctx.data_unchecked::<Database>().clone();
-        let user_query = UserQuery { user_id: user };
-        let query = GearQuery {
-            user_id: user,
+        let gear = GearQuery {
+            user_id: user.user_id,
             id: GearId::new(),
         };
 
         tokio::task::spawn_blocking(move || {
             db.root::<User>()?
                 .traverse::<Gear>()?
-                .insert(&query, &gear, &user_query)?;
+                .insert(&gear, &input, &user)?;
 
-            Ok(MutateGearPayload { gear })
+            Ok(CreateGearPayload {
+                gear: query::gear::GearRoot { query: gear },
+            })
         })
         .await?
     }
@@ -47,23 +61,22 @@ impl GearRoot {
     async fn update_gear(
         &self,
         ctx: &Context<'_>,
-        user: UserId,
-        gear: GearId,
+        gear: GearQuery,
         input: Gear,
-    ) -> Result<MutateGearPayload> {
+    ) -> Result<UpdateGearPayload> {
         let db = ctx.data_unchecked::<Database>().clone();
-        let user_query = UserQuery { user_id: user };
-        let query = GearQuery {
-            user_id: user,
-            id: gear,
+        let user = UserQuery {
+            user_id: gear.user_id,
         };
 
         tokio::task::spawn_blocking(move || {
             db.root::<User>()?
                 .traverse::<Gear>()?
-                .insert(&query, &input, &user_query)?;
+                .insert(&gear, &input, &user)?;
 
-            Ok(MutateGearPayload { gear: input })
+            Ok(UpdateGearPayload {
+                gear: query::gear::GearRoot { query: gear },
+            })
         })
         .await?
     }
@@ -72,19 +85,17 @@ impl GearRoot {
     async fn delete_gear(
         &self,
         ctx: &Context<'_>,
-        user: UserId,
-        gear: GearId,
-    ) -> Result<Option<MutateGearPayload>> {
+        gear: GearQuery,
+    ) -> Result<Option<DeleteGearPayload>> {
         let db = ctx.data_unchecked::<Database>().clone();
-        let query = GearQuery {
-            user_id: user,
-            id: gear,
-        };
 
         tokio::task::spawn_blocking(move || {
-            let gear = db.root::<User>()?.traverse::<Gear>()?.remove(&query)?;
-
-            Ok(gear.map(|gear| MutateGearPayload { gear }))
+            Ok(db
+                .root::<User>()?
+                .traverse::<Gear>()?
+                .remove(&gear)?
+                .is_some()
+                .then(|| DeleteGearPayload { id: gear.id }))
         })
         .await?
     }

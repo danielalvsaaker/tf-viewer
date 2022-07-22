@@ -1,12 +1,6 @@
 use crate::{error::Result, primitives::Key};
-use serde::{Deserialize, Serialize};
+pub use tf_models::query::{ActivityQuery, ClientQuery, GearQuery, UserQuery};
 use tf_models::{ActivityId, ClientId, GearId, UserId};
-
-#[derive(Clone, Copy, Serialize, Deserialize)]
-pub struct ActivityQuery {
-    pub user_id: UserId,
-    pub id: ActivityId,
-}
 
 impl Key for ActivityQuery {
     fn as_key(&self) -> Vec<u8> {
@@ -29,12 +23,6 @@ impl Key for ActivityQuery {
             id: ActivityId::from_bytes(suffix)?,
         })
     }
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct ClientQuery {
-    pub user_id: UserId,
-    pub id: ClientId,
 }
 
 impl Key for ClientQuery {
@@ -60,12 +48,6 @@ impl Key for ClientQuery {
     }
 }
 
-#[derive(Clone, Copy)]
-pub struct GearQuery {
-    pub user_id: UserId,
-    pub id: GearId,
-}
-
 impl Key for GearQuery {
     fn as_key(&self) -> Vec<u8> {
         [
@@ -86,17 +68,6 @@ impl Key for GearQuery {
             user_id: UserId::from_bytes(prefix)?,
             id: GearId::from_bytes(suffix)?,
         })
-    }
-}
-
-#[derive(Clone, Copy, Serialize, Deserialize)]
-pub struct UserQuery {
-    pub user_id: UserId,
-}
-
-impl std::fmt::Display for UserQuery {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.user_id.fmt(f)
     }
 }
 

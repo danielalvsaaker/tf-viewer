@@ -104,6 +104,20 @@ where
         Ok(())
     }
 
+    pub fn link(&self, key: &LK, foreign_key: &FK) -> Result<()> {
+        if self.local.contains_key(key)? {
+            self.index.insert(key, foreign_key)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn unlink(&self, key: &LK) -> Result<()> {
+        self.index.remove(key)?;
+
+        Ok(())
+    }
+
     pub fn remove(&self, key: &LK) -> Result<Option<LV>> {
         self.index.remove(key)?;
         self.local.remove(key)

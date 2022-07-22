@@ -7,24 +7,24 @@ use tf_database::{
     query::{ActivityQuery, UserQuery},
     Database,
 };
-use tf_models::{activity::Session, gear::Gear, user::User, ActivityId, UserId};
+use tf_models::{activity::Session, gear::Gear, user::User, UserId};
 
 pub struct UserRoot {
-    pub inner: UserQuery,
+    pub query: UserQuery,
 }
 
 #[Object(name = "User")]
 impl UserRoot {
     async fn id(&self) -> &UserId {
-        &self.inner.user_id
+        &self.query.user_id
     }
 
     #[graphql(flatten)]
     async fn _user(&self, ctx: &Context<'_>) -> Result<User> {
         let db = ctx.data_unchecked::<Database>().clone();
-        let inner = self.inner;
+        let query = self.query;
 
-        tokio::task::spawn_blocking(move || Ok(db.root()?.get(&inner)?.unwrap())).await?
+        tokio::task::spawn_blocking(move || Ok(db.root()?.get(&query)?.unwrap())).await?
     }
 
     #[graphql(guard = "OAuthGuard::new(Read(scopes::Activity))")]
@@ -36,17 +36,17 @@ impl UserRoot {
         #[graphql(default)] reverse: bool,
     ) -> Result<Connection<ActivityRoot>> {
         let db = ctx.data_unchecked::<Database>().clone();
-        let inner = self.inner;
+        let query = self.query;
 
         let (edges, total_count) = tokio::task::spawn_blocking(move || {
             let collection = db.root::<User>()?.traverse::<Session>()?;
 
             let edges = collection
-                .keys(&inner, skip, take, reverse)?
-                .map(|inner| ActivityRoot { inner })
+                .keys(&query, skip, take, reverse)?
+                .map(|query| ActivityRoot { query })
                 .collect();
 
-            let total_count = collection.count(&inner)?;
+            let total_count = collection.count(&query)?;
 
             Ok::<_, Error>((edges, total_count))
         })
@@ -66,20 +66,16 @@ impl UserRoot {
     async fn activity(
         &self,
         ctx: &Context<'_>,
-        activity_id: ActivityId,
+        activity: ActivityQuery,
     ) -> Result<Option<ActivityRoot>> {
         let db = ctx.data_unchecked::<Database>().clone();
-        let inner = ActivityQuery {
-            user_id: self.inner.user_id,
-            id: activity_id,
-        };
 
         tokio::task::spawn_blocking(move || {
             Ok(db
                 .root::<User>()?
                 .traverse::<Session>()?
-                .contains_key(&inner)?
-                .then(|| ActivityRoot { inner }))
+                .contains_key(&activity)?
+                .then(|| ActivityRoot { query: activity }))
         })
         .await?
     }
@@ -93,17 +89,17 @@ impl UserRoot {
         #[graphql(default)] reverse: bool,
     ) -> Result<Connection<GearRoot>> {
         let db = ctx.data_unchecked::<Database>().clone();
-        let inner = self.inner;
+        let query = self.query;
 
         let (edges, total_count) = tokio::task::spawn_blocking(move || {
             let collection = db.root::<User>()?.traverse::<Gear>()?;
 
             let edges = collection
-                .keys(&inner, skip, take, reverse)?
-                .map(|inner| GearRoot { inner })
+                .keys(&query, skip, take, reverse)?
+                .map(|query| GearRoot { query })
                 .collect();
 
-            let total_count = collection.count(&inner)?;
+            let total_count = collection.count(&query)?;
 
             Ok::<_, Error>((edges, total_count))
         })

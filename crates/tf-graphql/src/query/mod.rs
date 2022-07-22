@@ -3,12 +3,12 @@ use super::{
     guard::OAuthGuard,
 };
 use tf_auth::scopes::{self, Read};
-use tf_database::{
-    error::Error,
+use tf_database::{error::Error, Database};
+use tf_models::{
+    activity::Session,
     query::{ActivityQuery, UserQuery},
-    Database,
+    user::User,
 };
-use tf_models::{activity::Session, user::User, ActivityId, UserId};
 
 use async_graphql::{Context, Object, Result};
 
@@ -24,15 +24,14 @@ pub struct Query;
 #[Object]
 impl Query {
     #[graphql(guard = "OAuthGuard::new(Read(scopes::User))")]
-    async fn user(&self, ctx: &Context<'_>, user_id: UserId) -> Result<Option<UserRoot>> {
+    async fn user(&self, ctx: &Context<'_>, user: UserQuery) -> Result<Option<UserRoot>> {
         let db = ctx.data_unchecked::<Database>().clone();
-        let inner = UserQuery { user_id };
 
         tokio::task::spawn_blocking(move || {
             Ok(db
                 .root::<User>()?
-                .contains_key(&inner)?
-                .then(|| UserRoot { inner }))
+                .contains_key(&user)?
+                .then(|| UserRoot { query: user }))
         })
         .await?
     }
@@ -52,7 +51,7 @@ impl Query {
 
             let edges = collection
                 .iter(skip, take, reverse)?
-                .map(|inner| UserRoot { inner })
+                .map(|query| UserRoot { query })
                 .collect();
 
             let total_count = collection.count()?;
@@ -75,21 +74,16 @@ impl Query {
     async fn activity(
         &self,
         ctx: &Context<'_>,
-        user: UserId,
-        activity: ActivityId,
+        activity: ActivityQuery,
     ) -> Result<Option<ActivityRoot>> {
         let db = ctx.data_unchecked::<Database>().clone();
-        let inner = ActivityQuery {
-            user_id: user,
-            id: activity,
-        };
 
         tokio::task::spawn_blocking(move || {
             Ok(db
                 .root::<User>()?
                 .traverse::<Session>()?
-                .contains_key(&inner)?
-                .then(|| ActivityRoot { inner }))
+                .contains_key(&activity)?
+                .then(|| ActivityRoot { query: activity }))
         })
         .await?
     }
@@ -98,14 +92,12 @@ impl Query {
     async fn activities(
         &self,
         ctx: &Context<'_>,
-        user: UserId,
+        user: UserQuery,
         #[graphql(default = 0)] skip: usize,
         #[graphql(default = 10)] take: usize,
         #[graphql(default)] reverse: bool,
     ) -> Result<Connection<ActivityRoot>> {
-        let inner = UserQuery { user_id: user };
-
-        UserRoot { inner }
+        UserRoot { query: user }
             .activities(ctx, skip, take, reverse)
             .await
     }

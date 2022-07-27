@@ -13,6 +13,7 @@ pub use value::Value;
 
 use crate::{error::Result, Resource};
 use nebari::tree::Root;
+pub use nebari::ArcBytes;
 
 pub type Inner = nebari::Roots<nebari::io::fs::StdFile>;
 

@@ -1,4 +1,4 @@
-use super::{Key, Value};
+use super::{ArcBytes, Key, Value};
 use crate::error::{Error, Result};
 
 pub type Inner = nebari::Tree<nebari::tree::Unversioned, nebari::io::fs::StdFile>;
@@ -36,6 +36,10 @@ where
             .transpose()
     }
 
+    pub fn get_raw(&self, key: &K) -> Result<Option<ArcBytes<'static>>> {
+        Ok(self.inner.get(&key.as_key())?)
+    }
+
     pub fn insert(&self, key: &K, value: &V) -> Result<()> {
         self.inner.set(key.as_key(), value.as_bytes()?)?;
 
@@ -50,7 +54,7 @@ where
     }
 
     pub fn contains_key(&self, key: &K) -> Result<bool> {
-        self.get(key).map(|x| x.is_some())
+        Ok(self.inner.get(&key.as_key())?.is_some())
     }
 
     pub fn iter(&self, skip: usize, take: usize, reverse: bool) -> Result<impl Iterator<Item = K>> {

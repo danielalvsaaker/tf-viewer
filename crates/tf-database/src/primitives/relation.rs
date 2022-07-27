@@ -94,7 +94,7 @@ where
     */
 
     pub fn contains_key(&self, key: &LK) -> Result<bool> {
-        self.get(key).map(|v| v.is_some())
+        Ok(self.index.contains_key(key)? && self.local.contains_key(key)?)
     }
 
     pub fn insert(&self, key: &LK, value: &LV, foreign_key: &FK) -> Result<()> {

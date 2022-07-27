@@ -19,10 +19,16 @@ pub enum Error {
         source: tf_models::InvalidLengthError,
     },
 
-    #[error("Serialization/deserialization error: {source}")]
-    PotError {
+    #[error("Serialization error: {source}")]
+    SerializeError {
         #[from]
-        source: pot::Error,
+        source: flexbuffers::SerializationError,
+    },
+
+    #[error("Deserialization error: {source}")]
+    DeserializeError {
+        #[from]
+        source: flexbuffers::DeserializationError,
     },
 }
 

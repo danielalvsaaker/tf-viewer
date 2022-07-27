@@ -14,10 +14,10 @@ where
     T: Serialize + DeserializeOwned,
 {
     fn as_bytes(&self) -> Result<Vec<u8>> {
-        Ok(pot::to_vec(self)?)
+        Ok(flexbuffers::to_vec(self)?)
     }
 
     fn from_bytes(data: &[u8]) -> Result<Self> {
-        Ok(pot::from_slice(data)?)
+        Ok(flexbuffers::from_slice(data)?)
     }
 }

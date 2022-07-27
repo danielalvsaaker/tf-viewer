@@ -1,9 +1,8 @@
 use crate::Sport;
-use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    types::{AngularVelocity, Duration, Energy, LengthF64, LengthU32, Power, Velocity},
+    types::{AngularVelocity, DateTime, Duration, Energy, LengthF64, LengthU32, Power, Velocity},
     ActivityId, GearId, UserId,
 };
 
@@ -40,7 +39,7 @@ pub struct Session {
     pub distance: Option<LengthF64>,
     pub duration: Duration,
     pub duration_active: Duration,
-    pub start_time: DateTime<Local>,
+    pub start_time: DateTime,
 }
 
 #[derive(Default, Clone, Serialize, Deserialize)]
@@ -54,7 +53,7 @@ pub struct Record {
     pub power: Vec<Option<Power>>,
     pub lat: Vec<Option<f64>>,
     pub lon: Vec<Option<f64>>,
-    pub timestamp: Vec<Option<DateTime<Local>>>,
+    pub timestamp: Vec<Option<DateTime>>,
     pub duration: Vec<Duration>,
 }
 

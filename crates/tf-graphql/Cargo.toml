@@ -1,7 +1,6 @@
 [package]
 name = "tf-graphql"
 version = "0.1.1"
-authors = ["danielalvsaaker <daniel@nopemail.net>", "vidarandrebo"]
 edition = "2021"
 include = ["src/**/*", "LICENSE", "README.md"]
 
@@ -11,5 +10,8 @@ tf-models = { path = "../tf-models", features = ["graphql"] }
 tf-database = { path = "../tf-database" }
 tf-auth = { path = "../tf-auth" }
 oxide-auth = "0.5"
+serde = "1"
 
-tokio = "*"
+tokio = "1"
+flexbuffers = "2.0"
+rayon = "1.5"

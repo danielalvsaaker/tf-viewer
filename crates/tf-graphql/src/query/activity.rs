@@ -10,6 +10,9 @@ use tf_models::{
     ActivityId,
 };
 
+mod record;
+use record::RecordRoot;
+
 pub struct ActivityRoot {
     pub query: ActivityQuery,
 }
@@ -53,11 +56,16 @@ impl ActivityRoot {
         tokio::task::spawn_blocking(move || Ok(db.root::<Session>()?.get(&query)?.unwrap())).await?
     }
 
-    async fn record(&self, ctx: &Context<'_>) -> Result<Record> {
+    async fn record(&self, ctx: &Context<'_>) -> Result<RecordRoot> {
         let db = ctx.data_unchecked::<Database>().clone();
         let query = self.query;
 
-        tokio::task::spawn_blocking(move || Ok(db.root::<Record>()?.get(&query)?.unwrap())).await?
+        let buffer = tokio::task::spawn_blocking(move || {
+            Ok::<_, tf_database::error::Error>(db.root::<Record>()?.get_raw(&query)?.unwrap())
+        })
+        .await??;
+
+        Ok(RecordRoot { buffer })
     }
 
     async fn lap(&self, ctx: &Context<'_>) -> Result<Vec<Lap>> {

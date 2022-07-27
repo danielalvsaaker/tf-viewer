@@ -49,6 +49,7 @@ wrap_unit!(Length, f64, length, LengthF64);
 wrap_unit!(Power, u16, power);
 wrap_unit!(Velocity, f64, velocity);
 pub type Duration = Unit<std::time::Duration>;
+pub type DateTime = chrono::DateTime<chrono::Local>;
 
 async_graphql::scalar!(Duration);
 async_graphql::scalar!(ActivityId);

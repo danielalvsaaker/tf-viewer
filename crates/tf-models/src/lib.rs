@@ -139,6 +139,7 @@ pub mod types;
 #[cfg(not(feature = "graphql"))]
 pub mod types {
     pub use std::time::Duration;
+    pub type DateTime = chrono::DateTime<chrono::Local>;
     pub use uom::si::{
         f64::{AngularVelocity, Length as LengthF64, Velocity},
         u16::Power,

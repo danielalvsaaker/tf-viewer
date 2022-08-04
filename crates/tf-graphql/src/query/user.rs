@@ -4,10 +4,10 @@ use async_graphql::{Context, Object, Result};
 use tf_auth::scopes::{self, Read};
 use tf_database::{
     error::Error,
-    query::{ActivityQuery, UserQuery},
+    query::{ActivityQuery, GearQuery, UserQuery},
     Database,
 };
-use tf_models::{activity::Session, gear::Gear, user::User, UserId};
+use tf_models::{activity::Session, gear::Gear, user::User, ActivityId, GearId, UserId};
 
 pub struct UserRoot {
     pub query: UserQuery,
@@ -20,7 +20,7 @@ impl UserRoot {
     }
 
     #[graphql(flatten)]
-    async fn _user(&self, ctx: &Context<'_>) -> Result<User> {
+    async fn _self(&self, ctx: &Context<'_>) -> Result<User> {
         let db = ctx.data_unchecked::<Database>().clone();
         let query = self.query;
 
@@ -28,7 +28,29 @@ impl UserRoot {
     }
 
     #[graphql(guard = "OAuthGuard::new(Read(scopes::Activity))")]
-    pub(super) async fn activities(
+    async fn activity(
+        &self,
+        ctx: &Context<'_>,
+        activity: ActivityId,
+    ) -> Result<Option<ActivityRoot>> {
+        let db = ctx.data_unchecked::<Database>().clone();
+        let query = ActivityQuery {
+            user_id: self.query.user_id,
+            id: activity,
+        };
+
+        tokio::task::spawn_blocking(move || {
+            Ok(db
+                .root::<User>()?
+                .traverse::<Session>()?
+                .contains_key(&query)?
+                .then(|| ActivityRoot { query }))
+        })
+        .await?
+    }
+
+    #[graphql(guard = "OAuthGuard::new(Read(scopes::Activity))")]
+    pub(super) async fn activities_connection(
         &self,
         ctx: &Context<'_>,
         #[graphql(default = 0)] skip: usize,
@@ -62,26 +84,26 @@ impl UserRoot {
         })
     }
 
-    #[graphql(guard = "OAuthGuard::new(Read(scopes::Activity))")]
-    async fn activity(
-        &self,
-        ctx: &Context<'_>,
-        activity: ActivityQuery,
-    ) -> Result<Option<ActivityRoot>> {
+    #[graphql(guard = "OAuthGuard::new(Read(scopes::Gear))")]
+    async fn gear(&self, ctx: &Context<'_>, gear: GearId) -> Result<Option<GearRoot>> {
         let db = ctx.data_unchecked::<Database>().clone();
+        let query = GearQuery {
+            user_id: self.query.user_id,
+            id: gear,
+        };
 
         tokio::task::spawn_blocking(move || {
             Ok(db
                 .root::<User>()?
-                .traverse::<Session>()?
-                .contains_key(&activity)?
-                .then(|| ActivityRoot { query: activity }))
+                .traverse::<Gear>()?
+                .contains_key(&query)?
+                .then(|| GearRoot { query }))
         })
         .await?
     }
 
     #[graphql(guard = "OAuthGuard::new(Read(scopes::Gear))")]
-    async fn gear(
+    async fn gear_connection(
         &self,
         ctx: &Context<'_>,
         #[graphql(default = 0)] skip: usize,

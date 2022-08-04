@@ -1,7 +1,6 @@
 [package]
 name = "tf-parse"
 version = "0.1.0"
-authors = ["danielalvsaaker <daniel@nopemail.net>"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

@@ -16,7 +16,7 @@ impl GearRoot {
     }
 
     #[graphql(flatten)]
-    async fn gear(&self, ctx: &Context<'_>) -> Result<Gear> {
+    async fn _self(&self, ctx: &Context<'_>) -> Result<Gear> {
         let db = ctx.data_unchecked::<Database>().clone();
         let query = self.query;
 

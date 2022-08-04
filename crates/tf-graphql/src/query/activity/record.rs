@@ -13,16 +13,17 @@ impl RecordRoot {
     {
         let (send, recv) = tokio::sync::oneshot::channel();
         let buffer = self.buffer.clone();
+
         rayon::spawn(move || {
             let reader = flexbuffers::Reader::get_root(buffer.as_slice())
                 .unwrap()
                 .as_map()
                 .idx(field);
-
             let res = T::deserialize(reader).unwrap();
 
             let _ = send.send(res);
         });
+
         Ok(recv.await?)
     }
 }

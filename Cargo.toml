@@ -51,6 +51,5 @@ version = "0.5"
 features = ["background_threads"]
 
 [patch.crates-io]
-chrono = { git = "https://github.com/chronotope/chrono", rev = "b1d74aef688c27fccc" }
 askama = { git = "https://github.com/djc/askama" }
 askama_axum = { git = "https://github.com/djc/askama" }

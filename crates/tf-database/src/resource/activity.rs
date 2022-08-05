@@ -1,30 +1,11 @@
-use crate::{
-    primitives::{Key, Value},
-    query::{ActivityQuery, GearQuery, UserQuery},
-};
+use super::Resource;
+use crate::{primitives::Relation, Traverse};
 use tf_models::{
     activity::{Lap, Record, Session},
     gear::Gear,
+    query::{ActivityQuery, GearQuery, UserQuery},
     user::User,
 };
-
-pub trait Resource: Value {
-    const NAME: &'static str;
-
-    type Key: Key;
-}
-
-impl Resource for User {
-    const NAME: &'static str = "user";
-
-    type Key = UserQuery;
-}
-
-impl Resource for Gear {
-    const NAME: &'static str = "gear";
-
-    type Key = GearQuery;
-}
 
 impl Resource for Session {
     const NAME: &'static str = "session";
@@ -42,4 +23,12 @@ impl Resource for Vec<Lap> {
     const NAME: &'static str = "lap";
 
     type Key = ActivityQuery;
+}
+
+impl Traverse<Gear> for Session {
+    type Collection = Relation<ActivityQuery, Session, GearQuery, Gear>;
+}
+
+impl Traverse<User> for Session {
+    type Collection = Relation<ActivityQuery, Session, UserQuery, User>;
 }

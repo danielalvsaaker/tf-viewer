@@ -5,7 +5,7 @@ use tf_models::{
     gear::Gear,
     query::{GearQuery, UserQuery},
     user::User,
-    GearId,
+    GearId, UserId,
 };
 
 use async_graphql::{Context, Object, Result, SimpleObject};
@@ -34,14 +34,16 @@ impl GearRoot {
     async fn create_gear(
         &self,
         ctx: &Context<'_>,
-        user: UserQuery,
+        user: UserId,
         input: Gear,
     ) -> Result<CreateGearPayload> {
         let db = ctx.data_unchecked::<Database>().clone();
+
         let gear = GearQuery {
-            user_id: user.user_id,
+            user_id: user,
             id: GearId::new(),
         };
+        let user = UserQuery { user_id: user };
 
         tokio::task::spawn_blocking(move || {
             db.root::<User>()?
@@ -59,13 +61,17 @@ impl GearRoot {
     async fn update_gear(
         &self,
         ctx: &Context<'_>,
-        gear: GearQuery,
+        user: UserId,
+        gear: GearId,
         input: Gear,
     ) -> Result<UpdateGearPayload> {
         let db = ctx.data_unchecked::<Database>().clone();
-        let user = UserQuery {
-            user_id: gear.user_id,
+
+        let gear = GearQuery {
+            user_id: user,
+            id: gear,
         };
+        let user = UserQuery { user_id: user };
 
         tokio::task::spawn_blocking(move || {
             db.root::<User>()?
@@ -83,9 +89,15 @@ impl GearRoot {
     async fn delete_gear(
         &self,
         ctx: &Context<'_>,
-        gear: GearQuery,
+        user: UserId,
+        gear: GearId,
     ) -> Result<Option<DeleteGearPayload>> {
         let db = ctx.data_unchecked::<Database>().clone();
+
+        let gear = GearQuery {
+            user_id: user,
+            id: gear,
+        };
 
         tokio::task::spawn_blocking(move || {
             Ok(db

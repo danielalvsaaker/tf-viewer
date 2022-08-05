@@ -4,7 +4,7 @@ use super::{
 };
 use tf_auth::scopes::{self, Read};
 use tf_database::{error::Error, Database};
-use tf_models::{query::UserQuery, user::User};
+use tf_models::{query::UserQuery, user::User, UserId};
 
 use async_graphql::{Context, Object, Result};
 
@@ -20,8 +20,10 @@ pub struct Query;
 #[Object]
 impl Query {
     #[graphql(guard = "OAuthGuard::new(Read(scopes::User))")]
-    async fn user(&self, ctx: &Context<'_>, user: UserQuery) -> Result<Option<UserRoot>> {
+    async fn user(&self, ctx: &Context<'_>, user: UserId) -> Result<Option<UserRoot>> {
         let db = ctx.data_unchecked::<Database>().clone();
+
+        let user = UserQuery { user_id: user };
 
         tokio::task::spawn_blocking(move || {
             Ok(db

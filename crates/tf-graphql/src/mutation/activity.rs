@@ -6,7 +6,7 @@ use tf_models::{
     gear::Gear,
     query::{ActivityQuery, GearQuery},
     user::User,
-    ActivityId,
+    ActivityId, GearId, UserId,
 };
 
 use async_graphql::{Context, Object, Result, SimpleObject};
@@ -35,10 +35,20 @@ impl ActivityRoot {
     async fn link_gear(
         &self,
         ctx: &Context<'_>,
-        activity: ActivityQuery,
-        gear: GearQuery,
+        user: UserId,
+        activity: ActivityId,
+        gear: GearId,
     ) -> Result<LinkGearPayload> {
         let db = ctx.data_unchecked::<Database>().clone();
+
+        let activity = ActivityQuery {
+            user_id: user,
+            id: activity,
+        };
+        let gear = GearQuery {
+            user_id: user,
+            id: gear,
+        };
 
         tokio::task::spawn_blocking(move || {
             db.root::<User>()?
@@ -59,9 +69,15 @@ impl ActivityRoot {
     async fn unlink_gear(
         &self,
         ctx: &Context<'_>,
-        activity: ActivityQuery,
+        user: UserId,
+        activity: ActivityId,
     ) -> Result<UnlinkGearPayload> {
         let db = ctx.data_unchecked::<Database>().clone();
+
+        let activity = ActivityQuery {
+            user_id: user,
+            id: activity,
+        };
 
         tokio::task::spawn_blocking(move || {
             db.root::<User>()?
@@ -82,9 +98,15 @@ impl ActivityRoot {
     async fn delete_activity(
         &self,
         ctx: &Context<'_>,
-        activity: ActivityQuery,
+        user: UserId,
+        activity: ActivityId,
     ) -> Result<Option<DeleteActivityPayload>> {
         let db = ctx.data_unchecked::<Database>().clone();
+
+        let activity = ActivityQuery {
+            user_id: user,
+            id: activity,
+        };
 
         tokio::task::spawn_blocking(move || {
             let root = db.root::<User>()?;

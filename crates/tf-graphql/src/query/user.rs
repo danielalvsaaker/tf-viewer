@@ -5,6 +5,7 @@ use tf_auth::scopes::{self, Read};
 use tf_database::{
     error::Error,
     query::{ActivityQuery, GearQuery, UserQuery},
+    resource::index::DefaultGear,
     Database,
 };
 use tf_models::{activity::Session, gear::Gear, user::User, ActivityId, GearId, UserId};
@@ -82,6 +83,21 @@ impl UserRoot {
                 has_next_page: (skip + take) < total_count,
             },
         })
+    }
+
+    #[graphql(guard = "OAuthGuard::new(Read(scopes::Gear))")]
+    async fn default_gear(&self, ctx: &Context<'_>) -> Result<Option<GearRoot>> {
+        let db = ctx.data_unchecked::<Database>().clone();
+        let query = self.query;
+
+        tokio::task::spawn_blocking(move || {
+            Ok(db
+                .root::<User>()?
+                .traverse::<DefaultGear>()?
+                .key(&query)?
+                .map(|query| GearRoot { query }))
+        })
+        .await?
     }
 
     #[graphql(guard = "OAuthGuard::new(Read(scopes::Gear))")]

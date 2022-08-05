@@ -1,4 +1,4 @@
-use crate::guard::OAuthGuard;
+use crate::{guard::OAuthGuard, query};
 use tf_auth::scopes::{self, Write};
 use tf_database::{error::Error, Database};
 use tf_models::{
@@ -13,8 +13,6 @@ use async_graphql::{Context, Object, Result, SimpleObject};
 
 #[derive(Default)]
 pub struct ActivityRoot;
-
-use crate::query;
 
 #[derive(SimpleObject)]
 struct LinkGearPayload {

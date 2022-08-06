@@ -35,7 +35,7 @@ impl Query {
     }
 
     #[graphql(guard = "OAuthGuard::new(Read(scopes::User))")]
-    async fn users_connection(
+    async fn user_connection(
         &self,
         ctx: &Context<'_>,
         #[graphql(default = 0)] skip: usize,

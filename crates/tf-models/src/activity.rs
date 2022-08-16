@@ -3,14 +3,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     types::{AngularVelocity, DateTime, Duration, Energy, LengthF64, LengthU32, Power, Velocity},
-    ActivityId, GearId, UserId,
+    ActivityId,
 };
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Activity {
-    pub owner: UserId,
     pub id: ActivityId,
-    pub gear_id: Option<GearId>,
     pub session: Session,
     pub record: Record,
     pub lap: Vec<Lap>,

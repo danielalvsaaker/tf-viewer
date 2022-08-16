@@ -15,10 +15,12 @@ use tf_auth::scopes::{Activity, Grant, Read, Write};
 use tf_database::{
     primitives::Key,
     query::{ActivityQuery, UserQuery},
+    resource::index::DefaultGear,
     Database,
 };
 use tf_models::{
     activity::{Lap, Record, Session},
+    gear::Gear,
     user::User,
 };
 
@@ -72,7 +74,7 @@ async fn post_activity_index(
         let (send, recv) = tokio::sync::oneshot::channel();
 
         rayon::spawn(move || {
-            let _ = send.send(tf_parse::parse(query.user_id, &file));
+            let _ = send.send(tf_parse::parse(&file));
         });
 
         recv.await
@@ -106,6 +108,12 @@ async fn post_activity_index(
 
         root.traverse::<Vec<Lap>>()?
             .insert(&activity_query, &parsed.lap, &query)?;
+
+        if let Some(default_gear) = root.traverse::<DefaultGear>()?.key(&query)? {
+            root.traverse::<Session>()?
+                .traverse::<Gear>(&activity_query)?
+                .link(&activity_query, &default_gear)?;
+        }
 
         Ok::<_, tf_database::error::Error>(())
     })

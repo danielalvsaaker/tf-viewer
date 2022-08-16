@@ -12,7 +12,7 @@ use chrono::{offset::Local, DateTime};
 use tf_models::{
     activity::{Lap, Record, Session},
     types::{AngularVelocity, Energy, LengthF64, LengthU32, Power, Velocity},
-    Activity, ActivityId, Sport, UserId,
+    Activity, ActivityId, Sport,
 };
 
 use uom::si::{
@@ -48,7 +48,7 @@ fn between(lhs: &Option<DateTime<Local>>, rhs: Option<DateTime<Local>>) -> Optio
 
 const MULTIPLIER: f64 = 180_f64 / (2_u32 << 30) as f64;
 
-pub fn parse(user: UserId, fit_data: &[u8]) -> Result<Activity> {
+pub fn parse(fit_data: &[u8]) -> Result<Activity> {
     let mut session: Session = Session::default();
     let mut record: Record = Record::default();
     let mut lap_vec: Vec<Lap> = Vec::new();
@@ -123,9 +123,6 @@ pub fn parse(user: UserId, fit_data: &[u8]) -> Result<Activity> {
                 .as_bytes(),
         )
         .unwrap(),
-        // TODO: Correct username
-        owner: user,
-        gear_id: None,
         session,
         record,
         lap: lap_vec,

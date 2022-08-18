@@ -1,6 +1,6 @@
 use crate::{
     error::{Error, Result},
-    primitives::{ArcBytes, Key, Value, collection::Iter},
+    primitives::{collection::Iter, ArcBytes, Key, Value},
 };
 use nebari::tree::ScanEvaluation;
 

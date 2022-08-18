@@ -47,12 +47,10 @@ impl Query {
         let (edges, total_count) = tokio::task::spawn_blocking(move || {
             let collection = db.root::<User>()?;
 
-            let edges = collection
-                .iter(skip, take, reverse)?
-                .map(|query| UserRoot { query })
-                .collect();
+            let iter = collection.iter(skip, take, reverse)?;
+            let total_count = iter.total_count;
 
-            let total_count = collection.count()?;
+            let edges = iter.map(|query| UserRoot { query }).collect();
 
             Ok::<_, Error>((edges, total_count))
         })

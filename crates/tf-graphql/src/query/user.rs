@@ -64,12 +64,10 @@ impl UserRoot {
         let (edges, total_count) = tokio::task::spawn_blocking(move || {
             let collection = db.root::<User>()?.traverse::<Session>()?;
 
-            let edges = collection
-                .keys(&query, skip, take, reverse)?
-                .map(|query| ActivityRoot { query })
-                .collect();
+            let iter = collection.keys(&query, skip, take, reverse)?;
+            let total_count = iter.total_count;
 
-            let total_count = collection.count(&query)?;
+            let edges = iter.map(|query| ActivityRoot { query }).collect();
 
             Ok::<_, Error>((edges, total_count))
         })
@@ -129,27 +127,23 @@ impl UserRoot {
         let db = ctx.data_unchecked::<Database>().clone();
         let query = self.query;
 
-        let (edges, total_count) = tokio::task::spawn_blocking(move || {
+        tokio::task::spawn_blocking(move || {
             let collection = db.root::<User>()?.traverse::<Gear>()?;
 
-            let edges = collection
-                .keys(&query, skip, take, reverse)?
-                .map(|query| GearRoot { query })
-                .collect();
+            let iter = collection.keys(&query, skip, take, reverse)?;
 
-            let total_count = collection.count(&query)?;
+            let total_count = iter.total_count;
+            let edges = iter.map(|query| GearRoot { query }).collect();
 
-            Ok::<_, Error>((edges, total_count))
+            Ok(Connection {
+                edges,
+                total_count,
+                page_info: PageInfo {
+                    has_previous_page: skip.checked_sub(take).is_some(),
+                    has_next_page: (skip + take) < total_count,
+                },
+            })
         })
-        .await??;
-
-        Ok(Connection {
-            edges,
-            total_count,
-            page_info: PageInfo {
-                has_previous_page: skip.checked_sub(take).is_some(),
-                has_next_page: (skip + take) < total_count,
-            },
-        })
+        .await?
     }
 }

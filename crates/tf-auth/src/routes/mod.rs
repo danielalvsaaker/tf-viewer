@@ -2,10 +2,13 @@ use crate::primitives::scopes::Grant;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
-use axum::{extract::Extension, response::IntoResponse, routing::get, Json, Router};
+use axum::{response::IntoResponse, routing::get, Json, Router};
 
 pub fn routes() -> Router {
-    let store = async_session::MemoryStore::new();
+    let session_layer = {
+        let store = axum_sessions::async_session::MemoryStore::new();
+        axum_sessions::SessionLayer::new(store, nanoid::nanoid!(128).as_bytes())
+    };
 
     Router::new()
         .merge(oauth::routes())
@@ -14,7 +17,7 @@ pub fn routes() -> Router {
         .nest("/signout", signout::routes())
         .nest("/signup", signup::routes())
         .route("/whoami", get(whoami))
-        .layer(Extension(store))
+        .layer(session_layer)
 }
 
 async fn whoami(grant: Grant<()>) -> impl IntoResponse {

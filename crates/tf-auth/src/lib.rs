@@ -3,7 +3,6 @@ pub use primitives::scopes;
 pub mod database;
 mod endpoint;
 mod primitives;
-pub mod session;
 mod solicitor;
 mod state;
 

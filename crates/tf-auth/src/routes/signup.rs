@@ -1,11 +1,11 @@
 use super::{Callback, UserForm};
-use crate::templates::SignUp;
 use crate::{
     database::{
         resource::user::{User, Username},
         Database,
     },
     error::Result,
+    templates::SignUp,
 };
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},

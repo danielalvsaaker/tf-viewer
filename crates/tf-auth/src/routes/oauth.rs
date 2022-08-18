@@ -1,17 +1,18 @@
 use super::Callback;
-use crate::{
-    database::Database, error::Result, session::Session, solicitor::Solicitor, Consent, State,
-};
+use crate::{database::Database, error::Result, solicitor::Solicitor, Consent, State};
 use axum::{
     extract::{Extension, OriginalUri, Query},
     response::{IntoResponse, Redirect},
     routing::{get, post},
     Router,
 };
-use oxide_auth::endpoint::{OwnerConsent, QueryParameter, Solicitation};
-use oxide_auth::frontends::simple::endpoint::FnSolicitor;
+use axum_sessions::extractors::ReadableSession;
+use oxide_auth::{
+    endpoint::{OwnerConsent, QueryParameter, Solicitation},
+    frontends::simple::endpoint::FnSolicitor,
+};
 use oxide_auth_axum::{OAuthRequest, OAuthResponse, WebError};
-use tf_database::primitives::Key;
+use tf_database::{primitives::Key, query::UserQuery};
 
 pub fn routes() -> Router {
     Router::new()
@@ -24,10 +25,12 @@ async fn get_authorize(
     req: OAuthRequest,
     Extension(state): Extension<State>,
     Extension(db): Extension<Database>,
-    session: Session,
+    session: ReadableSession,
     OriginalUri(uri): OriginalUri,
 ) -> Result<impl IntoResponse> {
-    if session.id().is_none() {
+    let id = if let Some(id) = session.get::<UserQuery>("id") {
+        id
+    } else {
         let callback =
             Callback::from_str(uri.path_and_query().map(|x| x.as_str()).unwrap_or_default());
 
@@ -36,9 +39,7 @@ async fn get_authorize(
             serde_urlencoded::to_string(&callback).unwrap()
         );
         return Ok(Redirect::to(&uri).into_response());
-    }
-
-    let id = session.id().unwrap();
+    };
 
     state
         .endpoint(db.clone())
@@ -56,9 +57,9 @@ async fn post_authorize(
     Extension(state): Extension<State>,
     Extension(db): Extension<Database>,
     Query(consent): Query<Consent>,
-    session: Session,
+    session: ReadableSession,
 ) -> Result<impl IntoResponse> {
-    let user_id = match session.id() {
+    let user_id = match session.get::<UserQuery>("id") {
         Some(username) => username,
         _ => return Ok(Redirect::to("/oauth/signin").into_response()),
     };

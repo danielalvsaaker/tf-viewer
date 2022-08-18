@@ -3,8 +3,6 @@ mod issuer;
 mod registrar;
 pub mod scopes;
 
-pub use oxide_auth_async::primitives::{Authorizer, Issuer, Registrar};
-
 use tokio::sync::MutexGuard;
 
 pub struct Guard<'a, T> {

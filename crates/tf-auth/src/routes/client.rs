@@ -8,9 +8,13 @@ use axum::{
     routing::get,
     Router,
 };
+use axum_sessions::extractors::ReadableSession;
 use oxide_auth::primitives::registrar::{Client, RegisteredUrl};
 use serde::{Deserialize, Serialize};
-use tf_database::{primitives::Key, query::ClientQuery};
+use tf_database::{
+    primitives::Key,
+    query::{ClientQuery, UserQuery},
+};
 use tf_models::ClientId;
 
 pub fn routes() -> Router {
@@ -36,12 +40,12 @@ struct ClientForm {
 }
 
 async fn post_client(
-    session: crate::session::Session,
     Form(client): Form<ClientForm>,
     Extension(db): Extension<Database>,
+    session: ReadableSession,
 ) -> Result<impl IntoResponse> {
-    let username = match session.id() {
-        Some(username) => username,
+    let user = match session.get::<UserQuery>("id") {
+        Some(user) => user,
         _ => return Ok(Redirect::to("/oauth/signin").into_response()),
     };
 
@@ -51,7 +55,7 @@ async fn post_client(
         let id = ClientId::from_bytes(nanoid::nanoid!().as_bytes())?;
 
         ClientQuery {
-            user_id: username.user_id,
+            user_id: user.user_id,
             id,
         }
     };
@@ -80,7 +84,7 @@ async fn post_client(
         ),
     };
 
-    db.register_client(&client_id, client, client_name, &username)?;
+    db.register_client(&client_id, client, client_name, &user)?;
 
     #[derive(Serialize)]
     struct Response {

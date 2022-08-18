@@ -5,7 +5,6 @@ use crate::{
         Database,
     },
     error::Result,
-    session::Session,
     templates::SignIn,
 };
 
@@ -17,6 +16,7 @@ use axum::{
     routing::get,
     Router,
 };
+use axum_sessions::extractors::WritableSession;
 
 pub fn routes() -> Router {
     Router::new().route("/", get(get_signin).post(post_signin))
@@ -31,10 +31,10 @@ async fn get_signin(query: Option<Query<Callback<'_>>>) -> impl IntoResponse {
 }
 
 async fn post_signin(
-    session: Session,
     Extension(db): Extension<Database>,
     query: Option<Query<Callback<'_>>>,
     Form(user): Form<UserForm>,
+    mut session: WritableSession,
 ) -> Result<impl IntoResponse> {
     let query = query.as_ref().map(|x| x.as_str());
 
@@ -53,13 +53,13 @@ async fn post_signin(
         })
         .unwrap_or_default();
 
-    let cookie = if authorized {
+    if authorized {
         let user_id = db
             .root::<Username>()?
             .traverse::<User>()?
             .key(&user.username)?
             .unwrap();
-        session.remember(user_id).await
+        session.insert("id", user_id).unwrap();
     } else {
         return Ok((
             StatusCode::UNAUTHORIZED,
@@ -68,11 +68,11 @@ async fn post_signin(
             },
         )
             .into_response());
-    };
+    }
 
     if let Some(query) = query {
-        Ok((cookie, Redirect::to(query)).into_response())
+        Ok(Redirect::to(query).into_response())
     } else {
-        Ok((cookie, Redirect::to("/oauth/")).into_response())
+        Ok(Redirect::to("/oauth/").into_response())
     }
 }

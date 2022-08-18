@@ -7,9 +7,11 @@ edition = "2021"
 askama = { version = "0.11", features = ["with-axum"] }
 askama_axum = "0.1"
 
+async-trait = "0.1"
 argon2 = { version = "0.4", features = ["std"] }
 oxide-auth = "0.5"
 oxide-auth-axum = "0.2"
+oxide-auth-async = "0.1"
 axum = { version = "0.5", features = ["headers"] }
 thiserror = "1"
 serde = { version = "1", features = ["derive"] }
@@ -18,3 +20,4 @@ nanoid = "0.4"
 async-session = "3"
 tf-models = { path = "../tf-models" }
 tf-database = { path = "../tf-database" }
+tokio = { version = "1", features = ["sync"] }

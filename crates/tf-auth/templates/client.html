@@ -7,8 +7,8 @@
       <h1>Create new client</h1>
     </hgroup>
     <form method="post">
+      <input type="text" name="name" placeholder="Name" aria-label="Name" required>
       <input type="url" name="redirect_uri" placeholder="Redirect URL" aria-label="Redirect URL" required>
-      <input type="text" name="scopes" placeholder="Scopes" aria-label="Scopes" required>
       <label for="type">Client type</label>
       <select name="type" id="type" required>
 	<option value="public" selected>Public</option>

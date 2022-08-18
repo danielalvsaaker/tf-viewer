@@ -1,7 +1,7 @@
 use super::{Callback, UserForm};
 use crate::{
     database::{
-        resources::{User, Username},
+        resource::user::{User, Username},
         Database,
     },
     error::Result,

@@ -1,4 +1,4 @@
-use oxide_auth::primitives::registrar::EncodedClient as Inner;
+use super::client::EncodedClient;
 use serde::{Deserialize, Serialize};
 use tf_database::{
     primitives::{Index, Relation},
@@ -8,14 +8,19 @@ use tf_database::{
 };
 
 #[derive(Serialize, Deserialize)]
-pub struct EncodedClient {
-    pub inner: Inner,
-}
-
-#[derive(Serialize, Deserialize)]
 pub struct User {
     pub username: String,
     pub password: String,
+}
+
+impl Resource for User {
+    const NAME: &'static str = "user";
+
+    type Key = UserQuery;
+}
+
+impl Traverse<EncodedClient> for User {
+    type Collection = Relation<ClientQuery, EncodedClient, UserQuery, User>;
 }
 
 #[derive(Serialize, Deserialize)]
@@ -29,20 +34,4 @@ impl Resource for Username {
 
 impl Traverse<User> for Username {
     type Collection = Index<String, Username, UserQuery, User>;
-}
-
-impl Resource for EncodedClient {
-    const NAME: &'static str = "client";
-
-    type Key = ClientQuery;
-}
-
-impl Resource for User {
-    const NAME: &'static str = "user";
-
-    type Key = UserQuery;
-}
-
-impl Traverse<EncodedClient> for User {
-    type Collection = Relation<ClientQuery, EncodedClient, UserQuery, User>;
 }

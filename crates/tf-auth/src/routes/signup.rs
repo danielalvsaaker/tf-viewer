@@ -2,7 +2,7 @@ use super::{Callback, UserForm};
 use crate::templates::SignUp;
 use crate::{
     database::{
-        resources::{User, Username},
+        resource::user::{User, Username},
         Database,
     },
     error::Result,

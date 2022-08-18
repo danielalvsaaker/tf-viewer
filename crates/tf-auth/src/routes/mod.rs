@@ -1,4 +1,4 @@
-use crate::scopes::Grant;
+use crate::primitives::scopes::Grant;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 

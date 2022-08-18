@@ -30,8 +30,8 @@ enum ClientType {
 
 #[derive(Deserialize)]
 struct ClientForm {
+    name: String,
     redirect_uri: String,
-    scopes: String,
     r#type: ClientType,
 }
 
@@ -56,6 +56,8 @@ async fn post_client(
         }
     };
 
+    let client_name = client.name;
+
     let client = match client.r#type {
         ClientType::Confidential => {
             let secret = nanoid::nanoid!(32);
@@ -63,7 +65,7 @@ async fn post_client(
             let client = Client::confidential(
                 &client_id.as_string(),
                 RegisteredUrl::Semantic(client.redirect_uri.parse().unwrap()),
-                client.scopes.parse().unwrap(),
+                "".parse().unwrap(),
                 secret.as_bytes(),
             );
 
@@ -74,11 +76,11 @@ async fn post_client(
         ClientType::Public => Client::public(
             &client_id.as_string(),
             RegisteredUrl::Semantic(client.redirect_uri.parse().unwrap()),
-            client.scopes.parse().unwrap(),
+            "".parse().unwrap(),
         ),
     };
 
-    db.register_client(&client_id, client, &username)?;
+    db.register_client(&client_id, client, client_name, &username)?;
 
     #[derive(Serialize)]
     struct Response {

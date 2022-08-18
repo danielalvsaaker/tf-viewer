@@ -1,8 +1,6 @@
 use askama::Template;
 
 use oxide_auth::endpoint::WebRequest;
-use std::borrow::Cow;
-use tf_database::query::UserQuery;
 
 #[derive(Template)]
 #[template(path = "signin.html")]
@@ -20,8 +18,8 @@ pub struct SignUp<'a> {
 #[template(path = "authorize.html")]
 pub struct Authorize<'a> {
     pub query: String,
-    pub client_id: String,
-    pub user_id: &'a UserQuery,
+    pub client_name: &'a str,
+    pub username: &'a str,
     pub scopes: String,
 }
 
@@ -32,20 +30,22 @@ pub struct Client;
 impl<'a> Authorize<'a> {
     pub fn new(
         req: &mut oxide_auth_axum::OAuthRequest,
-        solicitation: oxide_auth::endpoint::Solicitation<'a>,
-        user_id: &'a UserQuery,
+        solicitation: &oxide_auth::endpoint::Solicitation<'a>,
+        username: &'a str,
+        client_name: &'a str,
     ) -> Self {
-        macro_rules! to_string {
-            ($query:expr) => {
-                $query.unwrap_or(Cow::Borrowed("")).to_string()
-            };
-        }
-
         let query = req.query().unwrap();
         let grant = solicitation.pre_grant();
         let state = solicitation.state();
-        let code_challenge = to_string!(query.unique_value("code_challenge"));
-        let method = to_string!(query.unique_value("code_challenge_method"));
+        let code_challenge = query
+            .unique_value("code_challenge")
+            .unwrap_or_default()
+            .to_string();
+        let method = query
+            .unique_value("code_challenge_method")
+            .unwrap_or_default()
+            .to_string();
+        let scope = grant.scope.to_string();
 
         let mut extra = vec![
             ("response_type", "code"),
@@ -53,6 +53,7 @@ impl<'a> Authorize<'a> {
             ("redirect_uri", grant.redirect_uri.as_str()),
             ("code_challenge", &code_challenge),
             ("code_challenge_method", &method),
+            ("scope", &scope),
         ];
 
         if let Some(state) = state {
@@ -63,8 +64,8 @@ impl<'a> Authorize<'a> {
 
         Self {
             query,
-            client_id: grant.client_id.to_owned(),
-            user_id,
+            client_name,
+            username,
             scopes: grant.scope.iter().collect::<Vec<_>>().join(", "),
         }
     }

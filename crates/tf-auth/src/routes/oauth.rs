@@ -1,18 +1,15 @@
 use super::Callback;
 use crate::{
-    database::Database, error::Result, session::Session, templates::Authorize, Consent, State,
+    database::Database, error::Result, session::Session, solicitor::Solicitor, Consent, State,
 };
-use askama::Template;
 use axum::{
     extract::{Extension, OriginalUri, Query},
     response::{IntoResponse, Redirect},
     routing::{get, post},
     Router,
 };
-use oxide_auth::{
-    endpoint::{OwnerConsent, QueryParameter, Solicitation},
-    frontends::simple::endpoint::FnSolicitor,
-};
+use oxide_auth::endpoint::{OwnerConsent, QueryParameter, Solicitation};
+use oxide_auth::frontends::simple::endpoint::FnSolicitor;
 use oxide_auth_axum::{OAuthRequest, OAuthResponse, WebError};
 use tf_database::primitives::Key;
 
@@ -43,28 +40,15 @@ async fn get_authorize(
 
     let id = session.id().unwrap();
 
-    Ok(state
-        .endpoint(db)
-        .with_solicitor(FnSolicitor(
-            move |req: &mut OAuthRequest, pre_grant: Solicitation| {
-                let body = Authorize::new(req, pre_grant, &id);
-
-                match body.render() {
-                    Ok(inner) => OwnerConsent::InProgress(
-                        OAuthResponse::default()
-                            .content_type("text/html")
-                            .unwrap()
-                            .body(&inner),
-                    ),
-                    Err(inner) => {
-                        OwnerConsent::Error(WebError::InternalError(Some(inner.to_string())))
-                    }
-                }
-            },
-        ))
+    state
+        .endpoint(db.clone())
+        .await
+        .with_solicitor(Solicitor::new(db, id))
         .authorization_flow()
         .execute(req)
-        .map(IntoResponse::into_response)?)
+        .await
+        .map(IntoResponse::into_response)
+        .map_err(Into::into)
 }
 
 async fn post_authorize(
@@ -79,8 +63,9 @@ async fn post_authorize(
         _ => return Ok(Redirect::to("/oauth/signin").into_response()),
     };
 
-    Ok(state
+    state
         .endpoint(db)
+        .await
         .with_solicitor(FnSolicitor(
             move |_: &mut OAuthRequest, _: Solicitation| match consent {
                 Consent::Allow => OwnerConsent::Authorized(user_id.as_string()),
@@ -89,7 +74,9 @@ async fn post_authorize(
         ))
         .authorization_flow()
         .execute(req)
-        .map(IntoResponse::into_response)?)
+        .await
+        .map(IntoResponse::into_response)
+        .map_err(Into::into)
 }
 
 async fn token(
@@ -104,7 +91,14 @@ async fn token(
 
     match &*grant_type {
         "refresh_token" => refresh(req, Extension(state), Extension(db)).await,
-        _ => state.endpoint(db).access_token_flow().execute(req),
+        _ => {
+            state
+                .endpoint(db)
+                .await
+                .access_token_flow()
+                .execute(req)
+                .await
+        }
     }
 }
 
@@ -113,5 +107,5 @@ async fn refresh(
     Extension(state): Extension<State>,
     Extension(db): Extension<Database>,
 ) -> Result<OAuthResponse, WebError> {
-    state.endpoint(db).refresh_flow().execute(req)
+    state.endpoint(db).await.refresh_flow().execute(req).await
 }

@@ -1,15 +1,12 @@
-mod index;
-mod relation;
-mod tree;
-
+mod collection;
 mod key;
 mod value;
 
-pub use index::Index;
-pub use key::Key;
-pub use relation::Relation;
-pub use tree::Tree;
-pub use value::Value;
+pub use self::{
+    collection::{Index, Relation, Tree},
+    key::Key,
+    value::Value,
+};
 
 use crate::{error::Result, Resource};
 use nebari::tree::Root;

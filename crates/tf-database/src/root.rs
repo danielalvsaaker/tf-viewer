@@ -28,7 +28,7 @@ where
     ) -> Result<Root<'a, Target, <Current as Traverse<Target>>::Collection>>
     where
         Current: Traverse<Target>,
-        Database: OpenCollection<Current::Collection>,
+        Database: OpenCollection<<Current as Traverse<Target>>::Collection>,
     {
         let collection: <Current as Traverse<Target>>::Collection = self.db.open_collection()?;
 

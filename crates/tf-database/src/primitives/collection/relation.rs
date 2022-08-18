@@ -1,5 +1,8 @@
-use super::{Index, Key, Tree, Value};
 use crate::error::Result;
+use crate::primitives::{
+    collection::{Index, Iter, Tree},
+    Key, Value,
+};
 
 #[derive(Clone)]
 pub struct Relation<LK, LV, FK, FV> {
@@ -35,63 +38,19 @@ where
         skip: usize,
         take: usize,
         reverse: bool,
-    ) -> Result<impl Iterator<Item = LK>> {
+    ) -> Result<Iter<LK>> {
         self.index.keys(key, skip, take, reverse)
     }
 
-    pub fn count<L: Key>(&self, key: &L) -> Result<usize> {
-        self.index.count(key)
-    }
-
-    /*
-    pub fn values<L: Key>(
+    pub fn join<L: Key>(
         &self,
         key: &L,
         skip: usize,
         take: usize,
-    ) -> Result<impl Iterator<Item = FK>> {
-        let key = key.as_prefix().to_vec();
-        let next = super::key::next_byte_sequence(&key).map(|x| x.to_vec());
-
-        let range = if let Some(ref next) = next {
-            (
-                std::ops::Bound::Included(key.as_slice()),
-                std::ops::Bound::Excluded(next.as_slice()),
-            )
-        } else {
-            (
-                std::ops::Bound::Included(key.as_slice()),
-                std::ops::Bound::Unbounded,
-            )
-        };
-
-        let mut output = Vec::with_capacity(take);
-        let mut keys_scanned = 0;
-
-        self.local.as_ref().scan::<Error, _, _, _, _>(
-            &range,
-            false,
-            |_, _, _| nebari::tree::ScanEvaluation::ReadData,
-            |key, _| {
-                if keys_scanned > skip {
-                    if let Ok(Some(foreign_key)) = self.index.as_ref().get(key) {
-                        output.push(foreign_key);
-                    }
-                }
-
-                keys_scanned += 1;
-                if output.len() >= take {
-                    nebari::tree::ScanEvaluation::Stop
-                } else {
-                    nebari::tree::ScanEvaluation::Skip
-                }
-            },
-            |_, _, _| unreachable!(),
-        )?;
-
-        Ok(output.into_iter().flat_map(|key| FK::from_bytes(&key)))
+        reverse: bool,
+    ) -> Result<Iter<LK>> {
+        self.index.join(key, skip, take, reverse)
     }
-    */
 
     pub fn contains_key(&self, key: &LK) -> Result<bool> {
         Ok(self.index.contains_key(key)? && self.local.contains_key(key)?)

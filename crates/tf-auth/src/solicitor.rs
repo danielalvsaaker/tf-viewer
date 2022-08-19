@@ -1,7 +1,7 @@
 use crate::database::{
     resource::{
         client::{ClientName, EncodedClient},
-        user::User,
+        user::{Authorization, AuthorizationQuery, User},
     },
     Database,
 };
@@ -15,12 +15,12 @@ use tf_models::query::{ClientQuery, UserQuery};
 
 pub struct Solicitor {
     db: Database,
-    id: UserQuery,
+    user: UserQuery,
 }
 
 impl Solicitor {
-    pub fn new(db: Database, id: UserQuery) -> Self {
-        Self { db, id }
+    pub fn new(db: Database, user: UserQuery) -> Self {
+        Self { db, user }
     }
 }
 
@@ -31,48 +31,87 @@ impl OwnerSolicitor<OAuthRequest> for Solicitor {
         req: &mut OAuthRequest,
         solicitation: Solicitation<'_>,
     ) -> OwnerConsent<<OAuthRequest as WebRequest>::Response> {
-        let client_id = match solicitation.pre_grant().client_id.parse::<ClientQuery>() {
+        fn map_err<E: std::error::Error>(
+            err: E,
+        ) -> OwnerConsent<<OAuthRequest as WebRequest>::Response> {
+            OwnerConsent::Error(WebError::InternalError(Some(err.to_string())))
+        }
+
+        let client_id = match solicitation
+            .pre_grant()
+            .client_id
+            .parse::<ClientQuery>()
+            .map_err(map_err)
+        {
             Ok(id) => id,
-            Err(err) => return OwnerConsent::Error(WebError::InternalError(Some(err.to_string()))),
+            Err(err) => return err,
         };
 
-        let (client, user) = {
-            let result = tokio::task::spawn_blocking({
+        let authorization = {
+            let inner = tokio::task::spawn_blocking({
                 let db = self.db.clone();
-                let id = self.id;
+                let query = AuthorizationQuery {
+                    user: self.user,
+                    client: client_id,
+                };
+                move || db.root::<User>()?.traverse::<Authorization>()?.get(&query)
+            })
+            .await
+            .map_err(map_err)
+            .map(|res| res.map_err(map_err))
+            .and_then(std::convert::identity);
+
+            match inner {
+                Ok(inner) => inner,
+                Err(err) => return err,
+            }
+        };
+
+        match authorization {
+            Some(Authorization { scope }) if scope >= solicitation.pre_grant().scope => {
+                return OwnerConsent::Authorized(self.user.to_string())
+            }
+            _ => (),
+        }
+
+        let (client, user) = {
+            let inner = tokio::task::spawn_blocking({
+                let db = self.db.clone();
+                let user = self.user;
+
                 move || {
                     let client = db
                         .root::<EncodedClient>()?
                         .traverse::<ClientName>()?
                         .get(&client_id)?;
 
-                    let user = db.root::<User>()?.get(&id)?;
+                    let user = db.root::<User>()?.get(&user)?;
 
                     Ok::<_, Error>((client, user))
                 }
             })
             .await
-            .map_err(|err| WebError::InternalError(Some(err.to_string())))
-            .map(|res| res.map_err(|err| WebError::InternalError(Some(err.to_string()))))
+            .map_err(map_err)
+            .map(|res| res.map_err(map_err))
             .and_then(std::convert::identity);
 
-            match result {
-                Ok(result) => result,
-                Err(err) => return OwnerConsent::Error(err),
+            match inner {
+                Ok(inner) => inner,
+                Err(err) => return err,
             }
         };
 
         if let Some((client, user)) = client.zip(user) {
             let body = Authorize::new(req, &solicitation, &user.username, &client.inner);
 
-            match body.render() {
+            match body.render().map_err(map_err) {
                 Ok(inner) => OwnerConsent::InProgress(
                     OAuthResponse::default()
                         .content_type("text/html")
                         .unwrap()
                         .body(&inner),
                 ),
-                Err(inner) => OwnerConsent::Error(WebError::InternalError(Some(inner.to_string()))),
+                Err(err) => err,
             }
         } else {
             OwnerConsent::Denied

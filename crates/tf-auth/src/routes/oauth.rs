@@ -1,5 +1,13 @@
 use super::Callback;
-use crate::{database::Database, error::Result, solicitor::Solicitor, Consent, State};
+use crate::{
+    database::{
+        resource::user::{Authorization, AuthorizationQuery, User},
+        Database,
+    },
+    error::{Error, Result},
+    solicitor::Solicitor,
+    Consent, State,
+};
 use axum::{
     extract::{Extension, OriginalUri, Query},
     response::{IntoResponse, Redirect},
@@ -28,8 +36,8 @@ async fn get_authorize(
     session: ReadableSession,
     OriginalUri(uri): OriginalUri,
 ) -> Result<impl IntoResponse> {
-    let id = if let Some(id) = session.get::<UserQuery>("id") {
-        id
+    let user = if let Some(user) = session.get::<UserQuery>("user") {
+        user
     } else {
         let callback =
             Callback::from_str(uri.path_and_query().map(|x| x.as_str()).unwrap_or_default());
@@ -44,7 +52,7 @@ async fn get_authorize(
     state
         .endpoint(db.clone())
         .await
-        .with_solicitor(Solicitor::new(db, id))
+        .with_solicitor(Solicitor::new(db, user))
         .authorization_flow()
         .execute(req)
         .await
@@ -59,18 +67,48 @@ async fn post_authorize(
     Query(consent): Query<Consent>,
     session: ReadableSession,
 ) -> Result<impl IntoResponse> {
-    let user_id = match session.get::<UserQuery>("id") {
-        Some(username) => username,
+    let user = match session.get::<UserQuery>("user") {
+        Some(user) => user,
         _ => return Ok(Redirect::to("/oauth/signin").into_response()),
     };
 
     state
-        .endpoint(db)
+        .endpoint(db.clone())
         .await
         .with_solicitor(FnSolicitor(
-            move |_: &mut OAuthRequest, _: Solicitation| match consent {
-                Consent::Allow => OwnerConsent::Authorized(user_id.as_string()),
-                Consent::Deny => OwnerConsent::Denied,
+            move |_: &mut OAuthRequest, solicitation: Solicitation| {
+                if let Consent::Allow = consent {
+                    tokio::task::spawn_blocking({
+                        let db = db.clone();
+                        let solicitation = solicitation.into_owned();
+
+                        move || {
+                            let query = AuthorizationQuery {
+                                user,
+                                client: solicitation.pre_grant().client_id.parse()?,
+                            };
+
+                            let collection = db.root::<User>()?.traverse::<Authorization>()?;
+
+                            let authorization = collection.get(&query)?;
+                            let scope = solicitation.pre_grant().scope.clone();
+
+                            if authorization.is_none()
+                                || authorization
+                                    .map(|authorization| authorization.scope < scope)
+                                    .unwrap_or_default()
+                            {
+                                collection.insert(&query, &Authorization { scope }, &user)?;
+                            }
+
+                            Ok::<_, Error>(())
+                        }
+                    });
+
+                    OwnerConsent::Authorized(user.as_string())
+                } else {
+                    OwnerConsent::Denied
+                }
             },
         ))
         .authorization_flow()

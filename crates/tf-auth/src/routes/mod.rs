@@ -8,6 +8,8 @@ pub fn routes() -> Router {
     let session_layer = {
         let store = axum_sessions::async_session::MemoryStore::new();
         axum_sessions::SessionLayer::new(store, nanoid::nanoid!(128).as_bytes())
+            // TODO: Set based on config
+            .with_secure(false)
     };
 
     Router::new()
@@ -47,7 +49,7 @@ impl<'a> Callback<'a> {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct UserForm {
     pub username: String,
     pub password: String,

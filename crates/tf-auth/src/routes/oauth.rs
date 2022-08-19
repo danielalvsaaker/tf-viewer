@@ -16,7 +16,7 @@ use axum::{
 };
 use axum_sessions::extractors::ReadableSession;
 use oxide_auth::{
-    endpoint::{OwnerConsent, QueryParameter, Solicitation},
+    endpoint::{OwnerConsent, PreGrant, QueryParameter, Solicitation},
     frontends::simple::endpoint::FnSolicitor,
 };
 use oxide_auth_axum::{OAuthRequest, OAuthResponse, WebError};
@@ -80,18 +80,19 @@ async fn post_authorize(
                 if let Consent::Allow = consent {
                     tokio::task::spawn_blocking({
                         let db = db.clone();
-                        let solicitation = solicitation.into_owned();
+                        let PreGrant {
+                            client_id, scope, ..
+                        } = solicitation.pre_grant().clone();
 
                         move || {
                             let query = AuthorizationQuery {
                                 user,
-                                client: solicitation.pre_grant().client_id.parse()?,
+                                client: client_id.parse()?,
                             };
 
                             let collection = db.root::<User>()?.traverse::<Authorization>()?;
 
                             let authorization = collection.get(&query)?;
-                            let scope = solicitation.pre_grant().scope.clone();
 
                             if authorization.is_none()
                                 || authorization

@@ -4,6 +4,7 @@ use crate::{
         resource::user::{User, Username},
         Database,
     },
+    error::Error,
     error::Result,
     templates::SignIn,
 };
@@ -25,7 +26,7 @@ pub fn routes() -> Router {
 async fn get_signin(query: Option<Query<Callback<'_>>>) -> impl IntoResponse {
     let query = &query
         .as_ref()
-        .map(|Query(x)| serde_urlencoded::to_string(x).unwrap())
+        .and_then(|Query(x)| serde_urlencoded::to_string(x).ok())
         .unwrap_or_default();
     SignIn { query }.into_response()
 }
@@ -38,29 +39,34 @@ async fn post_signin(
 ) -> Result<impl IntoResponse> {
     let query = query.as_ref().map(|x| x.as_str());
 
-    let hash = db
-        .root::<Username>()?
-        .traverse::<User>()?
-        .get(&user.username)?
-        .map(|x| x.password)
-        .unwrap_or_default();
+    let authorized = tokio::task::spawn_blocking({
+        let db = db.clone();
+        let user = user.clone();
+        move || {
+            let collection = db.root::<Username>()?.traverse::<User>()?;
 
-    let authorized = PasswordHash::new(&hash)
-        .map(|x| {
-            Argon2::default()
-                .verify_password(user.password.as_bytes(), &x)
-                .is_ok()
-        })
-        .unwrap_or_default();
+            Ok::<_, Error>(
+                collection
+                    .get(&user.username)?
+                    .ok_or(argon2::password_hash::Error::Password)
+                    .map_err(Error::from)
+                    .and_then(|User { password, .. }| {
+                        let hash = PasswordHash::new(&password)?;
+                        Ok(Argon2::default().verify_password(user.password.as_bytes(), &hash)?)
+                    })
+                    .and_then(|_| {
+                        let user = collection.key(&user.username)?.ok_or(Error::NotFound)?;
 
-    if authorized {
-        let user_id = db
-            .root::<Username>()?
-            .traverse::<User>()?
-            .key(&user.username)?
-            .unwrap();
-        session.insert("id", user_id).unwrap();
-    } else {
+                        session.insert("user", user).unwrap();
+                        Ok(())
+                    })
+                    .is_ok(),
+            )
+        }
+    })
+    .await??;
+
+    if !authorized {
         return Ok((
             StatusCode::UNAUTHORIZED,
             SignIn {

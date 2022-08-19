@@ -32,6 +32,12 @@ pub enum Error {
         #[from]
         source: oxide_auth_axum::WebError,
     },
+
+    #[error("{source}")]
+    JoinError {
+        #[from]
+        source: tokio::task::JoinError,
+    },
 }
 
 impl IntoResponse for Error {

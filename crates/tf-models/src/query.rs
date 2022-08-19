@@ -8,7 +8,7 @@ pub struct ActivityQuery {
     pub id: ActivityId,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct ClientQuery {
     pub user_id: UserId,
     pub id: ClientId,

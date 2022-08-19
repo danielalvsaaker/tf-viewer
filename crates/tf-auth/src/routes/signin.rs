@@ -42,6 +42,7 @@ async fn post_signin(
     let authorized = tokio::task::spawn_blocking({
         let db = db.clone();
         let user = user.clone();
+
         move || {
             let collection = db.root::<Username>()?.traverse::<User>()?;
 
@@ -67,16 +68,14 @@ async fn post_signin(
     .await??;
 
     if !authorized {
-        return Ok((
+        Ok((
             StatusCode::UNAUTHORIZED,
             SignIn {
                 query: query.unwrap_or_default(),
             },
         )
-            .into_response());
-    }
-
-    if let Some(query) = query {
+            .into_response())
+    } else if let Some(query) = query {
         Ok(Redirect::to(query).into_response())
     } else {
         Ok(Redirect::to("/oauth/").into_response())

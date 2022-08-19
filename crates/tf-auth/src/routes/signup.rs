@@ -4,7 +4,7 @@ use crate::{
         resource::user::{User, Username},
         Database,
     },
-    error::Result,
+    error::{Error, Result},
     templates::SignUp,
 };
 use argon2::{
@@ -36,23 +36,49 @@ async fn post_signup(
     Form(user): Form<UserForm>,
     query: Option<Query<Callback<'_>>>,
 ) -> Result<impl IntoResponse> {
-    let salt = SaltString::generate(&mut OsRng);
-    let hash = Argon2::default()
-        .hash_password(user.password.as_bytes(), &salt)?
-        .serialize();
+    if tokio::task::spawn_blocking({
+        let db = db.clone();
+        let username = user.username.clone();
 
-    let key = UserQuery::from_bytes(nanoid::nanoid!().as_bytes())?;
-    let user = User {
-        username: user.username,
-        password: hash.as_str().into(),
-    };
+        move || {
+            db.root::<Username>()?
+                .traverse::<User>()?
+                .contains_key(&username)
+        }
+    })
+    .await??
+    {
+        return Ok(Redirect::to("/oauth/signin"));
+    }
 
-    db.root::<User>()?.insert(&key, &user)?;
-    db.root::<Username>()?
-        .traverse::<User>()?
-        .insert(&user.username, &key)?;
+    tokio::task::spawn_blocking({
+        let db = db.clone();
 
-    let query = query.as_ref().map(|x| x.as_str()).unwrap_or_default();
+        move || {
+            let salt = SaltString::generate(&mut OsRng);
+            let hash = Argon2::default()
+                .hash_password(user.password.as_bytes(), &salt)?
+                .serialize();
 
-    Ok(Redirect::to(query))
+            let query = UserQuery::from_bytes(nanoid::nanoid!().as_bytes())?;
+            let user = User {
+                username: user.username,
+                password: hash.as_str().into(),
+            };
+
+            db.root::<User>()?.insert(&query, &user)?;
+            db.root::<Username>()?
+                .traverse::<User>()?
+                .insert(&user.username, &query)?;
+
+            Ok::<_, Error>(())
+        }
+    })
+    .await??;
+
+    if let Some(query) = query.as_ref().map(|x| x.as_str()) {
+        Ok(Redirect::to(query))
+    } else {
+        Ok(Redirect::to("/oauth/signin"))
+    }
 }

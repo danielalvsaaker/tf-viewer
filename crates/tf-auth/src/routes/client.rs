@@ -44,7 +44,7 @@ async fn post_client(
     Extension(db): Extension<Database>,
     session: ReadableSession,
 ) -> Result<impl IntoResponse> {
-    let user = match session.get::<UserQuery>("id") {
+    let user = match session.get::<UserQuery>("user") {
         Some(user) => user,
         _ => return Ok(Redirect::to("/oauth/signin").into_response()),
     };

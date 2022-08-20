@@ -8,6 +8,7 @@ pub fn routes() -> Router {
     let session_layer = {
         let store = axum_sessions::async_session::MemoryStore::new();
         axum_sessions::SessionLayer::new(store, nanoid::nanoid!(128).as_bytes())
+            .with_cookie_path("tf_session")
             // TODO: Set based on config
             .with_secure(false)
     };

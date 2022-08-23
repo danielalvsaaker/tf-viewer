@@ -1,17 +1,17 @@
 use crate::primitives::scopes::Grant;
+use axum::{response::IntoResponse, routing::get, Json, Router};
+use axum_sessions::{async_session::MemoryStore, SameSite, SessionLayer};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
-use axum::{response::IntoResponse, routing::get, Json, Router};
-
 pub fn routes() -> Router {
-    let session_layer = {
-        let store = axum_sessions::async_session::MemoryStore::new();
-        axum_sessions::SessionLayer::new(store, nanoid::nanoid!(128).as_bytes())
-            .with_cookie_path("tf_session")
-            // TODO: Set based on config
-            .with_secure(false)
-    };
+    let session_layer = SessionLayer::new(MemoryStore::new(), nanoid::nanoid!(128).as_bytes())
+        .with_cookie_name("tf_session")
+        // TODO: Set based on config
+        .with_secure(true)
+        .with_save_unchanged(false)
+        .with_cookie_path("/oauth/")
+        .with_same_site_policy(SameSite::Lax);
 
     Router::new()
         .merge(oauth::routes())

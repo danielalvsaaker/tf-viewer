@@ -1,8 +1,5 @@
-.git
-target
-db
-.gitignore
-Dockerfile
-LICENSE
-README.md
-*.png
+*
+
+!crates
+!Cargo.toml
+!src

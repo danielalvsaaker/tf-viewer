@@ -17,6 +17,8 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
+          toolchain: stable
+          override: true
           components: rustfmt
       - uses: Swatinem/rust-cache@v1
       - name: "cargo fmt --check"
@@ -30,6 +32,8 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
+          toolchain: stable
+          override: true
           components: clippy
       - uses: Swatinem/rust-cache@v1
       - name: "clippy --all"

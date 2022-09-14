@@ -1,7 +1,6 @@
 use async_graphql::{Context, Object, Result};
 
 use super::{GearRoot, OAuthGuard, UserRoot};
-use tf_auth::scopes::{self, Read};
 use tf_database::{query::ActivityQuery, Database};
 use tf_models::{
     activity::{Lap, Record, Session},
@@ -9,6 +8,7 @@ use tf_models::{
     user::User,
     ActivityId,
 };
+use tf_scopes::{self as scopes, Read};
 
 mod record;
 use record::RecordRoot;

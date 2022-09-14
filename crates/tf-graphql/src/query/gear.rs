@@ -2,13 +2,13 @@ use async_graphql::{Context, Object, Result};
 
 use super::{ActivityRoot, OAuthGuard, UserRoot};
 use crate::connection::{Connection, PageInfo};
-use tf_auth::scopes::{self, Read};
 use tf_database::{
     query::{GearQuery, UserQuery},
     resource::index::DefaultGear,
     Database,
 };
 use tf_models::{activity::Session, gear::Gear, user::User, GearId};
+use tf_scopes::{self as scopes, Read};
 
 pub struct GearRoot {
     pub query: GearQuery,

@@ -1,5 +1,4 @@
 use crate::{guard::OAuthGuard, query};
-use tf_auth::scopes::{self, Write};
 use tf_database::{error::Error, Database};
 use tf_models::{
     activity::{Lap, Record, Session},
@@ -8,6 +7,7 @@ use tf_models::{
     user::User,
     ActivityId, GearId, UserId,
 };
+use tf_scopes::{self as scopes, Write};
 
 use async_graphql::{Context, Object, Result, SimpleObject};
 

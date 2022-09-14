@@ -8,7 +8,7 @@ include = ["src/**/*", "LICENSE", "README.md"]
 async-graphql = { version = "4.0", default-features = false }
 tf-models = { path = "../tf-models", features = ["graphql"] }
 tf-database = { path = "../tf-database" }
-tf-auth = { path = "../tf-auth" }
+tf-scopes = { path = "../tf-scopes" }
 oxide-auth = "0.5"
 serde = "1"
 

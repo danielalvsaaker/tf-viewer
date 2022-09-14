@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+tf-scopes = { path = "../tf-scopes" }
 askama = { version = "0.11", features = ["with-axum"] }
 askama_axum = "0.1"
 

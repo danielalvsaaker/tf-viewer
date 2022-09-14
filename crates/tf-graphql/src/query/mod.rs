@@ -2,9 +2,9 @@ use super::{
     connection::{Connection, PageInfo},
     guard::OAuthGuard,
 };
-use tf_auth::scopes::{self, Read};
 use tf_database::{error::Error, Database};
 use tf_models::{query::UserQuery, user::User, UserId};
+use tf_scopes::{self as scopes, Read};
 
 use async_graphql::{Context, Object, Result};
 

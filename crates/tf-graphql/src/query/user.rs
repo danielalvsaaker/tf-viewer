@@ -1,7 +1,6 @@
 use super::{ActivityRoot, GearRoot, OAuthGuard};
 use crate::connection::{Connection, PageInfo};
 use async_graphql::{Context, Object, Result};
-use tf_auth::scopes::{self, Read};
 use tf_database::{
     error::Error,
     query::{ActivityQuery, GearQuery, UserQuery},
@@ -9,6 +8,7 @@ use tf_database::{
     Database,
 };
 use tf_models::{activity::Session, gear::Gear, user::User, ActivityId, GearId, UserId};
+use tf_scopes::{self as scopes, Read};
 
 pub struct UserRoot {
     pub query: UserQuery,

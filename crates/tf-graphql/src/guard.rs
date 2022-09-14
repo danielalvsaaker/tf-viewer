@@ -1,6 +1,5 @@
 use async_graphql::{async_trait, Context, Error, ErrorExtensions, Guard, Result};
 use oxide_auth::primitives::{grant::Grant, scope::Scope};
-use tf_auth::scopes;
 
 pub struct OAuthGuard {
     scope: Scope,
@@ -9,7 +8,7 @@ pub struct OAuthGuard {
 impl OAuthGuard {
     pub fn new<S>(_scope: S) -> Self
     where
-        S: scopes::Scope,
+        S: tf_scopes::Scope,
     {
         Self {
             scope: S::SCOPE.parse().unwrap(),

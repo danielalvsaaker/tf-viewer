@@ -1,13 +1,13 @@
 use crate::{guard::OAuthGuard, query};
 use async_graphql::{Context, Object, Result, SimpleObject};
 use oxide_auth::primitives::grant::Grant;
-use tf_auth::scopes::{self, Write};
 use tf_database::{error::Error, resource::index::DefaultGear, Database};
 use tf_models::{
     query::{GearQuery, UserQuery},
     user::User,
     GearId, UserId,
 };
+use tf_scopes::{self as scopes, Write};
 
 #[derive(Default)]
 pub struct UserRoot;

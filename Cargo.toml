@@ -14,6 +14,7 @@ members = [
     "crates/tf-graphql",
     "crates/tf-models",
     "crates/tf-parse",
+    "crates/tf-scopes",
 ]
 
 [dependencies]

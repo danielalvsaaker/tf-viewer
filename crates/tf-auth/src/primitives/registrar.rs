@@ -76,7 +76,7 @@ impl Registrar for Database {
             .and_then(|scope| {
                 scope
                     .iter()
-                    .filter(|scope| super::scopes::SCOPES.contains(scope))
+                    .filter(|scope| tf_scopes::SCOPES.contains(scope))
                     .collect::<Vec<_>>()
                     .join(" ")
                     .parse()

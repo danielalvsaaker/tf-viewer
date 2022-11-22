@@ -1,7 +1,7 @@
-use crate::{Event, FollowerEvent, Handler};
+use crate::{private::Local, Event, FollowerEvent, Handler};
 use dashmap::DashMap;
 use std::sync::Arc;
-use tokio::sync::watch::{error::SendError, Receiver, Sender};
+use tokio::sync::watch::{self, error::SendError, Receiver, Sender};
 
 pub type Topic<T> = Arc<DashMap<<T as Event>::Key, Arc<Sender<<T as Event>::Value>>>>;
 
@@ -18,21 +18,21 @@ impl Broker {
         T::Key: Copy + Send + Sync + 'static,
         T::Value: Send + Sync + 'static,
     {
-        let topic = self.handle();
+        let topic = self.handle::<Local>();
 
         match topic.get(&key).map(|sender| sender.subscribe()) {
             Some(inner) => inner,
             _ => {
-                let (sender, receiver) = tokio::sync::watch::channel(T::Value::default());
-                let sender = std::sync::Arc::new(sender);
+                let (sender, receiver) = watch::channel(T::Value::default());
+                let sender = Arc::new(sender);
 
                 topic.insert(key, sender.clone());
 
                 tokio::spawn(async move {
                     sender.closed().await;
-                    topic.remove(&key).unwrap();
-
-                    println!("Dropped");
+                    topic
+                        .remove(&key)
+                        .expect("sender should exist until closed");
                 });
 
                 receiver
@@ -45,8 +45,7 @@ impl Broker {
         Self: Handler<T>,
         T: Event,
     {
-        if let Some(sender) = self.handle().get(&key) {
-            dbg!(sender.receiver_count());
+        if let Some(sender) = self.handle::<Local>().get(&key) {
             sender.send(value)
         } else {
             Ok(())

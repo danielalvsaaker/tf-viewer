@@ -5,11 +5,20 @@ mod broker;
 
 pub use broker::{Broker, Topic};
 
+pub(crate) mod private {
+    pub enum Local {}
+
+    pub trait IsLocal {}
+
+    impl IsLocal for Local {}
+}
+
+#[doc(hidden)]
 pub trait Handler<T>
 where
     T: Event,
 {
-    fn handle(&self) -> Topic<T>;
+    fn handle<L: private::IsLocal>(&self) -> Topic<T>;
 }
 
 pub trait Event {
@@ -25,7 +34,7 @@ impl Event for FollowerEvent {
 }
 
 impl Handler<FollowerEvent> for Broker {
-    fn handle(&self) -> Topic<FollowerEvent> {
+    fn handle<L: private::IsLocal>(&self) -> Topic<FollowerEvent> {
         self.follower_event.clone()
     }
 }

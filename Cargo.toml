@@ -11,6 +11,7 @@ include = ["src/**/*", "LICENSE", "README.md"]
 members = [
     "crates/tf-auth",
     "crates/tf-database",
+    "crates/tf-events",
     "crates/tf-graphql",
     "crates/tf-models",
     "crates/tf-parse",
@@ -33,6 +34,7 @@ thiserror = "1.0"
 
 tf-auth = { path = "crates/tf-auth" }
 tf-database = { path = "crates/tf-database" }
+tf-events = { path = "crates/tf-events" }
 tf-graphql = { path = "crates/tf-graphql" }
 tf-models = { path = "crates/tf-models", features = ["graphql"] }
 tf-parse = { path = "crates/tf-parse" }

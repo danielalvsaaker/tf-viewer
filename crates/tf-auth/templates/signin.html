@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<article class="grid">
+	<div>
+		<hgroup>
+    	<h1>Sign in</h1>
+			<h2>Sign in to an existing account</h2>
+		</hgroup>
+		<form method="post" formaction="signin?{{ query }}">
+    	<input type="text" name="username" placeholder="Username" aria-label="Username" autocomplete="nickname" required>
+      <input type="password" name="password" placeholder="Password" aria-label="Password" autocomplete="current-password" required>
+			<button type="submit" class="contrast">Sign in</button>
+    </form>
+    Don't have an account? <a href="signup?{{ query }}">Sign up</a>
+  </div>
+</article>
+{% endblock %}

@@ -1,0 +1,20 @@
+[package]
+name = "tf-graphql"
+version = "0.1.1"
+edition = "2021"
+include = ["src/**/*", "LICENSE", "README.md"]
+
+[dependencies]
+async-graphql = { version = "5.0", default-features = false }
+tf-models = { path = "../tf-models", features = ["graphql"] }
+tf-database = { path = "../tf-database" }
+tf-scopes = { path = "../tf-scopes" }
+oxide-auth = "0.5"
+serde = "1"
+tf-events = { path = "../tf-events" }
+
+chrono = "*"
+tokio = { version = "1", features = ["rt", "macros", "time"] }
+flexbuffers = "2.0"
+rayon = "1.5"
+futures-util = "0.3"

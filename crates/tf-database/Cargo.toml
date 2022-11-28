@@ -1,0 +1,18 @@
+[package]
+name = "tf-database"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+flexbuffers = "2.0"
+lz4_flex = "0.9"
+nebari = "0.5"
+serde = { version = "1.0", features = ["derive"] }
+tf-models = { path = "../tf-models" }
+thiserror = "1.0"
+
+[dev-dependencies]
+nanoid = "0.4"
+tempfile = "3.3"

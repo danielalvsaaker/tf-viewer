@@ -1,0 +1,15 @@
+[package]
+name = "tf-models"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+uom = { version = "0.33", default-features = false, features = ["si", "use_serde", "u16", "u32", "f64"] }
+chrono = { version = "0.4", features = ["serde"] }
+nanoid = "0.4"
+
+async-graphql = { version = "5.0", default-features = false, features = ["chrono"], optional = true }
+
+[features]
+graphql = ["async-graphql"]

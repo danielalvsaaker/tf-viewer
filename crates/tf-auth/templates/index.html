@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Index{% endblock %}
+{% block content %}
+<div>
+	<b>Nothing yet.</b>
+	{% for client in clients %}
+		<p>{{ client.inner.client_id }}</p>
+	{% endfor %}
+</div>
+{% endblock %}

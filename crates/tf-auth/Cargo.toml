@@ -1,0 +1,24 @@
+[package]
+name = "tf-auth"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tf-scopes = { path = "../tf-scopes" }
+askama = { version = "0.11", features = ["with-axum"] }
+askama_axum = "0.1"
+
+async-trait = "0.1"
+argon2 = { version = "0.4", features = ["std"] }
+oxide-auth = "0.5"
+oxide-auth-axum = "0.3"
+oxide-auth-async = "0.1"
+axum = { version = "0.6", features = ["headers"] }
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+serde_urlencoded = "0.7"
+nanoid = "0.4"
+axum-sessions = "0.4"
+tf-models = { path = "../tf-models" }
+tf-database = { path = "../tf-database" }
+tokio = { version = "1", features = ["sync"] }

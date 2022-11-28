@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Authorize{% endblock %}
+{% block content %}
+<article class="grid">
+    <div>
+	<hgroup>
+	    <h1>Authorize {{ client_name }}</h1>
+	    <h4>{{ client_name }} wants access to your <em>{{ username }}</em> account with the following permissions:</h4>
+	    <h4>{{ scopes }}</h2>
+	</hgroup>
+	<form method="post">
+	    <button type="submit" value="Allow" class="contrast" formaction="authorize?{{ query }}&consent=allow">Allow</button>
+	    <button type="submit" value="Deny" class="contrast" formaction="authorize?{{ query }}&consent=deny">Deny</button>
+	</form>
+    </div>
+</article>
+{% endblock %}

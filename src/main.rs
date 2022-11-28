@@ -1,77 +1,79 @@
-mod config;
-mod database;
+mod cache;
 mod error;
-mod middleware;
-mod models;
-mod parser;
 mod routes;
-mod static_files;
+mod state;
 
+/*
 #[cfg(all(target_env = "musl", target_pointer_width = "64"))]
 #[global_allocator]
-static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
+static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+*/
 
-use actix_identity::{CookieIdentityPolicy, IdentityService};
-use actix_web::{
-    cookie::SameSite,
-    middleware::{Compress, Condition},
-    web, App, HttpServer, ResponseError,
-};
-use database::Database;
+use axum::{Router, Server};
+use tower_http::{compression::CompressionLayer, cors::CorsLayer};
 
-#[actix_web::main]
+use tf_auth::scopes::Grant;
+use tf_database::Database;
+use tf_events::Broker;
+use tf_graphql::Schema;
+
+#[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let data = Database::load_or_create().expect("Failed to load");
+    let database = Database::open("db").unwrap();
+    let auth_db = tf_auth::database::Database::open("db-auth").unwrap();
 
-    let config = config::config();
-    let (cookie_key, secure_cookies, disable_registration, units) = (
-        config.get_cookie_key(),
-        config.secure_cookies,
-        config.disable_registration,
-        config.get_units(),
-    );
+    let state = tf_auth::State::new(auth_db.clone());
+    let broker = Broker::default();
 
-    println!("Running at {}:{}", config.address, config.port);
+    let schema = Schema::build(Default::default(), Default::default(), Default::default())
+        .data(broker.clone())
+        .data(database.clone())
+        .finish();
 
-    HttpServer::new(move || {
-        App::new()
-            .data(data.clone())
-            .data(units.clone())
-            .wrap(Compress::default())
-            .wrap(Condition::new(
-                disable_registration,
-                middleware::DisableRegistration::default(),
-            ))
-            .wrap(IdentityService::new(
-                CookieIdentityPolicy::new(&cookie_key)
-                    .name("tf-viewer")
-                    .http_only(true)
-                    .secure(secure_cookies)
-                    .same_site(SameSite::Strict),
-            ))
-            .default_service(web::route().to(|| {
-                error::Error::BadRequest(error::ErrorKind::NotFound, "Page not found")
-                    .error_response()
-            }))
-            .configure(error::config)
-            .configure(static_files::config)
-            .configure(routes::authentication::config)
-            .service(
-                web::scope("")
-                    .wrap(middleware::CheckLogin::new(
-                        middleware::AuthType::Restricted,
-                    ))
-                    .configure(routes::index::config)
-                    .configure(routes::upload::config)
-                    .service(
-                        web::scope("user")
-                            .configure(routes::activity::config)
-                            .configure(routes::user::config)
-                            .configure(routes::gear::config),
-                    ),
-            )
-    })
-    .bind((config.address, config.port))?
-    .run()
-    .await
+    tokio::task::spawn({
+        let database = database.clone();
+        async move {
+            loop {
+                let database = database.clone();
+                tokio::task::spawn_blocking(move || {
+                    database.compact().unwrap();
+                })
+                .await
+                .unwrap();
+
+                tokio::time::sleep(tokio::time::Duration::from_secs(3600 * 3)).await;
+            }
+        }
+    });
+
+    std::fs::write("schema.graphql", &schema.sdl()).unwrap();
+
+    let state = state::AppState {
+        broker,
+        cache: Default::default(),
+        state,
+        schema,
+        database: state::Database {
+            main: database,
+            auth: auth_db,
+        },
+    };
+
+    let middleware = tower::ServiceBuilder::new()
+        .layer(CompressionLayer::new())
+        .layer(CorsLayer::permissive());
+
+    let router = Router::new()
+        .nest("/oauth", tf_auth::routes())
+        .nest("/user/:user_id/activity", routes::activity::router())
+        .merge(routes::graphql::routes())
+        .layer(middleware)
+        .with_state(state);
+
+    Server::bind(&([0, 0, 0, 0], 12001).into())
+        .serve(router.into_make_service())
+        .await
+        .unwrap();
+
+    Ok(())
 }

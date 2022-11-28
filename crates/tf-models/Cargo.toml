@@ -9,7 +9,7 @@ uom = { version = "0.33", default-features = false, features = ["si", "use_serde
 chrono = { version = "0.4", features = ["serde"] }
 nanoid = "0.4"
 
-async-graphql = { version = "4.0", default-features = false, features = ["chrono"], optional = true }
+async-graphql = { version = "5.0", default-features = false, features = ["chrono"], optional = true }
 
 [features]
 graphql = ["async-graphql"]

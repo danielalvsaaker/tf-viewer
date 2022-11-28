@@ -12,14 +12,18 @@ use argon2::{
     Argon2,
 };
 use axum::{
-    extract::{Extension, Form, Query},
+    extract::{Form, FromRef, Query, State},
     response::{IntoResponse, Redirect},
     routing::get,
     Router,
 };
 use tf_database::{primitives::Key, query::UserQuery};
 
-pub fn routes() -> Router {
+pub fn routes<S>() -> Router<S>
+where
+    S: Send + Sync + 'static + Clone,
+    Database: FromRef<S>,
+{
     Router::new().route("/", get(get_signup).post(post_signup))
 }
 
@@ -32,9 +36,9 @@ async fn get_signup(query: Option<Query<Callback<'_>>>) -> impl IntoResponse {
 }
 
 async fn post_signup(
-    Extension(db): Extension<Database>,
-    Form(user): Form<UserForm>,
+    State(db): State<Database>,
     query: Option<Query<Callback<'_>>>,
+    Form(user): Form<UserForm>,
 ) -> Result<impl IntoResponse> {
     if tokio::task::spawn_blocking({
         let db = db.clone();
@@ -48,7 +52,7 @@ async fn post_signup(
     })
     .await??
     {
-        return Ok(Redirect::to("/oauth/signin"));
+        return Ok(Redirect::to("signin"));
     }
 
     tokio::task::spawn_blocking({
@@ -79,6 +83,6 @@ async fn post_signup(
     if let Some(query) = query.as_ref().map(|x| x.as_str()) {
         Ok(Redirect::to(query))
     } else {
-        Ok(Redirect::to("/oauth/signin"))
+        Ok(Redirect::to("signin"))
     }
 }

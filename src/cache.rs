@@ -52,13 +52,15 @@ pub struct ThumbnailCache {
     inner: Cache<Vec<u8>, Option<Thumbnail>>,
 }
 
-impl ThumbnailCache {
-    pub fn new() -> Self {
+impl Default for ThumbnailCache {
+    fn default() -> Self {
         Self {
             inner: Cache::new(32),
         }
     }
+}
 
+impl ThumbnailCache {
     pub async fn get(&self, key: Vec<u8>, record: Record) -> Option<Thumbnail> {
         let task = async move {
             let (send, recv) = tokio::sync::oneshot::channel();

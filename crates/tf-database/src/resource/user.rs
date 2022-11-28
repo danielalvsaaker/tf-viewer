@@ -1,17 +1,23 @@
 use super::{index::DefaultGear, Resource};
 use crate::{
-    primitives::{Index, Relation},
+    primitives::{Index, Relation, Tree},
     Traverse,
 };
 use tf_models::{
     activity::{Lap, Record, Session},
     gear::Gear,
     query::{ActivityQuery, GearQuery, UserQuery},
-    user::User,
+    user::{User, Zones},
 };
 
 impl Resource for User {
     const NAME: &'static str = "user";
+
+    type Key = UserQuery;
+}
+
+impl Resource for Zones {
+    const NAME: &'static str = "zones";
 
     type Key = UserQuery;
 }
@@ -34,4 +40,8 @@ impl Traverse<Gear> for User {
 
 impl Traverse<DefaultGear> for User {
     type Collection = Index<UserQuery, DefaultGear, GearQuery, Gear>;
+}
+
+impl Traverse<Zones> for User {
+    type Collection = Tree<UserQuery, Zones>;
 }

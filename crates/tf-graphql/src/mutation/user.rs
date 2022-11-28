@@ -4,7 +4,7 @@ use oxide_auth::primitives::grant::Grant;
 use tf_database::{error::Error, resource::index::DefaultGear, Database};
 use tf_models::{
     query::{GearQuery, UserQuery},
-    user::User,
+    user::{User, Zones},
     GearId, UserId,
 };
 use tf_scopes::{self as scopes, Write};
@@ -27,7 +27,12 @@ struct SetDefaultGearPayload {
     user: query::user::UserRoot,
 }
 
-#[Object]
+#[derive(SimpleObject)]
+struct SetZonesPayload {
+    user: query::user::UserRoot,
+}
+
+#[Object(name = "UserMutation")]
 impl UserRoot {
     #[graphql(guard = "OAuthGuard::new(Write(scopes::User))")]
     async fn create_user(&self, ctx: &Context<'_>, input: User) -> Result<CreateUserPayload> {
@@ -104,6 +109,31 @@ impl UserRoot {
         .await??;
 
         Ok(SetDefaultGearPayload {
+            user: query::user::UserRoot { query: user },
+        })
+    }
+
+    #[graphql(guard = "OAuthGuard::new(Write(scopes::User))")]
+    async fn set_zones(
+        &self,
+        ctx: &Context<'_>,
+        user: UserId,
+        input: Zones,
+    ) -> Result<SetZonesPayload> {
+        let db = ctx.data_unchecked::<Database>().clone();
+
+        let user = UserQuery { user_id: user };
+
+        tokio::task::spawn_blocking(move || {
+            db.root::<User>()?
+                .traverse::<Zones>()?
+                .insert(&user, &input)?;
+
+            Ok::<_, Error>(())
+        })
+        .await??;
+
+        Ok(SetZonesPayload {
             user: query::user::UserRoot { query: user },
         })
     }

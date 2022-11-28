@@ -11,7 +11,7 @@ use crate::{
 
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use axum::{
-    extract::{Extension, Form, Query},
+    extract::{Form, FromRef, Query, State},
     http::StatusCode,
     response::{IntoResponse, Redirect},
     routing::get,
@@ -19,7 +19,12 @@ use axum::{
 };
 use axum_sessions::extractors::WritableSession;
 
-pub fn routes() -> Router {
+pub fn routes<S>() -> Router<S>
+where
+    S: Send + Sync + 'static + Clone,
+    crate::State: FromRef<S>,
+    Database: FromRef<S>,
+{
     Router::new().route("/", get(get_signin).post(post_signin))
 }
 
@@ -32,15 +37,15 @@ async fn get_signin(query: Option<Query<Callback<'_>>>) -> impl IntoResponse {
 }
 
 async fn post_signin(
-    Extension(db): Extension<Database>,
+    State(db): State<Database>,
     query: Option<Query<Callback<'_>>>,
-    Form(user): Form<UserForm>,
     mut session: WritableSession,
+    Form(user): Form<UserForm>,
 ) -> Result<impl IntoResponse> {
     let query = query.as_ref().map(|x| x.as_str());
 
     let authorized = tokio::task::spawn_blocking({
-        let db = db.clone();
+        //let db = db.clone();
         let user = user.clone();
 
         move || {

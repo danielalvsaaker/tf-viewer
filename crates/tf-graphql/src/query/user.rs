@@ -7,7 +7,12 @@ use tf_database::{
     resource::index::DefaultGear,
     Database,
 };
-use tf_models::{activity::Session, gear::Gear, user::User, ActivityId, GearId, UserId};
+use tf_models::{
+    activity::Session,
+    gear::Gear,
+    user::{User, Zones},
+    ActivityId, GearId, UserId,
+};
 use tf_scopes::{self as scopes, Read};
 
 pub struct UserRoot {
@@ -28,6 +33,13 @@ impl UserRoot {
         tokio::task::spawn_blocking(move || Ok(db.root()?.get(&query)?.unwrap())).await?
     }
 
+    async fn zones(&self, ctx: &Context<'_>) -> Result<Zones> {
+        let db = ctx.data_unchecked::<Database>().clone();
+        let query = self.query;
+
+        tokio::task::spawn_blocking(move || Ok(db.root()?.get(&query)?.unwrap_or_default())).await?
+    }
+
     #[graphql(guard = "OAuthGuard::new(Read(scopes::Activity))")]
     async fn activity(
         &self,
@@ -45,7 +57,7 @@ impl UserRoot {
                 .root::<User>()?
                 .traverse::<Session>()?
                 .contains_key(&query)?
-                .then(|| ActivityRoot { query }))
+                .then_some(ActivityRoot { query }))
         })
         .await?
     }
@@ -111,7 +123,7 @@ impl UserRoot {
                 .root::<User>()?
                 .traverse::<Gear>()?
                 .contains_key(&query)?
-                .then(|| GearRoot { query }))
+                .then_some(GearRoot { query }))
         })
         .await?
     }

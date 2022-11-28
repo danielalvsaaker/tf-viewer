@@ -119,7 +119,7 @@ impl ActivityRoot {
                 .and(record)
                 .and(lap)
                 .is_some()
-                .then(|| DeleteActivityPayload { id: activity.id }))
+                .then_some(DeleteActivityPayload { id: activity.id }))
         })
         .await?
     }

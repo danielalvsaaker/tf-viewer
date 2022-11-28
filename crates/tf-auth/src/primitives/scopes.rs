@@ -5,33 +5,32 @@ pub struct Grant<S = ()> {
     _type: std::marker::PhantomData<S>,
 }
 
-use crate::{database::Database, State};
 use axum::{
-    body::HttpBody,
-    extract::{Extension, FromRequest, RequestParts},
-    BoxError,
+    extract::{FromRef, FromRequestParts},
+    http::request::Parts,
 };
 use oxide_auth_axum::{OAuthResource, OAuthResponse, WebError};
 
 #[axum::async_trait]
-impl<B, S> FromRequest<B> for Grant<S>
+impl<State, Scope> FromRequestParts<State> for Grant<Scope>
 where
-    B: Send + HttpBody,
-    B::Data: Send,
-    B::Error: Into<BoxError>,
-    S: Scope,
+    crate::State: FromRef<State>,
+    State: Send + Sync + 'static,
+    Scope: tf_scopes::Scope,
 {
     type Rejection = Result<OAuthResponse, WebError>;
 
-    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-        let Extension(state) = Extension::<State>::from_request(req).await.unwrap();
-        let Extension(db) = Extension::<Database>::from_request(req).await.unwrap();
-        let req = OAuthResource::from_request(req).await.unwrap();
+    async fn from_request_parts(parts: &mut Parts, state: &State) -> Result<Self, Self::Rejection> {
+        let req = OAuthResource::from_request_parts(parts, state)
+            .await
+            .map_err(Err)?;
+
+        let state = crate::State::from_ref(state);
 
         let auth = state
-            .endpoint(db)
+            .endpoint()
             .await
-            .with_scopes(&[S::SCOPE.parse().unwrap()])
+            .with_scopes(&[Scope::SCOPE.parse().unwrap()])
             .resource_flow()
             .execute(req.into())
             .await;

@@ -105,7 +105,7 @@ impl GearRoot {
                 .traverse::<Gear>()?
                 .remove(&gear)?
                 .is_some()
-                .then(|| DeleteGearPayload { id: gear.id }))
+                .then_some(DeleteGearPayload { id: gear.id }))
         })
         .await?
     }

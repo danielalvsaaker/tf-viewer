@@ -3,6 +3,12 @@ use askama::Template;
 use oxide_auth::endpoint::WebRequest;
 
 #[derive(Template)]
+#[template(path = "index.html")]
+pub struct Index<'a> {
+    pub clients: &'a [crate::database::resource::client::EncodedClient],
+}
+
+#[derive(Template)]
 #[template(path = "signin.html")]
 pub struct SignIn<'a> {
     pub query: &'a str,

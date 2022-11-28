@@ -39,6 +39,12 @@ impl std::fmt::Display for GearQuery {
     }
 }
 
+impl std::fmt::Display for ClientQuery {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}", self.user_id, self.id)
+    }
+}
+
 impl std::str::FromStr for ActivityQuery {
     type Err = InvalidLengthError;
 

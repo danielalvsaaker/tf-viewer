@@ -3,7 +3,7 @@ use crate::error::Result;
 use crate::templates;
 
 use axum::{
-    extract::{Extension, Form},
+    extract::{Form, FromRef, State},
     response::{IntoResponse, Json, Redirect},
     routing::get,
     Router,
@@ -17,7 +17,11 @@ use tf_database::{
 };
 use tf_models::ClientId;
 
-pub fn routes() -> Router {
+pub fn routes<S>() -> Router<S>
+where
+    S: Send + Sync + 'static + Clone,
+    Database: FromRef<S>,
+{
     Router::new().route("/", get(get_client).post(post_client))
 }
 
@@ -40,9 +44,9 @@ struct ClientForm {
 }
 
 async fn post_client(
-    Form(client): Form<ClientForm>,
-    Extension(db): Extension<Database>,
+    State(db): State<Database>,
     session: ReadableSession,
+    Form(client): Form<ClientForm>,
 ) -> Result<impl IntoResponse> {
     let user = match session.get::<UserQuery>("user") {
         Some(user) => user,

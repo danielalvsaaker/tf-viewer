@@ -1,7 +1,9 @@
-use crate::error::Result;
-use crate::primitives::{
-    collection::{Index, Iter, Tree},
-    Key, Value,
+use crate::{
+    error::Result,
+    primitives::{
+        collection::{Index, Iter, Tree},
+        Key, Value,
+    },
 };
 
 #[derive(Clone)]

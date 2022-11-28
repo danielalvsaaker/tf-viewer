@@ -1,68 +1,76 @@
 mod cache;
 mod error;
 mod routes;
+mod state;
 
+/*
 #[cfg(all(target_env = "musl", target_pointer_width = "64"))]
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+*/
 
-use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
-use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
-use axum::{
-    extract::Extension,
-    response::{Html, IntoResponse},
-    routing::get,
-    Router, Server,
-};
+use axum::{Router, Server};
 use tower_http::{compression::CompressionLayer, cors::CorsLayer};
 
+use tf_auth::scopes::Grant;
 use tf_database::Database;
-
-use tf_auth::{scopes::Grant, State};
+use tf_events::Broker;
 use tf_graphql::Schema;
-
-async fn graphql_handler(
-    Grant { grant, .. }: Grant,
-    Extension(schema): Extension<Schema>,
-    Extension(db): Extension<Database>,
-    request: GraphQLRequest,
-) -> GraphQLResponse {
-    let request = request.into_inner().data(db).data(grant);
-
-    schema.execute(request).await.into()
-}
-
-async fn graphql_playground() -> impl IntoResponse {
-    Html(playground_source(GraphQLPlaygroundConfig::new("/")))
-}
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let database = Database::open("db").unwrap();
     let auth_db = tf_auth::database::Database::open("db-auth").unwrap();
 
-    let state = State::default();
-    let cache = cache::ThumbnailCache::new();
-    let schema = Schema::default();
+    let state = tf_auth::State::new(auth_db.clone());
+    let broker = Broker::default();
 
-    database.compact().unwrap();
+    let schema = Schema::build(Default::default(), Default::default(), Default::default())
+        .data(broker.clone())
+        .data(database.clone())
+        .finish();
+
+    tokio::task::spawn({
+        let database = database.clone();
+        async move {
+            loop {
+                let database = database.clone();
+                tokio::task::spawn_blocking(move || {
+                    database.compact().unwrap();
+                })
+                .await
+                .unwrap();
+
+                tokio::time::sleep(tokio::time::Duration::from_secs(3600 * 3)).await;
+            }
+        }
+    });
+
+    std::fs::write("schema.graphql", &schema.sdl()).unwrap();
+
+    let state = state::AppState {
+        broker,
+        cache: Default::default(),
+        state,
+        schema,
+        database: state::Database {
+            main: database,
+            auth: auth_db,
+        },
+    };
 
     let middleware = tower::ServiceBuilder::new()
-        .layer(Extension(schema))
-        .layer(Extension(auth_db))
-        .layer(Extension(database))
-        .layer(Extension(state))
-        .layer(Extension(cache))
         .layer(CompressionLayer::new())
         .layer(CorsLayer::permissive());
 
     let router = Router::new()
-        .route("/", get(graphql_playground).post(graphql_handler))
         .nest("/oauth", tf_auth::routes())
         .nest("/user/:user_id/activity", routes::activity::router())
-        .layer(middleware);
+        .merge(routes::graphql::routes())
+        .layer(middleware)
+        .with_state(state);
 
-    Server::bind(&([127, 0, 0, 1], 8777).into())
+    Server::bind(&([0, 0, 0, 0], 12001).into())
         .serve(router.into_make_service())
         .await
         .unwrap();

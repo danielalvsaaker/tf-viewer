@@ -29,7 +29,7 @@ impl Query {
             Ok(db
                 .root::<User>()?
                 .contains_key(&user)?
-                .then(|| UserRoot { query: user }))
+                .then_some(UserRoot { query: user }))
         })
         .await?
     }

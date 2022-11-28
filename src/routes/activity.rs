@@ -1,9 +1,10 @@
 use crate::{
     cache::ThumbnailCache,
     error::{Error, Result},
+    state::AppState,
 };
 use axum::{
-    extract::{Extension, Path, TypedHeader},
+    extract::{Path, State, TypedHeader},
     headers::{ContentType, ETag, HeaderMapExt, IfNoneMatch},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Json},
@@ -24,7 +25,7 @@ use tf_models::{
     user::User,
 };
 
-pub fn router() -> Router {
+pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", post(post_activity_index))
         .route("/:id/thumbnail", get(get_activity_thumbnail))
@@ -32,8 +33,8 @@ pub fn router() -> Router {
 
 async fn get_activity_thumbnail(
     _: Grant<Read<Activity>>,
-    Extension(db): Extension<Database>,
-    Extension(cache): Extension<ThumbnailCache>,
+    State(db): State<Database>,
+    State(cache): State<ThumbnailCache>,
     Path(query): Path<ActivityQuery>,
     header: Option<TypedHeader<IfNoneMatch>>,
 ) -> Result<impl IntoResponse> {
@@ -66,7 +67,7 @@ async fn get_activity_thumbnail(
 
 async fn post_activity_index(
     _grant: Grant<Write<Activity>>,
-    Extension(db): Extension<Database>,
+    State(db): State<Database>,
     Path(query): Path<UserQuery>,
     file: bytes::Bytes,
 ) -> Result<impl IntoResponse> {
